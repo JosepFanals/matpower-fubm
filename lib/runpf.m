@@ -129,7 +129,7 @@ mpc = ext2int(mpc, mpopt);
 
 if ~isempty(mpc.bus)
     %% get bus index lists of each type of bus
-    [ref, pv, pq] = bustypes(bus, gen);
+    [ref, pv, pq] = bustypes_aab(bus, gen, branch);
 
     %% generator info
     on = find(gen(:, GEN_STATUS) > 0);      %% which generators are on?
@@ -142,6 +142,7 @@ if ~isempty(mpc.bus)
         v = mpver('all');
         fprintf('\nMATPOWER Version %s, %s', v.Version, v.Date);
     end
+    %% Identify if the grid is AC/DC or has Controls
     %%AAB-----------------------------------------------------------------
     iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
     nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control

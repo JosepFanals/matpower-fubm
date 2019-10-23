@@ -100,7 +100,7 @@ if dc
   if (nBeqz || nPfsh || nQtma || nVtma)
       error('opf_setup: DC opf for AC/DC grids or grids with controls have not been coded yet');
   end  
-    %% ignore reactive costs for DC
+  %% ignore reactive costs for DC
   mpc.gencost = pqcost(mpc.gencost, ng);
 
   %% reduce A and/or N from AC dimensions to DC dimensions, if needed
@@ -126,7 +126,7 @@ if dc
       mpc.N(:, acc) = [];               %% delete Vm and Qg columns
     end
   end
-else    %% AC
+else    %% AC or AC/DC
   %% Identify if grid is AC/DC
   %%AAB--------------------------------------------------------------------
   iBeqz = find (mpc.branch(:,CONV)==1 & mpc.branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
@@ -477,6 +477,7 @@ else                %% AC model
         hess_mis = @(x, lam)opf_current_balance_hess(x, lam, mpc, Ybus, mpopt);
     end
   else %Power Balance
+    mis_cons = {'Pmis', 'Qmis'};      
       %%AAB---------------------------------------------------------------
       if (nBeqz || nBeqv || nPfsh || nQtma || nVtma) %AAB- AC/DC or Controls Formulation for power balance constraints
           %AAB-If we have AC/DC systems or any controls Ybus is variable since Beq, Theta_shift, ma are variable
