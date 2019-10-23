@@ -52,9 +52,11 @@ function [results, success, raw] = nlpopf_solver(om, mpopt)
 [GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN, ...
     MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PC1, PC2, QC1MIN, QC1MAX, ...
     QC2MIN, QC2MAX, RAMP_AGC, RAMP_10, RAMP_30, RAMP_Q, APF] = idx_gen;
-[F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, ...
-    TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
-    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX] = idx_brch;
+[F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
+    RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
+    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
+    TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
+    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
 [PW_LINEAR, POLYNOMIAL, MODEL, STARTUP, SHUTDOWN, NCOST, COST] = idx_cost;
 
 %% options
@@ -118,6 +120,32 @@ end
 %% find branches with flow limits
 il = find(branch(:, RATE_A) ~= 0 & branch(:, RATE_A) < 1e10);
 nl2 = length(il);           %% number of constrained lines
+%% identifier of AC/DC grids
+%%AAB--------------------------------------------------------------------- 
+iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
+%%identifier of elements with Vf controlled by Beq
+iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
+if nBeqz
+    nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
+else
+    nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
+    
+end
+iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
+if nBeqz
+    nVscL = length(iVscL); %AAB- Number of VSC with power losses
+else
+    nVscL = 0; %AAB- Number of VSC with power losses
+end
+%% Identify if grid has controls
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
+iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
+nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
+iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
+nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+%%------------------------------------------------------------------------- 
 
 %%-----  run opf  -----
 [x, f, eflag, output, lambda] = om.solve(opt);
@@ -137,6 +165,51 @@ else
 end
 Pg = x(vv.i1.Pg:vv.iN.Pg);
 Qg = x(vv.i1.Qg:vv.iN.Qg);
+
+%AAB-----------------------------------------------------------------------
+if nBeqz %%update mpc.branch with FUBM from x
+    Beqz = x(vv.i1.Beqz:vv.iN.Beqz);
+    branch(iBeqz,BEQ)=Beqz; %AAB- Update the data from Beqz to the branch matrix
+    disp('Beqz')
+    disp(Beqz)
+end
+if nBeqv %%update mpc.branch with FUBM from x
+    Beqv = x(vv.i1.Beqv:vv.iN.Beqv);
+    branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqz to the branch matrix
+    disp('Beqv')
+    disp(Beqv)
+end
+if nPfsh %%update mpc.branch with FUBM from x
+    ShAng = x(vv.i1.ShAng:vv.iN.ShAng);
+    branch(iPfsh,SHIFT)=ShAng*180/pi; %AAB- Update the data from Theta_sh to the branch matrix (the updated value is changed from radians to degrees)
+    disp('ShAng')
+    disp(ShAng)
+end
+if nQtma %%update mpc.branch with FUBM from x
+    maQt = x(vv.i1.maQt:vv.iN.maQt);
+    branch(iQtma,TAP)=maQt; %AAB- Update the data from ma/tap to the branch matrix 
+    disp('maQt')
+    disp(maQt)
+end
+if nVtma %%update mpc.branch with FUBM from x
+    maVt = x(vv.i1.maVt:vv.iN.maVt);
+    branch(iVtma,TAP)=maVt; %AAB- Update the data from ma/tap to the branch matrix 
+    disp('maVt')
+    disp(maVt)
+end
+
+[Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
+%% Standard IEC 62751-2 Ploss Correction for VSC losses
+if nVscL
+    %%compute branch power flows
+    brf=branch(:, F_BUS);              %%AAB- from bus index of all the branches, brf=branch(br, F_BUS); %For in-service branches 
+    It= Yt(:, :) * V;                  %%AAB- complex current injected at "to"   bus, Yt(br, :) * V; For in-service branches 
+    %%compute VSC Power Loss
+    PLoss_IEC = branch(iVscL,ALPH3).*((abs(It(iVscL))).^2) + branch(iVscL,ALPH2).*((abs(It(iVscL))).^2) + branch(iVscL,ALPH1); %%AAB- Standard IEC 62751-2 Ploss Correction for VSC losses 
+    branch(iVscL,GSW) = PLoss_IEC./(abs(V(brf(iVscL))).^2);    %%AAB- VSC Gsw Update
+    [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables
+end
+%--------------------------------------------------------------------------
 
 %%-----  calculate return values  -----
 %% update voltages & generator outputs

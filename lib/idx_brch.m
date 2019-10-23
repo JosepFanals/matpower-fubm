@@ -1,6 +1,8 @@
 function [F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
-    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX] = idx_brch
+    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
+    TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
+    ALPH1, ALPH2, ALPH3] = idx_brch
 %IDX_BRCH   Defines constants for named column indices to branch matrix.
 %   Example:
 %
@@ -49,8 +51,26 @@ function [F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
 %    19 MU_ST       Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
 %    20 MU_ANGMIN   Kuhn-Tucker multiplier lower angle difference limit (u/degree)
 %    21 MU_ANGMAX   Kuhn-Tucker multiplier upper angle difference limit (u/degree)
-%
+%    22 VF_SET      Tap Controlled Voltage (p.u.) (Voltage "from")
+%    23 VT_SET      Tap Controlled Voltage (p.u.) (Voltage "to")
+%    24 TAP_MAX     Tap Max (p.u.)
+%    25 TAP_MIN     Tap Min (p.u.)
+%    26 CONV        Converter tipe 1 (zero constraint), 2(VDC control), 3(Droop Control)
+%    27 G0          Conductance for PWM power Loss in VSC (p.u.)
+%    28 BEQ         Equivalent Suceptance (p.u.)
+%    29 K2          Modulation Constant for VSC, otherwise 1
+%    30 BEQ_MIN     Beq min value (p.u.)
+%    31 BEQ_MAX     Beq max value (p.u.)
+%    32 SH_MIN      Shift Angle min value (degrees)
+%    33 SH_MAX      Shift Angle max value (degrees)
+
 %   See also DEFINE_CONSTANTS.
+
+%   ABRAHAM ALVAREZ BUSTOS
+%   This code has been modified to include
+%   The Flexible Universal Branch Model (FUBM) for Matpower
+%   For more info about the model, email: 
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
 
 %   MATPOWER
 %   Copyright (c) 1996-2016, Power Systems Engineering Research Center (PSERC)
@@ -87,3 +107,19 @@ MU_SF       = 18;   %% Kuhn-Tucker multiplier on MVA limit at "from" bus (u/MVA)
 MU_ST       = 19;   %% Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
 MU_ANGMIN   = 20;   %% Kuhn-Tucker multiplier lower angle difference limit (u/degree)
 MU_ANGMAX   = 21;   %% Kuhn-Tucker multiplier upper angle difference limit (u/degree)
+%% fubm extra columns
+VF_SET      = 22;   %% Tap Controlled Voltage (p.u.) (Voltage "from")
+VT_SET      = 23;   %% Tap Controlled Voltage (p.u.) (Voltage "to")
+TAP_MAX     = 24;   %% Tap Max (p.u.)
+TAP_MIN     = 25;   %% Tap Min (p.u.)
+CONV        = 26;   %% Converter tipe 1 (zero constraint), 2(VDC control), 3(Droop Control)
+BEQ         = 27;   %% Equivalent Suceptance (p.u)
+K2          = 28;   %% Modulation Constant for VSC, otherwise 1
+BEQ_MIN     = 29;   %% Beq min value (p.u.)
+BEQ_MAX     = 30;   %% Beq max value (p.u.)
+SH_MIN      = 31;   %% Shift Angle min value (degrees)
+SH_MAX      = 32;   %% Shift Angle max value (degrees)
+GSW         = 33;   %% Initial condition for VSC Power Loss (p.u.) (Ploss = Gsw.*Vf.^2 )
+ALPH1       = 34;   %% Alpha constant 1 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
+ALPH2       = 35;   %% Alpha constant 2 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
+ALPH3       = 36;   %% Alpha constant 3 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)

@@ -13,6 +13,12 @@ function [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch)
 %
 %   See also MAKEJAC, MAKESBUS, EXT2INT.
 
+%   ABRAHAM ALVAREZ BUSTOS
+%   This code has been modified to include
+%   The Flexible Universal Branch Model (FUBM) for Matpower
+%   For more info about the model, email: 
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+
 %   MATPOWER
 %   Copyright (c) 1996-2016, Power Systems Engineering Research Center (PSERC)
 %   by Ray Zimmerman, PSERC Cornell
@@ -36,9 +42,11 @@ nl = size(branch, 1);       %% number of lines
 %% define named indices into bus, branch matrices
 [PQ, PV, REF, NONE, BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, ...
     VA, BASE_KV, ZONE, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN] = idx_bus;
-[F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, ...
-    TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
-    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX] = idx_brch;
+[F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
+    RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
+    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
+    TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
+    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
 
 %% check that bus numbers are equal to indices to bus (one set of bus numbers)
 if any(bus(:, BUS_I) ~= (1:nb)')
@@ -54,14 +62,22 @@ end
 stat = branch(:, BR_STATUS);                    %% ones at in-service branches
 Ys = stat ./ (branch(:, BR_R) + 1j * branch(:, BR_X));  %% series admittance
 Bc = stat .* branch(:, BR_B);                           %% line charging susceptance
-tap = ones(nl, 1);                              %% default tap ratio = 1
+%%AAB-----
+Beq= stat .* branch(:, BEQ);                            %%AAB- VSC Equivalent Reactor for absorbing or supplying reactive power and zero constraint in DC side   
+Gsw= stat .* branch(:, GSW);                             %%AAB- VSC Switching losses
+%%---------
+ma = ones(nl, 1);                               %% default tap ratio = 1
 i = find(branch(:, TAP));                       %% indices of non-zero tap ratios
-tap(i) = branch(i, TAP);                        %% assign non-zero tap ratios
-tap = tap .* exp(1j*pi/180 * branch(:, SHIFT)); %% add phase shifters
+ma(i) = branch(i, TAP);                         %% assign non-zero tap ratios
+%%AAB-----
+ShAng = branch(:, SHIFT)* pi/180;               %%AAB- Shift angle (in degrees from branch) and changed to radians
+tap = ma .* exp(1j* ShAng);                     %% add phase shifters to the tap
+k2 = branch(:, K2);                             %% VSC constant depending of how many levels does the VSC is simulating. Default k2 for branches = 1, Default k2 for VSC = sqrt(3)/2
+%%---------
 Ytt = Ys + 1j*Bc/2;
-Yff = Ytt ./ (tap .* conj(tap));
-Yft = - Ys ./ conj(tap);
-Ytf = - Ys ./ tap;
+Yff = Gsw+( (Ytt+1j*Beq) ./ ((k2.^2).*tap .* conj(tap))  ); %%<<AAB- FUBM formulation- Original: Yff = Ytt ./ (tap .* conj(tap));
+Yft = - Ys ./ ( k2.*conj(tap) );                            %%<<AAB- FUBM formulation- Original: Yft = - Ys ./ conj(tap) ;
+Ytf = - Ys ./ ( k2.*tap );                                  %%<<AAB- FUBM formulation- Original: Ytf = - Ys ./ tap ;
 
 %% compute shunt admittance
 %% if Psh is the real power consumed by the shunt at V = 1.0 p.u.

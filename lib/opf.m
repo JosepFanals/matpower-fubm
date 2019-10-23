@@ -172,9 +172,11 @@ t0 = tic;       %% start timer
 [GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN, ...
     MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PC1, PC2, QC1MIN, QC1MAX, ...
     QC2MIN, QC2MAX, RAMP_AGC, RAMP_10, RAMP_30, RAMP_Q, APF] = idx_gen;
-[F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, ...
-    TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
-    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX] = idx_brch;
+[F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
+    RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
+    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
+    TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
+    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
 [PW_LINEAR, POLYNOMIAL, MODEL, STARTUP, SHUTDOWN, NCOST, COST] = idx_cost;
 
 %% process input arguments
@@ -200,6 +202,7 @@ if mpopt.opf.start == 3
     end
     rpf = runpf(mpc, mpopt_pf);
     if rpf.success
+        fprintf('Power flow initialization converged.\n');%AAB- Just a flag for Power flow convergency
         mpc = rpf;      %% or should I just copy Va, Vm, Pg, Qg?
     end
 end
@@ -218,7 +221,17 @@ if size(mpc.branch,2) < MU_ANGMAX
   mpc.branch = [ mpc.branch zeros(nl, MU_ANGMAX-size(mpc.branch,2)) ];
 end
 
-%%-----  convert to internal numbering, remove out-of-service stuff  -----
+%% add FUBM columns to the branch matrix if needed
+if size(mpc.branch,2) < ALPH3
+  mpc.branch = [ mpc.branch zeros(nl, ALPH3-size(mpc.branch,2)) ];
+  mpc.branch(:,TAP_MAX)=1;
+  mpc.branch(:,TAP_MIN)=1;
+  mpc.branch(:,K2)=1;
+  mpc.branch(:,SH_MIN)=-360;
+  mpc.branch(:,SH_MAX)= 360;
+end
+
+%% -----  convert to internal numbering, remove out-of-service stuff  -----
 mpc = ext2int(mpc, mpopt);
 
 %%-----  construct OPF model object  -----

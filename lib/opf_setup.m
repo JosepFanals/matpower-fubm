@@ -7,6 +7,12 @@ function om = opf_setup(mpc, mpopt)
 %
 %   See also OPF, EXT2INT, OPF_EXECUTE.
 
+%   ABRAHAM ALVAREZ BUSTOS
+%   This code has been modified to include
+%   The Flexible Universal Branch Model (FUBM) for Matpower
+%   For more info about the model, email: 
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+
 %   MATPOWER
 %   Copyright (c) 1996-2016, Power Systems Engineering Research Center (PSERC)
 %   by Ray Zimmerman, PSERC Cornell
@@ -28,9 +34,11 @@ vcart = ~dc && mpopt.opf.v_cartesian;
 [GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN, ...
     MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PC1, PC2, QC1MIN, QC1MAX, ...
     QC2MIN, QC2MAX, RAMP_AGC, RAMP_10, RAMP_30, RAMP_Q, APF] = idx_gen;
-[F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, ...
-    TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
-    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX] = idx_brch;
+[F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
+    RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
+    ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
+    TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
+    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
 [PW_LINEAR, POLYNOMIAL, MODEL, STARTUP, SHUTDOWN, NCOST, COST] = idx_cost;
 
 %% define flag to indicate whether we are tied to legacy formulation
@@ -78,7 +86,21 @@ else
 end
 
 if dc
-  %% ignore reactive costs for DC
+  %% Identify if grid is AC/DC or has controls
+  %%AAB--------------------------------------------------------------------
+  iBeqz = find (mpc.branch(:,CONV)==1 & mpc.branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+  nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
+  iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+  nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
+  iQtma = find (mpc.branch(:,QT)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
+  nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
+  iVtma = find (mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & mpc.branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
+  nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+
+  if (nBeqz || nPfsh || nQtma || nVtma)
+      error('opf_setup: DC opf for AC/DC grids or grids with controls have not been coded yet');
+  end  
+    %% ignore reactive costs for DC
   mpc.gencost = pqcost(mpc.gencost, ng);
 
   %% reduce A and/or N from AC dimensions to DC dimensions, if needed
@@ -105,6 +127,77 @@ if dc
     end
   end
 else    %% AC
+  %% Identify if grid is AC/DC
+  %%AAB--------------------------------------------------------------------
+  iBeqz = find (mpc.branch(:,CONV)==1 & mpc.branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+  nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
+  iBeqv = find (mpc.branch(:,CONV)==2 & mpc.branch(:, BR_STATUS)==1 & mpc.branch(:,VF_SET)~=0); %AAB- Find branch locations of VSC for Vf Constraint control size[nBeqv,1]
+  if nBeqz
+      nBeqv = length(iBeqv); %AAB- Number of VSC with active Vf control
+  else
+      nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
+  end
+  if nBeqv
+      if ~nBeqz
+          error('opf_setup_aab: Vdc controlled by Beq is only possible in AC/DC grids. Each AC/DC grid must include a VSC type 1');
+      end
+  end
+  %% Identify if grid has controls
+  iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+  nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
+  iQtma = find (mpc.branch(:,QT)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & mpc.branch(:, VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
+  nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
+  iVtma = find (mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & mpc.branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
+  nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+  %%-----------------------------------------------------------------------
+  %% Solver check for FUBM
+  %AAB---------------------------------------------------------------------
+  if (nBeqz > 0 || nPfsh || nQtma || nVtma > 0) %AAB If we have AC/DC grids or controls, Checks that the solver to be used is Knitro. FUBM for other solvers havent been coded yet.
+      alg = upper(mpopt.opf.ac.solver);  %AAB- Type of algorithm
+      switch alg
+      case {'MIPS'}
+          if nb > 10
+            warning('opf_setup: SOLVER = ''%s'',  The selected solver has not been fully tested for large AC/DC grids or grids with Controls, we recomend to use ''KNITRO'' solver in this case.', alg)
+            %fprintf('Read warning and press any key to continue.\n');
+            %pause;
+          end
+      case {'IPOPT', 'TRALM', 'MINOPF', 'FMINCON', 'SDPOPF'}
+          error('opf_setup: SOLVER = ''%s'',  AC/DC grids or Controls have only been coded for ''KNITRO'' solver.', alg)
+      end
+  end
+  %------------------------------------------------------------------------
+  %% Voltage Control with VSC and ma/tap
+  %%AAB--------------------------------------------------------------------
+  if nBeqv     %% adjust bus voltage limits based on VSC Vf_set setpoint, NOTE: Vf must not be controlled with Beq if there are not DC grids. 
+    %% vsc type 2 (Vf Control) connection matrix, element i, j is 1 if, vsc j at bus i is ON %AAB- Here we want Vf as constant voltage control 
+    Cvsc_vf = sparse(mpc.branch(iBeqv, F_BUS), (1:nBeqv)', mpc.branch(iBeqv, CONV) == 2, nb, nBeqv); %AAB- Connection of the elements, matrix size = [nbuses x nBeqv]
+    Vbvsc_vf = Cvsc_vf * sparse(1:nBeqv, 1:nBeqv, mpc.branch(iBeqv, VF_SET), nBeqv, nBeqv); %AAB- Specified voltage for the vsc with Vf control, matrix size = [nbuses x nBeqv]
+    Vmax = max(Vbvsc_vf, [], 2);    %% zero for non-controled from buses, else max Vf_set of vsc type 2 @ bus 
+    ib = find(Vmax);                %% buses with online vsc type 2 (Vf control)
+    Vmin = max(2*Cvsc_vf - Vbvsc_vf, [], 2);  %% same as Vmax, except min Vf of vsc type 2 @ bus %It substracts 2 - the specified voltage in the bus and gives the maximum of them, is like setting a random minimum voltage for the buses, the ones that are not controlled the Vmin is Zero
+    Vmin(ib) = 2 - Vmin(ib);        %% the Vbvsc_vf Specified voltage is set as minimum Voltage per bus. %%AAB- What we did here Vmin=Vmax for controlled buses
+
+    mpc.bus(ib, VMAX) = Vmax(ib);   %% max set by max Vf_set @ bus
+    mpc.bus(ib, VMIN) = Vmin(ib);   %% min set by min Vf_set @ bus
+    mpc.bus(ib, VM) = mpc.bus(ib, VMAX); %AAB- It sets the voltage magnitude of the buses as the maximum voltage allowed @ bus
+
+  end
+  if nVtma     %% adjust bus voltage limits based on Vt_set setpoint, NOTE: Qt must not be controlled with ma at the same time. 
+    %% ma/tap (Vt Control) connection matrix, element i, j is 1 if, element j at bus i is ON %AAB- Here we want Vt as constant voltage control 
+    Cma_vt = sparse(mpc.branch(iVtma, T_BUS), (1:nVtma)', mpc.branch(iVtma, VT_SET) ~= 0, nb, nVtma); %AAB- Connection of the elements, matrix size = [nbuses x nVtma]
+    Vbma_vt = Cma_vt * sparse(1:nVtma, 1:nVtma, mpc.branch(iVtma, VT_SET), nVtma, nVtma); %AAB- Specified voltage for the element with Vt control with ma, matrix size = [nbuses x nVtma]
+    Vmax = max(Vbma_vt, [], 2);     %% zero for non-controled from buses, else max Vt_set element controlled by ma/tap @ bus 
+    ib = find(Vmax);                %% buses with online elements with ma/tap elements (Vt control)
+    Vmin = max(2*Cma_vt - Vbma_vt, [], 2);  %% same as Vmax, except min Vt of elements controlled by ma @ bus %It substracts 2 - the specified voltage in the bus and gives the maximum of them, is like setting a random minimum voltage for the buses, the ones that are not controlled the Vmin is Zero
+    Vmin(ib) = 2 - Vmin(ib);        %% the Vbma_vt Specified voltage is set as minimum Voltage per bus. %%AAB- What we did here Vmin=Vmax for controlled buses
+
+    mpc.bus(ib, VMAX) = Vmax(ib);   %% max set by max Vt_set @ bus
+    mpc.bus(ib, VMIN) = Vmin(ib);   %% min set by min Vt_set @ bus
+    mpc.bus(ib, VM) = mpc.bus(ib, VMAX); %AAB- It sets the voltage magnitude of the buses as the maximum voltage allowed @ bus
+
+  end%%--------------------------------------------------------------------
+  
+  %% Voltage Control with Genetrator    
   if use_vg     %% adjust bus voltage limits based on generator Vg setpoint
     %% gen connection matrix, element i, j is 1 if, generator j at bus i is ON
     Cg = sparse(mpc.gen(:, GEN_BUS), (1:ng)', mpc.gen(:, GEN_STATUS) > 0, nb, ng);
@@ -126,6 +219,8 @@ else    %% AC
         error('opf_setup: option ''opf.use_vg'' (= %g) cannot be negative or greater than 1', use_vg);
     end
   end
+  
+  %%add dimentions of user defined constraints
   if isfield(mpc, 'user_constraints')
     if isfield(mpc.user_constraints, 'nle')
       for k = 1:length(mpc.user_constraints.nle)
@@ -287,15 +382,41 @@ else                %% AC model
   il = find(branch(:, RATE_A) ~= 0 & branch(:, RATE_A) < 1e10);
   nl2 = length(il);         %% number of constrained lines
 
-  %% build admittance matrices
-  [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);
+  %% AAB-------------------------------------------------------------------
+  %%Set up dimentions, locations and bounds of FUBM
+  if nBeqz %AAB-If there is any VSC with Zero constraint
+      Beqz  = branch(iBeqz,BEQ); %AAB-Initial condition [pu]
+      [Beqzmin, Beqzmax]  = BeqBounds(branch,iBeqz,nBeqz); %Obtains the Beq boundaries for the Zero Constraint VSC
+  end
+  if nBeqv %AAB-If there is any VSC with Vf Control
+      Beqv  = branch(iBeqv,BEQ); %AAB-Initial condition [pu]
+      [Beqvmin, Beqvmax]  = BeqBounds(branch,iBeqv,nBeqv); %Obtains the Beq boundaries for the Zero Constraint VSC
+  end
+  if nPfsh %AAB-If there is any Pf controlled by Theta_shifter
+      ShAng  = branch(iPfsh,SHIFT) * (pi/180); %AAB-Initial condition [rad]
+      [ShAngmin, ShAngmax]  = ShBounds(branch,iPfsh,nPfsh); %Obtains the Beq boundaries for the Pf control constraint
+  end
+  if nQtma %AAB-If there is any Qt controlled by ma/tap
+      maQt  = branch(iQtma,TAP); %AAB-Initial condition [pu]
+      [Qtmamin, Qtmamax]  = maBounds(branch,iQtma,nQtma); %Obtains the ma boundaries for the Qt control constraint
+  end
+  if nVtma %AAB-If there is any Vt controlled by ma/tap
+      maVt  = branch(iVtma,TAP); %AAB-Initial condition [pu]
+      [Vtmamin, Vtmamax]  = maBounds(branch,iVtma,nVtma); %Obtains the ma boundaries for the Vt control constraint
+  end
+  %%-----------------------------------------------------------------------
 
+  %% build admittance matrices
+  if (~nBeqz > 0 || ~nPfsh || ~nQtma || ~nVtma > 0) %AAB If we have AC/DC grids or controls, Ybus is calculated inside the fcn and hess. For AC grids Ybus is constant
+    [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with FUBM
+  end
   %% dispatchable load, constant power factor constraints
   [Avl, lvl, uvl]  = makeAvl(mpc);
 
   %% generator PQ capability curve constraints
   [Apqh, ubpqh, Apql, ubpql, Apqdata] = makeApq(baseMVA, gen);
-
+  
+  %% variable declaration
   if vcart
       user_vars = {'Vr', 'Vi', 'Pg', 'Qg'};
       nodal_balance_vars = {'Vr', 'Vi', 'Pg', 'Qg'};
@@ -304,21 +425,92 @@ else                %% AC model
       user_vars = {'Va', 'Vm', 'Pg', 'Qg'};
       nodal_balance_vars = {'Va', 'Vm', 'Pg', 'Qg'};
       flow_lim_vars = {'Va', 'Vm'};
+            %%AAB----------------------------------------------------------------
+      %%Extend variables for FUBM
+      zero_lim_vars = flow_lim_vars;
+      pfsh_lim_vars = flow_lim_vars;
+      qtma_lim_vars = flow_lim_vars;
+      if nBeqz
+          user_vars{end+1} = 'Beqz'; %AAB- Adds the Beq variable at the end
+          nodal_balance_vars{end+1} = 'Beqz'; %AAB- Adds the Beq variable at the end because Ybus depends on Beq and Ybus is used in the power balance equations
+          flow_lim_vars{end+1} = 'Beqz'; %AAB- Adds the Beq variable at the end because Beq will be changing to control the reactive power in the branch, therefore affecting the branch flow
+          zero_lim_vars = flow_lim_vars; %AAB- Zero lim vars is a copy of flow lim vars, but since the zero constraint is controlled by Beq this constraint does not contain Beqv, only Beqz, therefore Beqv is skipped.
+      end
+      if nBeqv
+          user_vars{end+1} = 'Beqv'; %AAB- Adds the Beq variable at the end
+          nodal_balance_vars{end+1} = 'Beqv'; %AAB- Adds the Beq variable at the end because Ybus depends on Beq and Ybus is ussed in the power balance equations
+          flow_lim_vars{end+1} = 'Beqv'; %AAB- Adds the Beq variable at the end. Beq will be changing to control the reactive power in the branch, therefore affecting the branch flow
+      end
+      if nPfsh
+          user_vars{end+1} = 'ShAng'; %AAB- Adds the Theta_shift variable at the end
+          nodal_balance_vars{end+1} = 'ShAng'; %AAB- Adds the Theta_shift variable at the end because Ybus depends on Theta_shift and Ybus is used in the power balance equations
+          flow_lim_vars{end+1} = 'ShAng'; %AAB- Adds the Theta_shift variable at the end. Theta_shift will be changing to control the active power in the branch, therefore affecting the branch flow
+          zero_lim_vars{end+1} = 'ShAng'; %AAB- Adds the Theta_shift variable at the end. Theta_shift will be changing to control the active power in the branch, therefore affecting the branch flow
+          pfsh_lim_vars = flow_lim_vars;  %AAB- ShAng it's included    
+      end
+      if nQtma
+          user_vars{end+1} = 'maQt'; %AAB- Adds the ma/tap variable at the end
+          nodal_balance_vars{end+1} = 'maQt'; %AAB- Adds the ma/tap variable at the end because Ybus depends on ma/tap and Ybus is used in the power balance equations
+          flow_lim_vars{end+1} = 'maQt'; %AAB- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
+          zero_lim_vars{end+1} = 'maQt'; %AAB- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
+          pfsh_lim_vars{end+1} = 'maQt';  %AAB- ShAng it's included
+          qtma_lim_vars = flow_lim_vars;  %AAB- ma/tap it's included    
+      end
+      if nVtma
+          user_vars{end+1} = 'maVt'; %AAB- Adds the ma/tap variable at the end
+          nodal_balance_vars{end+1} = 'maVt'; %AAB- Adds the ma/tap variable at the end because Ybus depends on ma/tap and Ybus is used in the power balance equations
+          flow_lim_vars{end+1} = 'maVt'; %AAB- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
+          zero_lim_vars{end+1} = 'maVt'; %AAB- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
+          pfsh_lim_vars{end+1} = 'maVt';  %AAB- ShAng it's included  
+      end
+      %%-------------------------------------------------------------------
   end
   ycon_vars = {'Pg', 'Qg', 'y'};
 
   %% nonlinear constraint functions
   if mpopt.opf.current_balance
-    mis_cons = {'rImis', 'iImis'};
-    fcn_mis = @(x)opf_current_balance_fcn(x, mpc, Ybus, mpopt);
-    hess_mis = @(x, lam)opf_current_balance_hess(x, lam, mpc, Ybus, mpopt);
-  else
-    mis_cons = {'Pmis', 'Qmis'};
-    fcn_mis = @(x)opf_power_balance_fcn(x, mpc, Ybus, mpopt);
-    hess_mis = @(x, lam)opf_power_balance_hess(x, lam, mpc, Ybus, mpopt);
+    if (nBeqz || nBeqv || nPfsh || nQtma|| nVtma)
+        error('opf_setup_aab: FUBM for AC/DC grids or controls using current balance has not been coded yet.');
+    else
+        mis_cons = {'rImis', 'iImis'};
+        fcn_mis = @(x)opf_current_balance_fcn(x, mpc, Ybus, mpopt);
+        hess_mis = @(x, lam)opf_current_balance_hess(x, lam, mpc, Ybus, mpopt);
+    end
+  else %Power Balance
+      %%AAB---------------------------------------------------------------
+      if (nBeqz || nBeqv || nPfsh || nQtma || nVtma) %AAB- AC/DC or Controls Formulation for power balance constraints
+          %AAB-If we have AC/DC systems or any controls Ybus is variable since Beq, Theta_shift, ma are variable
+          %Therefore Ybus it's calculated inside opf_power_balance_fcn/hess_aab
+          fcn_mis = @(x)opf_power_balance_fcn_aab(x, mpc, mpopt); %<<AAB- Creating an annonymus function of the power balance constraints where Ybus is calculated inside
+          hess_mis = @(x, lam)opf_power_balance_hess_aab(x, lam, mpc, mpopt); %<<AAB- Creating an annonymus function of for the hessian of the power balance constraints where Ybus is calculated inside
+      else %AAB- AC Formulation for power balance constraints without controls
+          mis_cons = {'Pmis', 'Qmis'};
+          fcn_mis = @(x)opf_power_balance_fcn(x, mpc, Ybus, mpopt);
+          hess_mis = @(x, lam)opf_power_balance_hess(x, lam, mpc, Ybus, mpopt);
+      end
+      %%-------------------------------------------------------------------
   end
-  fcn_flow = @(x)opf_branch_flow_fcn(x, mpc, Yf(il, :), Yt(il, :), il, mpopt);
-  hess_flow = @(x, lam)opf_branch_flow_hess(x, lam, mpc, Yf(il, :), Yt(il, :), il, mpopt);
+  %AAB---------------------------------------------------------------------
+  if (nBeqz || nBeqv || nPfsh || nQtma || nVtma) %AAB- AC/DC or Controls Formulation for branch flow limit constraints
+      fcn_flow = @(x)opf_branch_flow_fcn_aab(x, mpc, il, mpopt); %<<AAB- Creating an annonymus function of the branch flow constraints, where Yf and Yt are calculated inside
+      hess_flow = @(x, lam)opf_branch_flow_hess_aab(x, lam, mpc, il, mpopt); %<<AAB- Creating an annonymus function of the hessian for the branch flow constraints, where Yf and Yt are calculated inside
+  else %AAB- AC Formulation  for branch flow limit constraints
+      fcn_flow = @(x)opf_branch_flow_fcn(x, mpc, Yf(il, :), Yt(il, :), il, mpopt); %AAB- Creating an annonymus function of the branch flow constraints %Inside of here we will have to make the Ybus as variable
+      hess_flow = @(x, lam)opf_branch_flow_hess(x, lam, mpc, Yf(il, :), Yt(il, :), il, mpopt); %AAB- Creating an annonymus function of the hessian for the branch flow constraints %Inside of here we will have to make the Ybus as variable 
+  end
+  if nBeqz %AAB- FUBM Formulation for branch reactive zero constraints with Beq (AC/DC grids)
+      fcn_zero = @(x)opf_branch_zero_fcn_aab(x, mpc, iBeqz, mpopt); %AAB- Creating an annonymus function of the branch flow "zero constraint" for VSC, where Yf and Yt are calculated inside
+      hess_zero = @(x, lam)opf_branch_zero_hess_aab(x, lam, mpc, iBeqz, mpopt); %AAB- Creating an annonymus function of the hessian for the branch flow constraints, where Yf and Yt are calculated inside
+  end
+  if nPfsh %AAB- FUBM Formulation for branch active power control "from" bus constraints with Theta_sh (Pf = Pf_set)
+      fcn_pfsh = @(x)opf_branch_pfsh_fcn_aab(x, mpc, iPfsh, mpopt); %AAB- Creating an annonymus function of the active power "from" controlled by Theta_sh constraint, where Yf and Yt are calculated inside
+      hess_pfsh = @(x, lam)opf_branch_pfsh_hess_aab(x, lam, mpc, iPfsh, mpopt); %AAB- Creating an annonymus function of the hessian for the active power "from" controlled by Theta_sh constraint, where Yf and Yt are calculated inside
+  end 
+  if nQtma %AAB- FUBM Formulation for branch reactive power control "to" bus constraints with ma/tap (Qt = Qt_set)
+      fcn_qtma = @(x)opf_branch_qtma_fcn_aab(x, mpc, iQtma, mpopt); %AAB- Creating an annonymus function of the reactive power "to" controlled by ma/tap constraint, where Yf and Yt are calculated inside
+      hess_qtma = @(x, lam)opf_branch_qtma_hess_aab(x, lam, mpc, iQtma, mpopt); %AAB- Creating an annonymus function of the hessian for the reactive power "to" controlled by ma/tap constraint, where Yf and Yt are calculated inside
+  end 
+  %------------------------------------------------------------------------
   if vcart
     fcn_vref = @(x)opf_vref_fcn(x, mpc, refs, mpopt);
     hess_vref = @(x, lam)opf_vref_hess(x, lam, mpc, refs, mpopt);
@@ -361,7 +553,7 @@ if any(gencost(:, MODEL) ~= POLYNOMIAL & gencost(:, MODEL) ~= PW_LINEAR)
 end
 
 %% more problem dimensions
-nx    = nb+nv + ng+nq;  %% number of standard OPF control variables
+nx    = nb+nv + ng+nq + nBeqz+nBeqv + nPfsh + nQtma+nVtma;  %% number of standard OPF control variables, plus the FUBM variables.
 if nlin
   nz = size(mpc.A, 2) - nx; %% number of user z variables
   if nz < 0
@@ -400,7 +592,7 @@ if dc
   if ~isempty(cpg)
     om.add_quad_cost('polPg', Qpg, cpg, kpg, {'Pg'});
   end
-else
+else % AC or AC/DC Formulation
   %% user data
   om.userdata.Apqdata = Apqdata;
 
@@ -415,7 +607,23 @@ else
   end
   om.add_var('Pg', ng, Pg, Pmin, Pmax);
   om.add_var('Qg', ng, Qg, Qmin, Qmax);
-
+  %AAB---------------------------------------------------------------------
+  if nBeqz
+      om.add_var('Beqz', nBeqz, Beqz, Beqzmin, Beqzmax); %AAB- Adds Beqz as an optimisation variable to the "om"
+  end
+  if nBeqv
+      om.add_var('Beqv', nBeqv, Beqv, Beqvmin, Beqvmax); %AAB- Adds Beqz as an optimisation variable to the "om"
+  end
+  if nPfsh
+      om.add_var('ShAng', nPfsh, ShAng, ShAngmin, ShAngmax); %AAB- Adds Theta_shift as an optimisation variable to the "om"
+  end
+  if nQtma
+      om.add_var('maQt', nQtma, maQt, Qtmamin, Qtmamax); %AAB- Adds ma/tap as an optimisation variable to the "om"
+  end
+  if nVtma
+      om.add_var('maVt', nVtma, maVt, Vtmamin, Vtmamax); %AAB- Adds ma/tap as an optimisation variable to the "om"
+  end
+  %------------------------------------------------------------------------ 
   %% nonlinear constraints
   om.add_nln_constraint(mis_cons, [nb;nb], 1, fcn_mis, hess_mis, nodal_balance_vars);
   if legacy_formulation
@@ -423,6 +631,29 @@ else
   else
     om.add_nln_constraint({'Sf', 'St'}, [nl2;nl2], 0, fcn_flow, hess_flow, flow_lim_vars);
   end
+  %AAB---------------------------------------------------------------------
+  if nBeqz 
+      if legacy_formulation %AAB- Only for: MINOPF, PDIPM, TRALM, SDPOPF
+          error('opf_setup: Legacy formulation for AC/DC systems modeled with FUBM is not coded yet.');
+      else %<-----AAB-other solver- OFSBSR 
+          om.add_nln_constraint({'misBeqz'}, nBeqz, 1, fcn_zero, hess_zero, zero_lim_vars); %AAB- Adds the nonlinear constraint of the Qf zero constraint equations (Name, size, (equality 'nle' 1 or inequality 'nli' 0), function/gradient, Hessian, Variables)
+      end 
+  end
+  if nPfsh 
+      if legacy_formulation %AAB- Only for: MINOPF, PDIPM, TRALM, SDPOPF
+          error('opf_setup: Legacy formulation for systems modeled with FUBM is not coded yet.');
+      else %<-----AAB-other solver- OFSBSR 
+          om.add_nln_constraint({'misPfsh'}, nPfsh, 1, fcn_pfsh, hess_pfsh, pfsh_lim_vars); %AAB- Adds the nonlinear constraint of the active power control equations, Pf-Pf_set = 0, (Name, size, (equality 'nle' 1 or inequality 'nli' 0), function/gradient, Hessian, Variables)
+      end 
+  end
+  if nQtma 
+      if legacy_formulation %AAB- Only for: MINOPF, PDIPM, TRALM, SDPOPF
+          error('opf_setup: Legacy formulation for systems modeled with FUBM is not coded yet.');
+      else %<-----AAB-other solver- OFSBSR 
+          om.add_nln_constraint({'misQtma'}, nQtma, 1, fcn_qtma, hess_qtma, qtma_lim_vars); %AAB- Adds the nonlinear constraint of the reactive power control equations, Qt-Qt_set = 0, (Name, size, (equality 'nle' 1 or inequality 'nli' 0), function/gradient, Hessian, Variables)
+      end 
+  end
+  %------------------------------------------------------------------------  
   if vcart
     om.userdata.veq = veq;  %% buses with voltage magnitude equality constraints
     om.userdata.viq = viq;  %% buses with voltage magnitude limits
