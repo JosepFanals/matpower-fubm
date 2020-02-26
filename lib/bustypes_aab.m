@@ -41,43 +41,58 @@ Cg = sparse(gen(:, GEN_BUS), (1:ng)', gen(:, GEN_STATUS) > 0, nb, ng);  %% gen c
 
                                         %% element i, j is 1 if, generator j at bus i is ON
 bus_gen_status = Cg * ones(ng, 1);      %% number of generators at each bus that are ON
-%% Check if there are elements that control the Voltage magnitude
+%% Check if is DC
 %%AAB----------------------------------------------------------------------
-%find elements that Control Vm and their buses
-iVt_ctrl = find((branch(:,BR_STATUS)~=0) & (branch(:,VT_SET)~=0)); %location of the elements that control Vt
-iVf_ctrl = find((branch(:,BR_STATUS)~=0) & (branch(:,VF_SET)~=0)); %location of the elements that control Vf
-
-Vt_ctrl_bus = branch(iVt_ctrl, T_BUS); %Locate the  "to"  bus of the elements with voltage  "to"  control 
-Vf_ctrl_bus = branch(iVf_ctrl, F_BUS); %Locate the "from" bus of the elements with voltage "from" control
+if size(branch,2) < ALPH3
+    dc = 1;
+else
+    dc = 0;
+end
 %%-------------------------------------------------------------------------
+if ~dc
+    %% Check if there are elements that control the Voltage magnitude
+    %%AAB----------------------------------------------------------------------
+    %find elements that Control Vm and their buses
+    iVt_ctrl = find((branch(:,BR_STATUS)~=0) & (branch(:,VT_SET)~=0)); %location of the elements that control Vt
+    iVf_ctrl = find((branch(:,BR_STATUS)~=0) & (branch(:,VF_SET)~=0)); %location of the elements that control Vf
+    
+    Vt_ctrl_bus = branch(iVt_ctrl, T_BUS); %Locate the  "to"  bus of the elements with voltage  "to"  control 
+    Vf_ctrl_bus = branch(iVf_ctrl, F_BUS); %Locate the "from" bus of the elements with voltage "from" control
+    %%-------------------------------------------------------------------------
 
-%% Change type of bus for Voltage controlled elements
-%%AAB----------------------------------------------------------------------
-bus(Vf_ctrl_bus, BUS_TYPE) = 2; %Change the PQ bus to a PV bus. 
-bus(Vt_ctrl_bus, BUS_TYPE) = 2; %Change the PQ bus to a PV bus.
-%%-------------------------------------------------------------------------
+    %% Change type of bus for Voltage controlled elements
+    %%AAB----------------------------------------------------------------------
+    bus(Vf_ctrl_bus, BUS_TYPE) = 2; %Change the PQ bus to a PV bus. 
+    bus(Vt_ctrl_bus, BUS_TYPE) = 2; %Change the PQ bus to a PV bus.
+    %%-------------------------------------------------------------------------
 
-%% Correct the bus type when tap Changer Voltage controlled is included
-%%AAB---------------------------------------------------------------------
-%%Get branch status
-nl = size(branch, 1); %number of lines
-vctrl_t=zeros(nl,1);  %vector with the same size as existing lines for Voltage control "to"
-vctrl_f=zeros(nl,1);  %vector with the same size as existing lines for Voltage control "from"
-vctrl_t(find(branch(:,VT_SET))) = 1; %Sets a value of 1 when the line controls voltage "to" side.
-vctrl_f(find(branch(:,VF_SET))) = 1; %Sets a value of 1 when the line controls voltage "from" side.
-Cvclt = sparse(branch(:, T_BUS), (1:nl)', vctrl_t > 0, nb, nl);  %% voltage control branch connection matrix
-Cvclf = sparse(branch(:, F_BUS), (1:nl)', vctrl_f > 0, nb, nl);  %% voltage control branch connection matrix
+    %% Correct the bus type when tap Changer Voltage controlled is included
+    %%AAB---------------------------------------------------------------------
+    %%Get branch status
+    nl = size(branch, 1); %number of lines
+    vctrl_t=zeros(nl,1);  %vector with the same size as existing lines for Voltage control "to"
+    vctrl_f=zeros(nl,1);  %vector with the same size as existing lines for Voltage control "from"
+    vctrl_t(find(branch(:,VT_SET))) = 1; %Sets a value of 1 when the line controls voltage "to" side.
+    vctrl_f(find(branch(:,VF_SET))) = 1; %Sets a value of 1 when the line controls voltage "from" side.
+    Cvclt = sparse(branch(:, T_BUS), (1:nl)', vctrl_t > 0, nb, nl);  %% voltage control branch connection matrix
+    Cvclf = sparse(branch(:, F_BUS), (1:nl)', vctrl_f > 0, nb, nl);  %% voltage control branch connection matrix
 
-                                        %%element i, j is 1 if, branch j at bus i is ON
-bus_branch_status_t = Cvclt * ones(nl, 1);      %% number of voltage control branches at each bus that are ON
-bus_branch_status_f = Cvclf * ones(nl, 1);      %% number of voltage control branches at each bus that are ON
-%%-------------------------------------------------------------------------
-
+                                                    %%element i, j is 1 if, branch j at bus i is ON
+    bus_branch_status_t = Cvclt * ones(nl, 1);      %% number of voltage control branches at each bus that are ON
+    bus_branch_status_f = Cvclf * ones(nl, 1);      %% number of voltage control branches at each bus that are ON
+    %%-------------------------------------------------------------------------
+end
 %% form index lists for slack, PV, and PQ buses (Based On Generation)
 %%AAB----------------------------------------------------------------------
-ref = find(bus(:, BUS_TYPE) == REF & (bus_gen_status | bus_branch_status_t | bus_branch_status_f));   %% reference bus index 
-pv  = find(bus(:, BUS_TYPE) == PV  & (bus_gen_status | bus_branch_status_t | bus_branch_status_f));   %% PV bus indices
-pq  = find(bus(:, BUS_TYPE) == PQ | ~(bus_gen_status | bus_branch_status_t | bus_branch_status_f));   %% PQ bus indices
+if ~dc
+    ref = find(bus(:, BUS_TYPE) == REF & (bus_gen_status | bus_branch_status_t | bus_branch_status_f));   %% reference bus index 
+    pv  = find(bus(:, BUS_TYPE) == PV  & (bus_gen_status | bus_branch_status_t | bus_branch_status_f));   %% PV bus indices
+    pq  = find(bus(:, BUS_TYPE) == PQ | ~(bus_gen_status | bus_branch_status_t | bus_branch_status_f));   %% PQ bus indices
+else
+    ref = find(bus(:, BUS_TYPE) == REF & bus_gen_status);   %% reference bus index
+    pv  = find(bus(:, BUS_TYPE) == PV  & bus_gen_status);   %% PV bus indices
+    pq  = find(bus(:, BUS_TYPE) == PQ | ~bus_gen_status);    
+end    
 %%-------------------------------------------------------------------------
 %% pick a new reference bus if for some reason there is none (may have been shut down)
 if isempty(ref)

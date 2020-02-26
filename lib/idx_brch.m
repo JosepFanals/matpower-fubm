@@ -51,18 +51,23 @@ function [F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
 %    19 MU_ST       Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
 %    20 MU_ANGMIN   Kuhn-Tucker multiplier lower angle difference limit (u/degree)
 %    21 MU_ANGMAX   Kuhn-Tucker multiplier upper angle difference limit (u/degree)
+%
+%    FUBM extra columns
 %    22 VF_SET      Tap Controlled Voltage (p.u.) (Voltage "from")
 %    23 VT_SET      Tap Controlled Voltage (p.u.) (Voltage "to")
 %    24 TAP_MAX     Tap Max (p.u.)
 %    25 TAP_MIN     Tap Min (p.u.)
 %    26 CONV        Converter tipe 1 (zero constraint), 2(VDC control), 3(Droop Control)
-%    27 G0          Conductance for PWM power Loss in VSC (p.u.)
-%    28 BEQ         Equivalent Suceptance (p.u.)
-%    29 K2          Modulation Constant for VSC, otherwise 1
-%    30 BEQ_MIN     Beq min value (p.u.)
-%    31 BEQ_MAX     Beq max value (p.u.)
-%    32 SH_MIN      Shift Angle min value (degrees)
-%    33 SH_MAX      Shift Angle max value (degrees)
+%    27 BEQ         Equivalent Suceptance (p.u.)
+%    28 K2          Modulation Constant for VSC, otherwise 1
+%    29 BEQ_MIN     Beq min value (p.u.)
+%    30 BEQ_MAX     Beq max value (p.u.)
+%    31 SH_MIN      Shift Angle min value (degrees)
+%    32 SH_MAX      Shift Angle max value (degrees)
+%    33 GSW         Initial condition for VSC Power Loss (p.u.) (Ploss = Gsw.*Vf.^2 )
+%    34 ALPH1       Alpha constant 1 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
+%    34 ALPH2       Alpha constant 2 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
+%    34 ALPH3       Alpha constant 3 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
 
 %   See also DEFINE_CONSTANTS.
 

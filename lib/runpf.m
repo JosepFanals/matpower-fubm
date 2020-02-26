@@ -112,8 +112,10 @@ mpc = loadcase(casedata);
 if size(mpc.branch,2) < QT
   mpc.branch = [ mpc.branch zeros(size(mpc.branch, 1), QT-size(mpc.branch,2)) ];
 end
+
 %% add FUBM columns to the branch matrix if needed
-if size(mpc.branch,2) < ALPH3
+%the FUBM for DC power flows has not been coded yet, so if DC no extra columns are added
+if (size(mpc.branch,2) < ALPH3 && ~dc ) 
   nl   = size(mpc.branch, 1); %% number of branches
   mpc.branch = [ mpc.branch zeros(nl, ALPH3-size(mpc.branch,2)) ];
   mpc.branch(:,TAP_MAX)=1;
@@ -142,31 +144,38 @@ if ~isempty(mpc.bus)
         v = mpver('all');
         fprintf('\nMATPOWER Version %s, %s', v.Version, v.Date);
     end
-    %% Identify if the grid is AC/DC or has Controls
-    %%AAB-----------------------------------------------------------------
-    iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-    nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-    iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1  & branch(:,VF_SET)~=0); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-    nBeqv = length(iBeqv); %AAB- Number of VSC with active Zero Constraint control
-    iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
-    nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
-    iQtma = find (branch(:,QT)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma [nQtma,1]
-    nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma
-    iVtma = find (branch(:,VT_SET)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX))); %AAB- Find branch locations with Vt controlled by ma [nVtma,1]
-    nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma
-    iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-    nVscL = length(iVscL); %AAB- Number of VSC with active PWM Losses Calculation   
-    if nBeqv
-        if ~nBeqz
-            error('mainpf: Vdc controlled by Beq is only possible in AC/DC grids. Each AC/DC grid must include a VSC type 1');
+    if ~dc
+        %% Identify if the grid is AC/DC or has Controls
+        %%AAB-----------------------------------------------------------------
+        iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+        nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
+        iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1  & branch(:,VF_SET)~=0); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+        nBeqv = length(iBeqv); %AAB- Number of VSC with active Zero Constraint control
+        iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+        nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
+        iQtma = find (branch(:,QT)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma [nQtma,1]
+        nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma
+        iVtma = find (branch(:,VT_SET)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX))); %AAB- Find branch locations with Vt controlled by ma [nVtma,1]
+        nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma
+        iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
+        nVscL = length(iVscL); %AAB- Number of VSC with active PWM Losses Calculation   
+        if nBeqv
+            if ~nBeqz
+                error('mainpf: Vdc controlled by Beq is only possible in AC/DC grids. Each AC/DC grid must include a VSC type 1');
+            end
         end
+        %Identify elements that control V and their buses
+        iVt_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VT_SET)~=0)); %AAB- Location of all the elements that control Vt with ma
+        iVf_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VF_SET)~=0)); %AAB- Location of all the elements that control Vf with either ma or Beq
+        Vt_ctrl_bus = branch(iVt_ctrl, T_BUS); %AAB- Saves the bus  "to"  of the element that controls voltage
+        Vf_ctrl_bus = branch(iVf_ctrl, F_BUS); %AAB- Saves the bus "from" of the element that controls voltage
+        %%---------------------------------------------------------------------    
+    else %DCPF using FUBM has not been coded yet
+        nBeqz=0;
+        nPfsh=0;
+        nQtma=0;
+        nVtma=0;
     end
-    %Identify elements that control V and their buses
-    iVt_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VT_SET)~=0)); %AAB- Location of all the elements that control Vt with ma
-    iVf_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VF_SET)~=0)); %AAB- Location of all the elements that control Vf with either ma or Beq
-    Vt_ctrl_bus = branch(iVt_ctrl, T_BUS); %AAB- Saves the bus  "to"  of the element that controls voltage
-    Vf_ctrl_bus = branch(iVf_ctrl, F_BUS); %AAB- Saves the bus "from" of the element that controls voltage
-    %%---------------------------------------------------------------------    
     if dc                               %% DC formulation
         if (nBeqz || nPfsh || nQtma || nVtma)
             error('runpf: DC power flow for AC/DC grids or grids with active controls have not been coded yet');

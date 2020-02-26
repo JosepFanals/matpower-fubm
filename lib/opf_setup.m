@@ -86,17 +86,24 @@ else
 end
 
 if dc
-  %% Identify if grid is AC/DC or has controls
-  %%AAB--------------------------------------------------------------------
-  iBeqz = find (mpc.branch(:,CONV)==1 & mpc.branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-  nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-  iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
-  nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
-  iQtma = find (mpc.branch(:,QT)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
-  nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
-  iVtma = find (mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & mpc.branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
-  nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
-
+  if size(mpc.branch,2) == ALPH3
+    %% Identify if grid is AC/DC or has controls
+    %%AAB--------------------------------------------------------------------
+    iBeqz = find (mpc.branch(:,CONV)==1 & mpc.branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+    nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
+    iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+    nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
+    iQtma = find (mpc.branch(:,QT)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
+    nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
+    iVtma = find (mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & mpc.branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
+    nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+  else %size(mpc.branch,2) < ALPH3 %no fubm extra columns
+      nBeqz=0;
+      nBeqv=0;
+      nPfsh=0; 
+      nQtma=0; 
+      nVtma=0;
+  end
   if (nBeqz || nPfsh || nQtma || nVtma)
       error('opf_setup: DC opf for AC/DC grids or grids with controls have not been coded yet');
   end  

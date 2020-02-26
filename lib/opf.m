@@ -202,7 +202,9 @@ if mpopt.opf.start == 3
     end
     rpf = runpf(mpc, mpopt_pf);
     if rpf.success
-        fprintf('Power flow initialization converged.\n');%AAB- Just a flag for Power flow convergency
+        if mpopt.verbose
+            fprintf('Power flow initialization converged.\n');%AAB- Just a flag for Power flow convergency
+        end
         mpc = rpf;      %% or should I just copy Va, Vm, Pg, Qg?
     end
 end
@@ -220,9 +222,9 @@ end
 if size(mpc.branch,2) < MU_ANGMAX
   mpc.branch = [ mpc.branch zeros(nl, MU_ANGMAX-size(mpc.branch,2)) ];
 end
-
+dc  = strcmp(upper(mpopt.model), 'DC');
 %% add FUBM columns to the branch matrix if needed
-if size(mpc.branch,2) < ALPH3
+if (size(mpc.branch,2) < ALPH3 && ~dc)
   mpc.branch = [ mpc.branch zeros(nl, ALPH3-size(mpc.branch,2)) ];
   mpc.branch(:,TAP_MAX)=1;
   mpc.branch(:,TAP_MIN)=1;
