@@ -1,26 +1,26 @@
-function [dSf_dshx, dSt_dshx] = dSbr_dsh(branch, V, side, vcart)
-%DSBR_DSH   Computes partial derivatives of branch power flows w.r.t. Theta_shift.
+function [num_dSf_dshx, num_dSt_dshx] = dSbr_dshPert(baseMVA, bus, branch, V, side, pert, vcart)
+%DSBR_DSHPERT   Computes partial derivatives of branch power flows w.r.t. Theta_shift. (Finite differences method)
 %  
 %   Theta_shift can be used either to control the Pf or Pt to a certain set 
 %   value Pfset or Ptset respectively for active power control. Thus, the 
 %   derivatives are separated for each function. The derivatives w.r.t. 
 %   Theta_shift will be chosen for either Pf or Pt control, depending on 
-%   the 3rd argument "side".
+%   the 5th argument "side".
 %   So that:
 %
 %   side = 1 : Pf = Pfset, "from side", Phase Shifter Transformers and VSC
 %   side = 2 : Pt = Ptset, "to side", 
 %
 %   The derivatives will be taken with respect to polar or cartesian coordinates
-%   of voltage, depending on the 4th argument. So far only polar
+%   of voltage, depending on the 7th argument. So far only polar
 %
-%   [DSF_DSHF, DST_DSHF] = DSBR_DSH(BRANCH, V, 1, 0)
+%   [NUM_DSF_DSHX, NUM_DST_DSHX] = DSBR_DSHPERT(BASEMVA, BUS, BRANCH, V, 1, PERT, 0)
 %
 %   PF CONTROL
 %   Returns two matrices containing partial derivatives of Sf and St
 %   power injections w.r.t Theta_shift,(for all lines).
 %
-%   [DSF_DSHT, DST_DSHT] = DSBR_DSH(BRANCH, V, 2, 0)
+%   [NUM_DSF_DSHX, NUM_DST_DSHX] = DSBR_DSHPERT(BASEMVA, BUS, BRANCH, V, 2, PERT, 0)
 %
 %   PT CONTROL
 %   Returns two matrices containing partial derivatives of Sf and St
@@ -41,27 +41,28 @@ function [dSf_dshx, dSt_dshx] = dSbr_dsh(branch, V, side, vcart)
 %       Yft = - Ys ./ conj(tap)
 %       Ytf = - Ys ./ tap 
 %
+%       tap = ma .* exp(1j*pi/180 * ShAngle);
+%
 %   Polar coordinates:
-%     Partials of Ytt, Yff, Yft and Ytf w.r.t. Theta_shift
-%       dYtt/dsh = zeros(nl,1)
-%       dYff/dsh = zeros(nl,1)
-%       dYft/dsh = -Ys./(-1j*k2.*conj(tap))
-%       dYtf/dsh = -Ys./( 1j*k2.*tap      )
+%     Calculation of Ybus, Yf, Yt for Original and perturbed values
+%       [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %Original
+%       [YbusPert, YfPert, YtPert] = makeYbus(baseMVA, bus, branch_Pert); %Perturbed
 %
-%     Partials of Yf, Yt, Ybus w.r.t. Theta_shift
-%       dYf/dsh = dYff/dsh * Cf + dYft/dsh * Ct
-%       dYt/dsh = dYtf/dsh * Cf + dYtt/dsh * Ct
+%     Power Balance Equation Evaluated with original and perturbed values      
+%       Sf     = diag(Cf*V) * conj(Yf * V)
+%       St     = diag(Ct*V) * conj(Yt * V)
+%       SfPert = diag(Cf*V) * conj(YfPert * V)
+%       StPert = diag(Ct*V) * conj(YtPert * V)
 %
-%       dYbus/dsh = Cf' * dYf/dsh + Ct' * dYt/dsh    
-%
-%     Partials of Sbr w.r.t. shift angle
-%       dSbr/dsh = diag(V) * conj(dYbus/dsh * V)
+%     Partials of Sbus w.r.t. shift angle
+%       dSf/dsh = (SfPert - Sf) / pert
+%       dSt/dsh = (StPert - St) / pert
 %
 %   Examples:
-%       [dSbr_dshf] = dSbr_dsh(branch, V, 1);
-%       [dSbr_dshf] = dSbr_dsh(branch, V, 1, vcart);
-%       [dSbr_dsht] = dSbr_dsh(branch, V, 2);
-%       [dSbr_dsht] = dSbr_dsh(branch, V, 2, vcart);
+%       [num_dSf_dshx, num_dSt_dshx] = dSbr_dshPert(baseMVA, bus, branch, V, 1, pert, 0);
+%       [num_dSf_dshx, num_dSt_dshx] = dSbr_dshPert(baseMVA, bus, branch, V, 1, pert);
+%       [num_dSf_dshx, num_dSt_dshx] = dSbr_dshPert(baseMVA, bus, branch, V, 2, pert, 0);
+%       [num_dSf_dshx, num_dSt_dshx] = dSbr_dshPert(baseMVA, bus, branch, V, 2, pert);
 %
 %
 %   For more details on the derivations behind the derivative code used
@@ -103,7 +104,7 @@ function [dSf_dshx, dSt_dshx] = dSbr_dsh(branch, V, side, vcart)
     ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
 
 %% default input args
-if nargin < 4
+if nargin < 7
     vcart = 0;      %% default to polar coordinates
 end
 
@@ -123,7 +124,7 @@ nPxsh = length(iPxsh);      %% AAB- Number of elements with active power flow co
 [stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 if vcart
-    error('dSbr_dsh: Derivatives of Power balance equations w.r.t Theta_shift in cartasian have not been coded yet')    
+    error('dSbr_dshPert: Derivatives of Power injections equations w.r.t Theta_shift using Finite Differences in cartasian have not been coded yet')    
 
 else %AAB- Polar Version
     diagV = sparse(1:nb, 1:nb, V, nb, nb); %AAB- diagV = sparse(diag(V))
@@ -131,31 +132,40 @@ else %AAB- Polar Version
     %Selector of active Theta shifters 
     shAux = zeros(nl,1);%AAB- Vector of zeros for the seclector
     shAux(iPxsh) = 1; %AAB- Fill the selector with "1" where Theta_shift is active
-    diagYssh = sparse( diag(shAux.*Ys) ); %AAB- Theta_shift selector multilied by the series addmitance Ys, size [nl,nl]
-    
-    %Dimensionalize (Allocate for computational speed)
-    dYtt_dsh = sparse( zeros(nl,nPxsh) );
-    dYff_dsh = sparse( zeros(nl,nPxsh) );
-    dYft_dsh = sparse( zeros(nl,nPxsh) );
-    dYtf_dsh = sparse( zeros(nl,nPxsh) );
-    dSf_dshx = sparse( zeros(nl,nPxsh) );
-    dSt_dshx = sparse( zeros(nl,nPxsh) );    
-    for k=1:nPxsh
-        Yssh=diagYssh(:,iPxsh(k)); %AAB- Selects the column of diagYssh representing only the active shift angles
+    diagshAux = sparse( diag(shAux) ); %AAB- Diagonal of Theta_shift selector size [nl,nl]
         
-        %Partials of Ytt, Yff, Yft and Ytf w.r.t. Theta shift
-        dYtt_dsh(:, k) = sparse( zeros(nl,1) );
-        dYff_dsh(:, k) = sparse( zeros(nl,1) );
-        dYft_dsh(:, k) = sparse( -Yssh./(-1j*k2.*conj(tap)) ); %AAB- It also could be: sparse( ( -1j .* Yssh ) ./ ( k2 .* conj(tap) ) );
-        dYtf_dsh(:, k) = sparse( -Yssh./( 1j*k2.*tap      ) ); %AAB- It also could be: sparse( (  1j .* Yssh ) ./ ( k2 .*      tap  ) );
-
-        %Partials of Yf and Yt w.r.t. Theta shift
-        dYf_dsh = dYff_dsh(:, k).* Cf + dYft_dsh(:, k).* Ct; %AAB- size [nl,nb] per active Theta shift
-        dYt_dsh = dYtf_dsh(:, k).* Cf + dYtt_dsh(:, k).* Ct; %AAB- size [nl,nb] per active Theta shift
-
-        %Partials of Sf and St w.r.t. Theta shift
-        dSf_dshx(:, k) = diag(Cf*V) * conj(dYf_dsh * V); %AAB- Final dSf_dsh has a size of [nl, nPxsh]
-        dSt_dshx(:, k) = diag(Ct*V) * conj(dYt_dsh * V); %AAB- Final dSt_dsh has a size of [nl, nPxsh]
-    end
+    %Changing Perturbation to Degrees since inside makeYbus it gets changed to radians.
+    pertDeg = (pert*180)/pi;
     
+    %Yf and Yt Original
+    [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);     %AAB- obtain the Ybus, Yf, Yt
+        
+    %Sf and St evaluated in x
+    Sf = diag(Cf*V) * conj(Yf * V);
+    St = diag(Ct*V) * conj(Yt * V);
+        
+    %Dimensionalize (Allocate for computational speed)
+    num_dSf_dshx = sparse( zeros(nl,nPxsh) );
+    num_dSt_dshx = sparse( zeros(nl,nPxsh) );   
+    
+    for k=1:nPxsh
+        PertSel=diagshAux(:,iPxsh(k)); %AAB- Selects the column of diagshAux representing the location of only the active shift angles to be perturbed
+ 
+        %Restoring perturbated branch to the original one
+        branch_Pert = branch;
+        
+        %Perturbing Theta_sh in the Perturbed branch (One Shifter at a time)
+        branch_Pert(:,SHIFT) = branch(:,SHIFT) + (pertDeg.*PertSel); 
+        
+        %Yf and Yt Perturbed
+        [Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);     %AAB- obtain the Perturbed Ybus, Yf, and Yt from for the k element.
+        
+        %Sf and St evaluated in x+pert
+        SfPert = diag(Cf*V) * conj(Yf_Pert * V);
+        StPert = diag(Ct*V) * conj(Yt_Pert * V);
+        
+        %Partials of Sf and St w.r.t. Theta shift Finite differences f'(x) ~~ ( f(x+pert) - f(x) ) / pert 
+        num_dSf_dshx(:, k) = (SfPert - Sf )/ pert; %AAB- Final dSf_dsh has a size of [nl, nPxsh]
+        num_dSt_dshx(:, k) = (StPert - St )/ pert; %AAB- Final dSt_dsh has a size of [nl, nPxsh]
+    end
 end

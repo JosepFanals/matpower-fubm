@@ -1,5 +1,5 @@
-function [dSf_dBeqx, dSt_dBeqx] = dSbr_dBeq(branch, V, vsc, vcart)
-%DSBBR_DBEQ   Computes partial derivatives of branch power flows w.r.t. Beq.
+function [num_dSf_dBeqx, num_dSt_dBeqx] = dSbr_dBeqPert(baseMVA, bus, branch, V, vsc, pert, vcart)
+%DSBBR_DBEQPERT   Computes partial derivatives of branch power flows w.r.t. Beq (Finite differences method)..
 %
 %   Beq can be used either to control the Vdc to a certain set value Vfset 
 %   or the Qf to match zero (zero constraint). So the derivatives are
@@ -13,13 +13,13 @@ function [dSf_dBeqx, dSt_dBeqx] = dSbr_dBeq(branch, V, vsc, vcart)
 %   The derivatives will be taken with respect to polar or cartesian coordinates
 %   of voltage, depending on the 4th argument. So far only polar
 %
-%   [DSF_DBEQX, DST_DBEQX] = DSBR_DBEQ(BRANCH, V, VSC)
-%   [DSF_DBEQX, DST_DBEQX] = DSBR_DBEQ(BRANCH, V, VSC, 0)
+%   [NUM_DSF_DBEQX, NUM_DST_DBEQX] = DSBR_DBEQPERT(BASEMVA, BUS, BRANCH, V, VSC, PERT, 0)
+%   [NUM_DSF_DBEQX, NUM_DST_DBEQX] = DSBR_DBEQPERT(BASEMVA, BUS, BRANCH, V, VSC, PERT)
 %
 %   Returns one matrix containing partial derivatives of the branch
 %   power injections Sf, St w.r.t Beq, (for all lines).
 %
-%   [DSF_DBEQX, DST_DBEQX] = DSBR_DBEQ(BRANCH, V, VSC, 1)
+%   [NUM_DSF_DBEQX, NUM_DST_DBEQX] = DSBR_DBEQPERT(BASEMVA, BUS, BRANCH, V, VSC, PERT, 1)
 %
 %   Not Coded yet
 %
@@ -38,24 +38,26 @@ function [dSf_dBeqx, dSt_dBeqx] = dSbr_dBeq(branch, V, vsc, vcart)
 %       Yft = - Ys ./ conj(tap)
 %       Ytf = - Ys ./ tap 
 %
+%       tap = ma .* exp(1j*pi/180 * ShAngle);
+%
 %   Polar coordinates:
-%     Partials of Ytt, Yff, Yft and Ytf w.r.t. Beq
-%       dYtt/dBeq = zeros(nl,1)
-%       dYff/dBeq = ( (1j * ones(nl,1) ) ./ ((k2.^2).*tap .* conj(tap))  )
-%       dYft/dBeq = zeros(nl,1)
-%       dYtf/dBeq = zeros(nl,1)
+%     Calculation of Ybus, Yf, Yt for Original and perturbed values
+%       [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %Original
+%       [YbusPert, YfPert, YtPert] = makeYbus(baseMVA, bus, branch_Pert); %Perturbed
 %
-%     Partials of Yf, Yt, Ybus w.r.t. Beq
-%       dYf/dBeq = dYff/dBeq * Cf + dYft/dBeq * Ct
-%       dYt/dBeq = dYtf/dBeq * Cf + dYtt/dBeq * Ct   
+%     Power Balance Equation Evaluated with original and perturbed values      
+%       Sf     = diag(Cf*V) * conj(Yf * V)
+%       St     = diag(Ct*V) * conj(Yt * V)
+%       SfPert = diag(Cf*V) * conj(YfPert * V)
+%       StPert = diag(Ct*V) * conj(YtPert * V)
 %
-%     Partials of S w.r.t. Beq
-%       dSf/dBeq = diag(Cf*V) * conj(dYf/dBeq * V)
-%       dSt/dBeq = diag(Ct*V) * conj(dYt/dBeq * V)
+%     Partials of Sbus w.r.t. Beq
+%       dSf/dma = (SfPert - Sf) / pert
+%       dSt/dma = (StPert - St) / pert
 %
 %   Examples:
-%       [dSf_dBeqx, dSt_dBeqx] = dSbr_dBeq(branch, V, vsc);
-%       [dSf_dBeqx, dSt_dBeqx] = dSbr_dBeq(branch, V, vsc, vcart);
+%       [num_dSf_dBeqz, num_dSt_dBeqz] = dSbr_dBeqPert(baseMVA, bus, branch, V, 1, pert, vcart);
+%       [num_dSf_dBeqv, num_dSt_dBeqv] = dSbr_dBeqPert(baseMVA, bus, branch, V, 2, pert, vcart);
 %
 %
 %   For more details on the derivations behind the derivative code used
@@ -97,7 +99,7 @@ function [dSf_dBeqx, dSt_dBeqx] = dSbr_dBeq(branch, V, vsc, vcart)
     ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
 
 %% default input args
-if nargin < 4
+if nargin < 7
     vcart = 0;      %% default to polar coordinates
 end
 
@@ -113,7 +115,7 @@ elseif vsc ==2 %VSC II
     %    error('dSbr_dBeq: There must be an AC/DC grid in order to use VSC Vf control')
     %end
 else
-    error('dSbr_dBeq: VSC can only be type 1 or 2')    
+    error('dSbr_dBeqPert: VSC can only be type 1 or 2')    
 end  
 %% constants
 nb = length(V);             %% number of buses
@@ -123,7 +125,7 @@ nBeqx = length(iBeqx);      %% AAB- Number of VSC with active Beq
 [stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 if vcart
-    error('dSbr_dBeq: Derivatives of Power balance equations w.r.t Beq in cartasian has not been coded yet')    
+    error('dSbr_dBeqPert: Derivatives of Power balance equations w.r.t Beq using Finite Differences in cartasian has not been coded yet')    
 
 else %AAB- Polar Version
     diagV = sparse(1:nb, 1:nb, V, nb, nb); %AAB- diagV = sparse(diag(V))
@@ -131,32 +133,37 @@ else %AAB- Polar Version
     %Selector of active Beq 
     BeqAux = zeros(nl,1);%AAB- Vector of zeros for the seclector
     BeqAux(iBeqx) = 1; %AAB- Fill the selector with 1 where Beq is active
-    diagBeqsel = sparse( diag(BeqAux) ); %AAB- Beq Selector [nl,nl]
+    diagBeqAux = sparse( diag(BeqAux) ); %AAB- Beq Selector [nl,nl]
+
+    %Yf and Yt Original
+    [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);     %AAB- obtain the Ybus, Yf, Yt
+        
+    %Sf and St evaluated in x
+    Sf = diag(Cf*V) * conj(Yf * V);
+    St = diag(Ct*V) * conj(Yt * V);
     
     %Dimensionalize (Allocate for computational speed)
-    dYtt_dBeq = sparse( zeros(nl,nBeqx) );
-    dYff_dBeq = sparse( zeros(nl,nBeqx) );
-    dYft_dBeq = sparse( zeros(nl,nBeqx) );
-    dYtf_dBeq = sparse( zeros(nl,nBeqx) );
-    dSf_dBeqx = sparse( zeros(nl,nBeqx) );
-    dSt_dBeqx = sparse( zeros(nl,nBeqx) );
+    num_dSf_dBeqx = sparse( zeros(nl,nBeqx) );
+    num_dSt_dBeqx = sparse( zeros(nl,nBeqx) );
     
     for k=1:nBeqx
-        Beqsel=diagBeqsel(:,iBeqx(k)); %AAB- Selects the column of diagBeqsel representing only the active Beq
+        PertSel=diagBeqAux(:,iBeqx(k)); %AAB- Selects the column of diagshAux representing the location of only the active vsc to be perturbed
+ 
+        %Restoring perturbated branch to the original one
+        branch_Pert = branch;
         
-        %Partials of Ytt, Yff, Yft and Ytf w.r.t. Beq
-        dYtt_dBeq(:, k) = sparse( zeros(nl,1) );
-        dYff_dBeq(:, k) = sparse((  (1j * Beqsel )./ ( (k2.*abs(tap)).^2 )  ));
-        dYft_dBeq(:, k) = sparse( zeros(nl,1) );
-        dYtf_dBeq(:, k) = sparse( zeros(nl,1) );
-
-        %Partials of Yf, Yt, Ybus w.r.t. Beq
-        dYf_dBeq = dYff_dBeq(:, k).* Cf + dYft_dBeq(:, k).* Ct; %AAB- size [nl,nb] per active Beq
-        dYt_dBeq = dYtf_dBeq(:, k).* Cf + dYtt_dBeq(:, k).* Ct; %AAB- size [nl,nb] per active Beq
+        %Perturbing Beq in the Perturbed branch (One vsc at a time)
+        branch_Pert(:,BEQ) = branch(:,BEQ) + (pert.*PertSel); 
         
-        %Partials of Sf and St w.r.t. Beq
-        dSf_dBeqx(:, k) = diag(Cf*V) * conj(dYf_dBeq * V); %AAB- Final dSf_dBeq has a size of [nl, nBeqx]
-        dSt_dBeqx(:, k) = diag(Ct*V) * conj(dYt_dBeq * V); %AAB- Final dSt_dBeq has a size of [nl, nBeqx]
-    end
-    
+        %Yf and Yt Perturbed
+        [Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);     %AAB- obtain the Perturbed Ybus, Yf, and Yt from for the k element.
+        
+        %Sf and St evaluated in x+pert
+        SfPert = diag(Cf*V) * conj(Yf_Pert * V);
+        StPert = diag(Ct*V) * conj(Yt_Pert * V);
+        
+        %Partials of Sf and St w.r.t. Beq  Finite differences f'(x) ~~ ( f(x+pert) - f(x) ) / pert 
+        num_dSf_dBeqx(:, k) = (SfPert - Sf )/ pert; %AAB- Final dSf_dBeq has a size of [nl, nBeqx]
+        num_dSt_dBeqx(:, k) = (StPert - St )/ pert; %AAB- Final dSt_dBeq has a size of [nl, nBeqx]
+    end  
 end

@@ -1,5 +1,5 @@
-function [dSf_dmax, dSt_dmax] = dSbr_dma(branch, V, ctrl, vcart)
-%DSBR_DMA   Computes partial derivatives of the branch power flows w.r.t. ma (tap).
+function [num_dSf_dmax, num_dSt_dmax] = dSbr_dmaPert(baseMVA, bus, branch, V, ctrl, pert, vcart)
+%DSBR_DMAPERT   Computes partial derivatives of the branch power flows w.r.t. ma (tap) (Finite differences method).
 %
 %   ma can be used either to control the Qf, Qt, Vf or Vt to a certain set 
 %   value Qfset, Qtset, Vfset or Vtset respectively. Thus, the derivatives 
@@ -13,31 +13,31 @@ function [dSf_dmax, dSt_dmax] = dSbr_dma(branch, V, ctrl, vcart)
 %   ctrl = 4 : Vt = Qtset, "to side",   Transformers and VSC
 %
 %   The derivatives will be taken with respect to polar or cartesian coordinates
-%   of voltage, depending on the 4th argument. So far only polar
+%   of voltage, depending on the 7th argument. So far only polar
 %
-%   [DSF_DQFMAX, DST_DQFMA] = DSBR_DMA(BRANCH, V, 1)
-%   [DSF_DQFMAX, DST_DQFMA] = DSBR_DMA(BRANCH, V, 1, VCART)
+%   [NUM_DSF_DQFMAX, NUM_DST_DQFMAX] = DSBR_DMAPERT(BASEMVA, BUS, BRANCH, V, 1, PERT, 0)
+%   [NUM_DSF_DQFMAX, NUM_DST_DQFMAX] = DSBR_DMAPERT(BASEMVA, BUS, BRANCH, V, 1, PERT)
 %
 %   QF Control
 %   Returns one matrix containing partial derivatives of the complex bus
 %   power injections w.r.t ma (where Qf control is active for all buses).
 %
-%   [DSF_DQTMAX, DST_DQTMA] = DSBR_DMA(BRANCH, V, 2)
-%   [DSF_DQTMAX, DST_DQTMA] = DSBR_DMA(BRANCH, V, 2, VCART)
+%   [NUM_DSF_DQTMAX, NUM_DST_DQTMAX] = DSBR_DMAPERT(BASEMVA, BUS, BRANCH, V, 2, PERT, 0)
+%   [NUM_DSF_DQTMAX, NUM_DST_DQTMAX] = DSBR_DMAPERT(BASEMVA, BUS, BRANCH, V, 2, PERT)
 %
 %   QT Control
 %   Returns one matrix containing partial derivatives of the complex bus
 %   power injections w.r.t ma (where Qt control is active for all buses).
 %
-%   [DSF_DVFMAX, DST_DVFMA] = DSBR_DMA(BRANCH, V, 3)
-%   [DSF_DVFMAX, DST_DVFMA] = DSBR_DMA(BRANCH, V, 3, VCART)
+%   [NUM_DSF_DVFMAX, NUM_DST_DVFMAX] = DSBR_DMAPERT(BASEMVA, BUS, BRANCH, V, 3, PERT, 0)
+%   [NUM_DSF_DVFMAX, NUM_DST_DVFMAX] = DSBR_DMAPERT(BASEMVA, BUS, BRANCH, V, 3, PERT)
 %
 %   VF Control
 %   Returns one matrix containing partial derivatives of the complex bus
 %   power injections w.r.t ma (where Vf control is active for all buses).
 %
-%   [DSF_DVTMAX, DST_DVTMA] = DSBR_DMA(BRANCH, V, 4)
-%   [DSF_DVTMAX, DST_DVTMA] = DSBR_DMA(BRANCH, V, 4, VCART)
+%   [NUM_DSF_DVTMAX, NUM_DST_DVTMAX] = DSBR_DMAPERT(BASEMVA, BUS, BRANCH, V, 4, PERT, 0)
+%   [NUM_DSF_DVTMAX, NUM_DST_DVTMAX] = DSBR_DMAPERT(BASEMVA, BUS, BRANCH, V, 4, PERT)
 %
 %   VT Control
 %   Returns one matrix containing partial derivatives of the complex bus
@@ -61,30 +61,25 @@ function [dSf_dmax, dSt_dmax] = dSbr_dma(branch, V, ctrl, vcart)
 %       tap = ma .* exp(1j*pi/180 * ShAngle);
 %
 %   Polar coordinates:
-%     Partials of Ytt, Yff, Yft and Ytf w.r.t. ma
-%       dYtt/dma = zeros(nl,1)
-%       dYff/dma = -2*Yttma./( (k2.^2).*((abs(tap)).^3) )
-%       dYft/dma = Ys./( k2.*(abs(tap).*conj(tap)) )
-%       dYtf/dma = Ys./( k2.*(abs(tap).*     tap ) )
+%     Calculation of Ybus, Yf, Yt for Original and perturbed values
+%       [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %Original
+%       [YbusPert, YfPert, YtPert] = makeYbus(baseMVA, bus, branch_Pert); %Perturbed
 %
-%     Partials of Yf, Yt, Ybus w.r.t. ma
-%       dYf/dma = dYff/dma * Cf + dYft/dma * Ct
-%       dYt/dma = dYtf/dma * Cf + dYtt/dma * Ct 
+%     Power Balance Equation Evaluated with original and perturbed values      
+%       Sf     = diag(Cf*V) * conj(Yf * V)
+%       St     = diag(Ct*V) * conj(Yt * V)
+%       SfPert = diag(Cf*V) * conj(YfPert * V)
+%       StPert = diag(Ct*V) * conj(YtPert * V)
 %
-%     Partials of Sf and St w.r.t. ma
-%       dSf/dma = diag(Cf*V) * conj(dYf/dma * V)
-%       dSt/dma = diag(Cf*V) * conj(dYt/dma * V)
+%     Partials of Sbus w.r.t. ma
+%       dSf/dma = (SfPert - Sf) / pert
+%       dSt/dma = (StPert - St) / pert
 %
 %   Examples:
-%       [dSf_dQfmax, dSt_dQfmax] = dSbr_dma(branch, V, 1, vcart);
-%       [dSf_dQtmax, dSt_dQtmax] = dSbr_dma(branch, V, 2, vcart);
-%       [dSf_dVfmax, dSt_dVfmax] = dSbr_dma(branch, V, 3, vcart);
-%       [dSf_dVtmax, dSt_dVtmax] = dSbr_dma(branch, V, 4, vcart);
-%
-%       [dSf_dQfmax, dSt_dQfmax] = dSbr_dma(branch, V, 1);
-%       [dSf_dQtmax, dSt_dQtmax] = dSbr_dma(branch, V, 2);
-%       [dSf_dVfmax, dSt_dVfmax] = dSbr_dma(branch, V, 3);
-%       [dSf_dVtmax, dSt_dVtmax] = dSbr_dma(branch, V, 4);
+%       [num_dSf_dQfmax, num_dSt_dQfmax] = dSbr_dmaPert(baseMVA, bus, branch, V, 1, pert, vcart);
+%       [num_dSf_dQtmax, num_dSt_dQtmax] = dSbr_dmaPert(baseMVA, bus, branch, V, 2, pert, vcart);
+%       [num_dSf_dVfmax, num_dSt_dVfmax] = dSbr_dmaPert(baseMVA, bus, branch, V, 3, pert, vcart);
+%       [num_dSf_dVtmax, num_dSt_dVtmax] = dSbr_dmaPert(baseMVA, bus, branch, V, 4, pert, vcart);
 %
 %   For more details on the derivations behind the derivative code used
 %   in MATPOWER information, see:
@@ -125,7 +120,7 @@ function [dSf_dmax, dSt_dmax] = dSbr_dma(branch, V, ctrl, vcart)
     ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
 
 %% default input args
-if nargin < 4
+if nargin < 7
     vcart = 0;      %% default to polar coordinates
 end
 
@@ -139,7 +134,7 @@ elseif ctrl == 3 %Vf
 elseif ctrl == 4 %Vt
     iXxma = find (branch(:,VT_SET)~=0 & branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) ); %AAB- Find branch locations of Qt control size[nQtsh,1] %Transformers and VSC
 else
-    error('dSbus_dsh: Control type can only be type 1 (Qf), 2 (Qt), 3(Vf), or 4(Vt)')    
+    error('dSbr_dmaPert: Control type can only be type 1 (Qf), 2 (Qt), 3(Vf), or 4(Vt)')    
 end  
 %% constants
 nb = length(V);             %% number of buses
@@ -147,9 +142,9 @@ nl = size(branch, 1);       %% number of lines
 nXxma = length(iXxma);      %% AAB- Number of elements with Voltage or Reactive power controlled by ma  
 
 [stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
-YttBeq = Ys + 1j*Bc/2 + 1j*Beq; %Ytt + jBeq
+
 if vcart
-    error('dSbr_dma: Derivatives of Power balance equations w.r.t ma in cartasian have not been coded yet')    
+    error('dSbr_dmaPert: Derivatives of Power injections equations w.r.t ma using Finite Differences in cartasian have not been coded yet')    
 
 else %AAB- Polar Version
     diagV = sparse(1:nb, 1:nb, V, nb, nb); %AAB- diagV = sparse(diag(V))
@@ -157,33 +152,37 @@ else %AAB- Polar Version
     %Selector of active ma for the specified control 
     maAux = zeros(nl,1);%AAB- Vector of zeros for the seclector
     maAux(iXxma) = 1; %AAB- Fill the selector with "1" where ma is active
-    diagYsma = sparse( diag(maAux.*Ys) );  %AAB- ma selector multilied by the series addmitance Ys,  size [nl,nl]
-    diagYttBeqma= sparse( diag(maAux.*YttBeq) ); %AAB- ma selector multilied by the series addmitance Ytt, size [nl,nl]
+    diagmaAux = sparse( diag(maAux) );  %AAB- Diagonal of ma selector size [nl,nl]
+
+    %Yf and Yt Original
+    [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);     %AAB- obtain the Ybus, Yf, Yt
+        
+    %Sf and St evaluated in x
+    Sf = diag(Cf*V) * conj(Yf * V);
+    St = diag(Ct*V) * conj(Yt * V);
     
     %Dimensionalize (Allocate for computational speed)
-    dYtt_dma = sparse( zeros(nl,nXxma) );
-    dYff_dma = sparse( zeros(nl,nXxma) );
-    dYft_dma = sparse( zeros(nl,nXxma) );
-    dYtf_dma = sparse( zeros(nl,nXxma) );
-    dSf_dmax = sparse( zeros(nl,nXxma) );
-    dSt_dmax = sparse( zeros(nl,nXxma) );    
-    for k=1:nXxma
-        Ysma =diagYsma(:,iXxma(k)); %AAB- Selects the column of diagYsma representing only the active ma for the specified control multiplied by Ys
-        YttBeqma=diagYttBeqma(:,iXxma(k)); %AAB- Selects the column of diagmaAux representing only the active ma for the specified control
-        
-        %Partials of Ytt, Yff, Yft and Ytf w.r.t. ma
-        dYtt_dma(:, k) = sparse( zeros(nl,1) );
-        dYff_dma(:, k) = sparse( -2*YttBeqma./( (k2.^2).*((abs(tap)).^3) ) );
-        dYft_dma(:, k) = sparse( Ysma./( k2.*(abs(tap).*conj(tap)) ) ); 
-        dYtf_dma(:, k) = sparse( Ysma./( k2.*(abs(tap).*     tap ) ) ); 
-
-        %Partials of Yf and Yt w.r.t. ma
-        dYf_dma = dYff_dma(:, k).* Cf + dYft_dma(:, k).* Ct; %AAB- size [nl,nb] per active ma
-        dYt_dma = dYtf_dma(:, k).* Cf + dYtt_dma(:, k).* Ct; %AAB- size [nl,nb] per active ma
-
-        %Partials of Sf and St w.r.t. ma
-        dSf_dmax(:, k) = diag(Cf*V) * conj(dYf_dma * V); %AAB- Final dSf_dma has a size of [nl, nXxma] 
-        dSt_dmax(:, k) = diag(Ct*V) * conj(dYt_dma * V); %AAB- Final dSf_dma has a size of [nl, nXxma] 
-    end
+    num_dSf_dmax = sparse( zeros(nl,nXxma) );
+    num_dSt_dmax = sparse( zeros(nl,nXxma) );    
     
+    for k=1:nXxma
+        PertSel =diagmaAux(:,iXxma(k));  %AAB- Selects the column of diagshAux representing the location of only the active ma to be perturbed
+ 
+        %Restoring perturbated branch to the original one
+        branch_Pert = branch;
+        
+        %Perturbing ma in the Perturbed branch (One ma at a time)
+        branch_Pert(:,TAP) = branch(:,TAP) + (pert.*PertSel); 
+        
+        %Yf and Yt Perturbed
+        [Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);     %AAB- obtain the Perturbed Ybus, Yf, and Yt from for the k element.
+        
+        %Sf and St evaluated in x+pert
+        SfPert = diag(Cf*V) * conj(Yf_Pert * V);
+        StPert = diag(Ct*V) * conj(Yt_Pert * V);
+        
+        %Partials of Sf and St w.r.t. ma  Finite differences f'(x) ~~ ( f(x+pert) - f(x) ) / pert 
+        num_dSf_dmax(:, k) = (SfPert - Sf )/ pert; %AAB- Final dSf_dma has a size of [nl, nXxma] 
+        num_dSt_dmax(:, k) = (StPert - St )/ pert; %AAB- Final dSf_dma has a size of [nl, nXxma] 
+    end
 end

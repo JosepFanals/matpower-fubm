@@ -53,7 +53,7 @@ function [num_dSbus_dPxsh] = dSbus_dshPert(baseMVA, bus, branch, V, side, pert, 
 %       SbusPert = diag(V) * conj(YbusPert * V)
 %
 %     Partials of Sbus w.r.t. shift angle Finite Differences Method f'(x) ~~ ( f(x+pert) - f(x) ) / pert 
-%       dSbus/dsh = (Sbus - SbusPert) / pert
+%       dSbus/dsh = (SbusPert - Sbus) / pert
 %
 %   Examples:
 %       [num_dSbus_dPxsh] = dSbus_dshPert(baseMVA, bus, branch, V, 1, pert, vcart);
@@ -133,7 +133,7 @@ else %AAB- Polar Version
     pertDeg = (pert*180)/pi;
     
     %Ybus Original
-    [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);     %AAB- obtain the Perturbed Ybus and Y from for the first element.
+    [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);     %AAB- obtain the Ybus, Yf, Yt
         
     %Sbus evaluated in x
     Sbus = diagV * conj(Ybus * V); 
