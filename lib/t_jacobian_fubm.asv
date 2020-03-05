@@ -33,7 +33,7 @@ t_begin(64, quiet); %AAB-initializes the global test counters
 %casefile = 'fubm_caseHVDC_vt';
 %casefile = 'fubm_case_57_14_2MTDC_ctrls';
 %casefile = 'fubm_case_30_2MTDC_ctrls_vt1_pf';
-%casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf';
+casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf';
 
 %% define named indices into bus, gen, branch matrices
 [PQ, PV, REF, NONE, BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, ...
@@ -71,10 +71,10 @@ pert = 1e-8;                %% perturbation factor (h) for the Finite Difference
 
 
 %%-----  run tests for polar coordinates -----
-        coord = 'polar';
-        vv = {'a', 'm'}; %a for angle, m for magnitude
-        V1p = (Vm*ones(1,nb)) .* (exp(1j * (Va*ones(1,nb) + pert*eye(nb,nb)))); %Perturbed V for Va+pert
-        V2p = (Vm*ones(1,nb) + pert*eye(nb,nb)) .* (exp(1j * Va) * ones(1,nb)); %Perturbed V for Vm+pert
+    coord = 'polar';
+    vv = {'a', 'm'}; %a for angle, m for magnitude
+    V1p = (Vm*ones(1,nb)) .* (exp(1j * (Va*ones(1,nb) + pert*eye(nb,nb)))); %Perturbed V for Va+pert
+    V2p = (Vm*ones(1,nb) + pert*eye(nb,nb)) .* (exp(1j * Va) * ones(1,nb)); %Perturbed V for Vm+pert
 
     %% -----  check dSbus_dx code  -----
     %%sparse matrices derivatives
@@ -89,7 +89,7 @@ pert = 1e-8;                %% perturbation factor (h) for the Finite Difference
     dSbus_dVtma_sp = full(dSbus_dVtma);
     dSbus_dQtma_sp = full(dSbus_dQtma);
     
-    %% compute numerically to compare (Finite Differences Method)
+    %%compute numerically to compare (Finite Differences Method)
     %Voltages
     num_dSbus_dV1 = full( (V1p .* conj(Ybus * V1p) - VV .* conj(Ybus * VV)) / pert );
     num_dSbus_dV2 = full( (V2p .* conj(Ybus * V2p) - VV .* conj(Ybus * VV)) / pert );
@@ -117,6 +117,7 @@ pert = 1e-8;                %% perturbation factor (h) for the Finite Difference
     
     %% -----  check dSbr_dx code  -----
     %%sparse matrices
+    [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, 0);
     [dSf_dV1, dSf_dV2, dSf_dPfsh, dSf_dQfma, dSf_dBeqz,...
         dSf_dBeqv, dSf_dVtma, dSf_dQtma,...
         dSt_dV1, dSt_dV2, dSt_dPfsh, dSt_dQfma, dSt_dBeqz,...
@@ -131,7 +132,7 @@ pert = 1e-8;                %% perturbation factor (h) for the Finite Difference
     dSf_dVtma_sp = full(dSf_dVtma);  dSt_dVtma_sp = full(dSt_dVtma);
     dSf_dQtma_sp = full(dSf_dQtma);  dSt_dQtma_sp = full(dSt_dQtma);
 
-    %% compute numerically to compare (Finite Differences Method)
+    %%compute numerically to compare (Finite Differences Method)
     %Voltages "from" and "to"
     V1pf = V1p(f,:);
     V2pf = V2p(f,:);
@@ -184,12 +185,8 @@ pert = 1e-8;                %% perturbation factor (h) for the Finite Difference
     t_is(dSt_dVtma_sp, num_dSt_dVtma_sp, 5, sprintf('%s - dSt_dVtma (sparse)', coord));
     t_is(dSt_dQtma_sp, num_dSt_dQtma_sp, 5, sprintf('%s - dSt_dQtma (sparse)', coord)); 
 
-    keyboard
-    %%-----  check dAbr_dV code  -----
-    %% full matrices
-    [dAf_dV1_full, dAf_dV2_full, dAt_dV1_full, dAt_dV2_full] = ...
-                            dAbr_dV(dSf_dV1_full, dSf_dV2_full, dSt_dV1_full, dSt_dV2_full, Sf, St);
-    %% sparse matrices
+    %% -----  check dAbr_dV code  -----
+    %%sparse matrices
     [dAf_dV1, dAf_dV2, dAt_dV1, dAt_dV2] = ...
                             dAbr_dV(dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St);
     dAf_dV1_sp = full(dAf_dV1);
@@ -197,7 +194,7 @@ pert = 1e-8;                %% perturbation factor (h) for the Finite Difference
     dAt_dV1_sp = full(dAt_dV1);
     dAt_dV2_sp = full(dAt_dV2);
 
-    %% compute numerically to compare
+    %%compute numerically to compare
     num_dAf_dV1 = full( (abs(S1pf).^2 - abs(Sf2).^2) / pert );
     num_dAf_dV2 = full( (abs(S2pf).^2 - abs(Sf2).^2) / pert );
     num_dAt_dV1 = full( (abs(S1pt).^2 - abs(St2).^2) / pert );
@@ -207,10 +204,19 @@ pert = 1e-8;                %% perturbation factor (h) for the Finite Difference
     t_is(dAf_dV2_sp, num_dAf_dV2, 4, sprintf('%s - dAf_dV%s (sparse)', coord, vv{2}));
     t_is(dAt_dV1_sp, num_dAt_dV1, 4, sprintf('%s - dAt_dV%s (sparse)', coord, vv{1}));
     t_is(dAt_dV2_sp, num_dAt_dV2, 4, sprintf('%s - dAt_dV%s (sparse)', coord, vv{2}));
-    t_is(dAf_dV1_full, num_dAf_dV1, 4, sprintf('%s - dAf_dV%s (full)', coord, vv{1}));
-    t_is(dAf_dV2_full, num_dAf_dV2, 4, sprintf('%s - dAf_dV%s (full)', coord, vv{2}));
-    t_is(dAt_dV1_full, num_dAt_dV1, 4, sprintf('%s - dAt_dV%s (full)', coord, vv{1}));
-    t_is(dAt_dV2_full, num_dAt_dV2, 4, sprintf('%s - dAt_dV%s (full)', coord, vv{2}));
-%end
 
+    %% -----  check dAbr_dsh code  -----
+    %%sparse matrices
+    [dAf_dPfsh, dAt_dPfsh] = ...
+                        dAbr_dsh(dSf_dPfsh, dSt_dPfsh, Sf, St);
+    dAf_dPfsh_sp = full(dAf_dPfsh);
+    dAt_dPfsh_sp = full(dAt_dPfsh);
+
+    %% compute numerically to compare
+[num_dAf_dPxsh, num_dAt_dPxsh] = ...
+                        dAbr_dshPert(baseMVA, bus, branch, V, side, pert, vcart)
+    
+    t_is(dAf_dPfsh_sp, num_dAf_dPfsh, 4, sprintf('%s - dAf_dPfsh (sparse)', coord));
+    t_is(dAt_dPfsh_sp, num_dAt_dPfsh, 4, sprintf('%s - dAt_dPfsh (sparse)', coord));
+    
 t_end;
