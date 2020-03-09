@@ -27,7 +27,7 @@ if nargin < 1
     quiet = 0;
 end
 
-t_begin(34, quiet); %AAB-initializes the global test counters
+t_begin(40, quiet); %AAB-initializes the global test counters
 
 %casefile = 'fubm_caseHVDC_qt';
 %casefile = 'fubm_caseHVDC_vt';
@@ -219,4 +219,56 @@ pert = 1e-8;                %% perturbation factor (h) for the Finite Difference
     t_is(dAf_dPfsh_sp, num_dAf_dPfsh, 4, sprintf('%s - dAf_dPfsh (sparse)', coord));
     t_is(dAt_dPfsh_sp, num_dAt_dPfsh, 4, sprintf('%s - dAt_dPfsh (sparse)', coord));
     
+        %% -----  check dAbr_dBeqx code  -----
+    %%sparse matrices
+    [dAf_dBeqz, dAt_dBeqz] = ...
+                        dAbr_dBeq(dSf_dBeqz, dSt_dBeqz, Sf, St);
+    [dAf_dBeqv, dAt_dBeqv] = ...
+                        dAbr_dBeq(dSf_dBeqv, dSt_dBeqv, Sf, St);                    
+    dAf_dBeqz_sp = full(dAf_dBeqz);
+    dAt_dBeqz_sp = full(dAt_dBeqz);
+    dAf_dBeqv_sp = full(dAf_dBeqv);
+    dAt_dBeqv_sp = full(dAt_dBeqv);
+
+    %% compute numerically to compare
+    [num_dAf_dBeqz, num_dAt_dBeqz] = ...
+                    dAbr_dBeqPert(baseMVA, bus, branch, V, 1, pert, 0);
+    [num_dAf_dBeqv, num_dAt_dBeqv] = ...
+                    dAbr_dBeqPert(baseMVA, bus, branch, V, 2, pert, 0);
+                
+    t_is(dAf_dBeqz_sp, num_dAf_dBeqz, 4, sprintf('%s - dAf_dBeqz (sparse)', coord));
+    t_is(dAt_dBeqz_sp, num_dAt_dBeqz, 4, sprintf('%s - dAt_dBeqz (sparse)', coord));
+    t_is(dAf_dBeqv_sp, num_dAf_dBeqv, 4, sprintf('%s - dAf_dBeqv (sparse)', coord));
+    t_is(dAt_dBeqv_sp, num_dAt_dBeqv, 4, sprintf('%s - dAt_dBeqv (sparse)', coord));  
+    
+    %% -----  check dAbr_dma code  -----
+    %%sparse matrices
+    [dAf_dQfma, dAt_dQfma] = ...
+                        dAbr_dma(dSf_dQfma, dSt_dQfma, Sf, St);    
+    [dAf_dQtma, dAt_dQtma] = ...
+                        dAbr_dma(dSf_dQtma, dSt_dQtma, Sf, St);
+    [dAf_dVtma, dAt_dVtma] = ...
+                        dAbr_dma(dSf_dVtma, dSt_dVtma, Sf, St);                  
+    dAf_dQfma_sp = full(dAf_dQfma);
+    dAt_dQfma_sp = full(dAt_dQfma);
+    dAf_dQtma_sp = full(dAf_dQtma);
+    dAt_dQtma_sp = full(dAt_dQtma);
+    dAf_dVtma_sp = full(dAf_dVtma);
+    dAt_dVtma_sp = full(dAt_dVtma);
+
+    %% compute numerically to compare
+    [num_dAf_dQfma, num_dAt_dQfma] = ...
+                    dAbr_dmaPert(baseMVA, bus, branch, V, 1, pert, 0);    
+    [num_dAf_dQtma, num_dAt_dQtma] = ...
+                    dAbr_dmaPert(baseMVA, bus, branch, V, 2, pert, 0);          
+    [num_dAf_dVtma, num_dAt_dVtma] = ...
+                    dAbr_dmaPert(baseMVA, bus, branch, V, 4, pert, 0);  
+
+    t_is(dAf_dQfma_sp, num_dAf_dQfma, 4, sprintf('%s - dAf_dQfma (sparse)', coord));
+    t_is(dAt_dQfma_sp, num_dAt_dQfma, 4, sprintf('%s - dAt_dQfma (sparse)', coord));
+    t_is(dAf_dQtma_sp, num_dAf_dQtma, 4, sprintf('%s - dAf_dQtma (sparse)', coord));
+    t_is(dAt_dQtma_sp, num_dAt_dQtma, 4, sprintf('%s - dAt_dQtma (sparse)', coord));
+    t_is(dAf_dVtma_sp, num_dAf_dVtma, 4, sprintf('%s - dAf_dVtma (sparse)', coord));
+    t_is(dAt_dVtma_sp, num_dAt_dVtma, 4, sprintf('%s - dAt_dVtma (sparse)', coord));
+   
 t_end;

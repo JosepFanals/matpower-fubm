@@ -9,8 +9,8 @@ function [dSf_dmax, dSt_dmax] = dSbr_dma(branch, V, ctrl, vcart)
 %
 %   ctrl = 1 : Qf = Qfset, "from side", Transformers (not for VSC)
 %   ctrl = 2 : Qt = Qtset, "to side",   Transformers and VSC
-%   ctrl = 3 : Vf = Qtset, "from side", Transformers (not for VSC)
-%   ctrl = 4 : Vt = Qtset, "to side",   Transformers and VSC
+%   ctrl = 3 : Vf = Vfset, "from side", Transformers (not for VSC)
+%   ctrl = 4 : Vt = Vtset, "to side",   Transformers and VSC
 %
 %   The derivatives will be taken with respect to polar or cartesian coordinates
 %   of voltage, depending on the 4th argument. So far only polar
