@@ -27,7 +27,7 @@ if nargin < 1
     quiet = 0;
 end
 
-t_begin(40, quiet); %AAB-initializes the global test counters
+t_begin(40, quiet); %AAB-initializes the global test counters (Number of Total Tests)
 
 %casefile = 'fubm_caseHVDC_qt';
 %casefile = 'fubm_caseHVDC_vt';
