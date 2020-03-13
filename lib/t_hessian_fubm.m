@@ -28,12 +28,12 @@ if nargin < 1
 end
 
 t_begin(96, quiet); %AAB-initializes the global test counters (Number of Total Tests)
-casefile = 'case30';
+%casefile = 'case30';
 %casefile = 'fubm_caseHVDC_qt';
 %casefile = 'fubm_caseHVDC_vt';
 %casefile = 'fubm_case_57_14_2MTDC_ctrls';
 %casefile = 'fubm_case_30_2MTDC_ctrls_vt1_pf';
-%casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf';
+casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf';
 
 %% define named indices into bus, gen, branch matrices
 [PQ, PV, REF, NONE, BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, ...
@@ -65,7 +65,31 @@ Cf = sparse(1:nl, f, ones(nl, 1), nl, nb);      %% connection matrix for line & 
 Ct = sparse(1:nl, t, ones(nl, 1), nl, nb);      %% connection matrix for line & to buses
 pert = 1e-8;                                    %% perturbation factor (h) for the Finite Differences Method
 
-%%-----  run tests for polar coordinate  -----
+%% identifier of AC/DC grids
+iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
+%%identifier of elements with Vf controlled by Beq
+iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
+if nBeqz
+    nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
+else
+    nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
+end
+iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
+if nBeqz
+    nVscL = length(iVscL); %AAB- Number of VSC with power losses
+else
+    nVscL = 0; %AAB- Number of VSC with power losses
+end
+%% Identify if grid has controls
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
+iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
+nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
+iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
+nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+
+%% -----  run tests for polar coordinate  -----
     %%-----  create perturbed voltages  -----
     %% polar coordinate voltages (V1=Va, V2=Vm)
         coord = 'polar';
@@ -73,35 +97,69 @@ pert = 1e-8;                                    %% perturbation factor (h) for t
         V1p = (Vm*ones(1,nb)) .* (exp(1j * (Va*ones(1,nb) + pert*eye(nb,nb))));
         V2p = (Vm*ones(1,nb) + pert*eye(nb,nb)) .* (exp(1j * Va) * ones(1,nb));
 
-    %%-----  check d2Sbus_dV2 code  -----
+    %% -----  check d2Sbus_dV2 code  -----
     t = ' - d2Sbus_dV2 (complex power injections)';
     lam = 10 * rand(nb, 1);
+    %%sparse matrices partial derivatives
+    [H11, H12, H21, H22] = d2Sbus_dV2(Ybus, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
     num_H11 = zeros(nb, nb);
     num_H12 = zeros(nb, nb);
     num_H21 = zeros(nb, nb);
     num_H22 = zeros(nb, nb);
-    [dSbus_dV1, dSbus_dV2] = dSbus_dV(Ybus, V, vcart);
-    [H11, H12, H21, H22] = d2Sbus_dV2(Ybus, V, lam, vcart);
+    [dSbus_dV1, dSbus_dV2] = dSbus_dV(Ybus, V, vcart); %dSbus_dVa
+    %VaVa
     for i = 1:nb
         V1p = V;
-        V2p = V;
         V1p(i) = Vm(i) * exp(1j * (Va(i) + pert));  %% perturb Va
-        V2p(i) = (Vm(i) + pert) * exp(1j * Va(i));  %% perturb Vm
-        [dSbus_dV1_1p, dSbus_dV2_1p] = dSbus_dV(Ybus, V1p, vcart);
-        num_H11(:, i) = (dSbus_dV1_1p - dSbus_dV1).' * lam / pert;
-        num_H21(:, i) = (dSbus_dV2_1p - dSbus_dV2).' * lam / pert;
-
-        [dSbus_dV1_2p, dSbus_dV2_2p] = dSbus_dV(Ybus, V2p, vcart);
-        num_H12(:, i) = (dSbus_dV1_2p - dSbus_dV1).' * lam / pert;
-        num_H22(:, i) = (dSbus_dV2_2p - dSbus_dV2).' * lam / pert;
+        [dSbus_dV1_1p, dSbus_dV2_1p] = dSbus_dV(Ybus, V1p, vcart); %dSbus_dVaPertVa
+        num_H11(:, i) = (dSbus_dV1_1p - dSbus_dV1).' * lam / pert; %VaVa (dSbus_dVaPertVa - dSbus_dVa)
     end
-
+    %VaVm
+    for i = 1:nb
+        V2p = V;
+        V2p(i) = (Vm(i) + pert) * exp(1j * Va(i));  %% perturb Vm
+        [dSbus_dV1_2p, dSbus_dV2_2p] = dSbus_dV(Ybus, V2p, vcart); %dSbus_dVaPertVm
+        num_H12(:, i) = (dSbus_dV1_2p - dSbus_dV1).' * lam / pert; %VaVm (dSbus_dVaPertVm - dSbus_dVa)
+    end
+    %VmVa
+    for i = 1:nb
+        V1p = V;
+        V1p(i) = Vm(i) * exp(1j * (Va(i) + pert));  %% perturb Va
+        [dSbus_dV1_1p, dSbus_dV2_1p] = dSbus_dV(Ybus, V1p, vcart); %dSbus_dVmPertVa
+        num_H21(:, i) = (dSbus_dV2_1p - dSbus_dV2).' * lam / pert; %VmVa (dSbus_dVmPertVa - dSbus_dVm)
+    end
+    %VmVm
+    for i = 1:nb
+        V2p = V;
+        V2p(i) = (Vm(i) + pert) * exp(1j * Va(i));  %% perturb Vm
+        [dSbus_dV1_2p, dSbus_dV2_2p] = dSbus_dV(Ybus, V2p, vcart); %dSbus_dVmPertVm
+        num_H22(:, i) = (dSbus_dV2_2p - dSbus_dV2).' * lam / pert; %VmVm (dSbus_dVmPertVm - dSbus_dVm)
+    end
+    
     t_is(full(H11), num_H11, 4, sprintf('%s - H%s%s', coord, vv{1}, t));
     t_is(full(H12), num_H12, 4, sprintf('%s - H%s%s', coord, vv{2}, t));
     t_is(full(H21), num_H21, 4, sprintf('%s - H%s%s', coord, vv{3}, t));
     t_is(full(H22), num_H22, 4, sprintf('%s - H%s%s', coord, vv{4}, t));
 
-    %%-----  check d2Sbr_dV2 code  -----
+
+    %% -----  check d2Sbus_dxBeqz2 code  -----
+    t = ' - d2Sbus_dxBeqz2 (Beqz complex power injections)';
+    lam = 10 * rand(nb   , 1    );
+    %%sparse matrices partial derivatives
+    [G15, G25, G51, G52, G55] = d2Sbus_dxBeqz2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_G15, num_G25, num_G51, num_G52, num_G55] = d2Sbus_dxBeqz2Pert(baseMVA, bus, branch, V, lam, pert, vcart);  
+
+    t_is(full(G15), num_G15, 4, sprintf('%s - HVaBeqz%s', coord, t));
+    t_is(full(G25), num_G25, 4, sprintf('%s - HVmBeqz%s', coord, t));
+    t_is(full(G51), num_G51, 4, sprintf('%s - HBeqzVa%s', coord, t));
+    t_is(full(G52), num_G52, 4, sprintf('%s - HBeqzVm%s', coord, t));
+    t_is(full(G55), num_G55, 4, sprintf('%s - HBeqz2 %s', coord, t));
+
+    %% -----  check d2Sbr_dV2 code  -----
     t = ' - d2Sbr_dV2 (complex power flows)';
     lam = 10 * rand(nl, 1);
     % lam = [1; zeros(nl-1, 1)];
@@ -146,7 +204,7 @@ pert = 1e-8;                                    %% perturbation factor (h) for t
     t_is(full(Gt21), num_Gt21, 4, sprintf('%s - Gt%s%s', coord, vv{3}, t));
     t_is(full(Gt22), num_Gt22, 4, sprintf('%s - Gt%s%s', coord, vv{4}, t));
 
-    %%-----  check d2Abr_dV2 code  -----
+    %% -----  check d2Abr_dV2 code  -----
     t = ' - d2Abr_dV2 (squared apparent power flows)';
     lam = 10 * rand(nl, 1);
     % lam = [1; zeros(nl-1, 1)];
