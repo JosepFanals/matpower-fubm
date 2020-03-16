@@ -106,8 +106,8 @@ if vcart
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
     diagV = sparse(1:nb, 1:nb, V, nb, nb); %AAB- diagV = sparse(diag(V))
-    diagVnorm=diag(V./abs(V)); %dV_Vm
-    jdiagV=1j*diagV; %dV_Va  
+    dVm=diag(V./abs(V)); %dV_Vm
+    dVa=1j*diagV; %dV_Va  
     
     %Selector of active ma/tap 
     maSel = sparse( zeros(nl,1) );             %AAB- Vector of zeros for the selector ma
@@ -144,26 +144,27 @@ else %AAB- Polar Version
     d2Sbus_dqtma2    = sparse( zeros(nQtma,nQtma) );
     
     for k=1:nQtma 
-        Ysma=diagYsma(:,iQtma(k)); %AAB- Selects the column of diagmasel representing only the active ma
-        YttBma=diagYttBma(:,iQtma(k)); %AAB- Selects the column of diagmaAux representing only the active ma for the specified control
+        for kk=1:nb %dQtmaVx
+            %% Second Derivatives  
+            Ysma=diagYsma(:,iQtma(k)); %AAB- Selects the column of diagmasel representing only the active ma
+            YttBma=diagYttBma(:,iQtma(k)); %AAB- Selects the column of diagmaAux representing only the active ma for the specified control
         
+            %Partials of Ytt, Yff, Yft and Ytf w.r.t. ma
+            dYff_dma(:, k) = sparse( -2*YttBma./( (k2.^2).*((abs(tap)).^3) ) );
+            dYft_dma(:, k) = sparse( Ysma./( k2.*(abs(tap).*conj(tap)) ) ); 
+            dYtf_dma(:, k) = sparse( Ysma./( k2.*(abs(tap).*     tap ) ) ); 
+            dYtt_dma(:, k) = sparse( zeros(nl,1) );
         
-        %Partials of Ytt, Yff, Yft and Ytf w.r.t. ma
-        dYff_dma(:, k) = sparse( -2*YttBma./( (k2.^2).*((abs(tap)).^3) ) );
-        dYft_dma(:, k) = sparse( Ysma./( k2.*(abs(tap).*conj(tap)) ) ); 
-        dYtf_dma(:, k) = sparse( Ysma./( k2.*(abs(tap).*     tap ) ) ); 
-        dYtt_dma(:, k) = sparse( zeros(nl,1) );
-        
-        %Partials of Yf, Yt, Ybus w.r.t. ma
-        dYf_dma = dYff_dma(:, k).* Cf + dYft_dma(:, k).* Ct; %AAB- size [nl,nb] per active ma
-        dYt_dma = dYtf_dma(:, k).* Cf + dYtt_dma(:, k).* Ct; %AAB- size [nl,nb] per active ma
+            %Partials of Yf, Yt, Ybus w.r.t. ma
+            dYf_dma = dYff_dma(:, k).* Cf + dYft_dma(:, k).* Ct; %AAB- size [nl,nb] per active ma
+            dYt_dma = dYtf_dma(:, k).* Cf + dYtt_dma(:, k).* Ct; %AAB- size [nl,nb] per active ma
 
-        dYbus_dma = Cf' * dYf_dma + Ct' * dYt_dma;     %AAB- size [nb,nb] per active ma       
+            dYbus_dma = Cf' * dYf_dma + Ct' * dYt_dma;     %AAB- size [nb,nb] per active ma       
 
-        %2nd Derivatives of Sbus w.r.t. qtmaVx
-        d2Sbus_dqtmaVa(:, k) = ((jdiagV*conj(dYbus_dma*V) + V.*conj(dYbus_dma*(jdiagV))).')*lam;       %AAB- Final d2Sbus_dmaVa has a size of [nb, nQtma] 
-        d2Sbus_dqtmaVm(:, k) = ((diagVnorm*conj(dYbus_dma*V) + V.*conj(dYbus_dma*(diagVnorm))).')*lam; %AAB- Final d2Sbus_dmaVm has a size of [nb, nQtma] 
-        
+            %2nd Derivatives of Sbus w.r.t. qtmaVx
+            d2Sbus_dqtmaVa(kk, k) = ((dVa(:,kk).*conj(dYbus_dma*V) + V.*conj(dYbus_dma*(dVa(:,kk)))).')*lam;       %AAB- Final d2Sbus_dmaVa has a size of [nb, nQtma] 
+            d2Sbus_dqtmaVm(kk, k) = ((dVm(:,kk).*conj(dYbus_dma*V) + V.*conj(dYbus_dma*(dVm(:,kk)))).')*lam; %AAB- Final d2Sbus_dmaVm has a size of [nb, nQtma] 
+        end
         for kk=1:nBeqz
             qtmaBeqzSel2=diagqtmaBeqzSel(:,iBeqz(kk)); %AAB- Selects the column of diagqtmaBeqzSel representing only the active element controlling Zero Constraint and Qt with Beq and ma
             

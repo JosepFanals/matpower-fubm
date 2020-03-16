@@ -101,8 +101,8 @@ if vcart
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
     diagV = sparse(1:nb, 1:nb, V, nb, nb); %AAB- diagV = sparse(diag(V))
-    diagVnorm=diag(V./abs(V)); %dV_Vm
-    jdiagV=1j*diagV; %dV_Va  
+    dVm=diag(V./abs(V)); %dV_Vm
+    dVa=1j*diagV; %dV_Va  
     
     %Selector of active Theta_sh 
     ShSel = sparse( zeros(nl,1) );        %AAB- Vector of zeros for the selector
@@ -124,24 +124,26 @@ else %AAB- Polar Version
     d2Sbus_dsh2    = sparse( zeros(nPfsh,nPfsh) );
     
     for k=1:nPfsh 
-        Yssh=diagYssh(:,iPfsh(k)); %AAB- Selects the column of diagShsel representing only the active Sh
+        for kk=1:nb %dshVx
+            %% Second Derivatives    
+            Yssh=diagYssh(:,iPfsh(k)); %AAB- Selects the column of diagShsel representing only the active Sh
         
-        %Partials of Ytt, Yff, Yft and Ytf w.r.t. Theta_shift
-        dYtt_dsh(:, k) = sparse( zeros(nl,1) );
-        dYff_dsh(:, k) = sparse( zeros(nl,1) );
-        dYft_dsh(:, k) = sparse( -Yssh./(-1j*k2.*conj(tap)) ); %AAB- It also could be: sparse( ( -1j .* Yssh ) ./ ( k2 .* conj(tap) ) );
-        dYtf_dsh(:, k) = sparse( -Yssh./( 1j*k2.*tap      ) ); %AAB- It also could be: sparse( (  1j .* Yssh ) ./ ( k2 .*      tap  ) );
+            %Partials of Ytt, Yff, Yft and Ytf w.r.t. Theta_shift
+            dYtt_dsh(:, k) = sparse( zeros(nl,1) );
+            dYff_dsh(:, k) = sparse( zeros(nl,1) );
+            dYft_dsh(:, k) = sparse( -Yssh./(-1j*k2.*conj(tap)) ); %AAB- It also could be: sparse( ( -1j .* Yssh ) ./ ( k2 .* conj(tap) ) );
+            dYtf_dsh(:, k) = sparse( -Yssh./( 1j*k2.*tap      ) ); %AAB- It also could be: sparse( (  1j .* Yssh ) ./ ( k2 .*      tap  ) );
 
-        %Partials of Yf, Yt, Ybus w.r.t. Theta_shift
-        dYf_dsh = dYff_dsh(:, k).* Cf + dYft_dsh(:, k).* Ct; %AAB- size [nl,nb] per active Theta_Shift
-        dYt_dsh = dYtf_dsh(:, k).* Cf + dYtt_dsh(:, k).* Ct; %AAB- size [nl,nb] per active Theta_Shift
+            %Partials of Yf, Yt, Ybus w.r.t. Theta_shift
+            dYf_dsh = dYff_dsh(:, k).* Cf + dYft_dsh(:, k).* Ct; %AAB- size [nl,nb] per active Theta_Shift
+            dYt_dsh = dYtf_dsh(:, k).* Cf + dYtt_dsh(:, k).* Ct; %AAB- size [nl,nb] per active Theta_Shift
 
-        dYbus_dsh = Cf' * dYf_dsh + Ct' * dYt_dsh;     %AAB- size [nb,nb] per active Theta_Shift       
+            dYbus_dsh = Cf' * dYf_dsh + Ct' * dYt_dsh;     %AAB- size [nb,nb] per active Theta_Shift       
 
-        %2nd Derivatives of Sbus w.r.t. shVx
-        d2Sbus_dshVa(:, k) = ((jdiagV*conj(dYbus_dsh*V) + V.*conj(dYbus_dsh*(jdiagV))).')*lam;       %AAB- Final d2Sbus_dshVa has a size of [nb, nPfsh] 
-        d2Sbus_dshVm(:, k) = ((diagVnorm*conj(dYbus_dsh*V) + V.*conj(dYbus_dsh*(diagVnorm))).')*lam; %AAB- Final d2Sbus_dshVm has a size of [nb, nPfsh] 
-        
+            %2nd Derivatives of Sbus w.r.t. shVx
+            d2Sbus_dshVa(kk, k) = ((dVa(:,kk).*conj(dYbus_dsh*V) + V.*conj(dYbus_dsh*(dVa(:,kk)))).')*lam;       %AAB- Final d2Sbus_dshVa has a size of [nb, nPfsh] 
+            d2Sbus_dshVm(kk, k) = ((dVm(:,kk).*conj(dYbus_dsh*V) + V.*conj(dYbus_dsh*(dVm(:,kk)))).')*lam; %AAB- Final d2Sbus_dshVm has a size of [nb, nPfsh] 
+        end
         for kk=1:nBeqz
             %% Second Derivatives %The shBeqz derivative is zero because Yff, Yft, Ytf and Ytt do not share Theta_shift and Beqz for any case.
             d2Yff_dshBeqz = zeros(nl,1);                                   %AAB- must be zero

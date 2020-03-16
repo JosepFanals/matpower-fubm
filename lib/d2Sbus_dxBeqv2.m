@@ -89,8 +89,8 @@ if vcart
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
     diagV = sparse(1:nb, 1:nb, V, nb, nb); %AAB- diagV = sparse(diag(V))
-    diagVnorm=diag(V./abs(V)); %dV_Vm
-    jdiagV=1j*diagV; %dV_Va  
+    dVm=diag(V./abs(V)); %dV_Vm
+    dVa=1j*diagV; %dV_Va  
     
     %Selector of active Beqv 
     BeqAux1 = sparse( zeros(nl,1) );      %AAB- Vector of zeros for the selector
@@ -110,23 +110,27 @@ else %AAB- Polar Version
     d2Sbus_dBeqv2 = sparse( zeros(nBeqv,nBeqv) );
     
     for k=1:nBeqv 
-        Beqsel1=diagBeqsel(:,iBeqv(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqv
+        for kk=1:nb %dBeqvVx
+            %% Second Derivatives    
+            Beqsel1=diagBeqsel(:,iBeqv(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqv
         
-        %Partials of Ytt, Yff, Yft and Ytf w.r.t. Beqv
-        dYtt_dBeq(:, k) = sparse( zeros(nl,1) );                                  %AAB- Only zeros because there is no Beq in Ytt
-        dYff_dBeq(:, k) = sparse((  (1j * Beqsel1 )./ ( (k2.*abs(tap)).^2 )  ));   %AAB- Yff does have Beq, this is the derivative
-        dYft_dBeq(:, k) = sparse( zeros(nl,1) );                                  %AAB- Only zeros because there is no Beq in Yft
-        dYtf_dBeq(:, k) = sparse( zeros(nl,1) );                                  %AAB- Only zeros because there is no Beq in Ytf
+            %Partials of Ytt, Yff, Yft and Ytf w.r.t. Beqv
+            dYtt_dBeq(:, k) = sparse( zeros(nl,1) );                                  %AAB- Only zeros because there is no Beq in Ytt
+            dYff_dBeq(:, k) = sparse((  (1j * Beqsel1 )./ ( (k2.*abs(tap)).^2 )  ));   %AAB- Yff does have Beq, this is the derivative
+            dYft_dBeq(:, k) = sparse( zeros(nl,1) );                                  %AAB- Only zeros because there is no Beq in Yft
+            dYtf_dBeq(:, k) = sparse( zeros(nl,1) );                                  %AAB- Only zeros because there is no Beq in Ytf
 
-        %Partials of Yf, Yt, Ybus w.r.t. Beqv
-        dYf_dBeq = dYff_dBeq(:, k).* Cf + dYft_dBeq(:, k).* Ct; %AAB- size [nl,nb] per active Beq
-        dYt_dBeq = dYtf_dBeq(:, k).* Cf + dYtt_dBeq(:, k).* Ct; %AAB- size [nl,nb] per active Beq
+            %Partials of Yf, Yt, Ybus w.r.t. Beqv
+            dYf_dBeq = dYff_dBeq(:, k).* Cf + dYft_dBeq(:, k).* Ct; %AAB- size [nl,nb] per active Beq
+            dYt_dBeq = dYtf_dBeq(:, k).* Cf + dYtt_dBeq(:, k).* Ct; %AAB- size [nl,nb] per active Beq
 
-        dYbus_dBeq = Cf' * dYf_dBeq + Ct' * dYt_dBeq;     %AAB- size [nb,nb] per active Beq       
+            dYbus_dBeq = Cf' * dYf_dBeq + Ct' * dYt_dBeq;     %AAB- size [nb,nb] per active Beq       
 
-        %2nd Derivatives of Sbus w.r.t. VxBeqv
-        d2Sbus_dBeqvVa(:, k) = ((jdiagV*conj(dYbus_dBeq*V) + V.*conj(dYbus_dBeq*(jdiagV))).')*lam;       %AAB- Final d2Sbus_dBeqVa has a size of [nb, nBeqx] 
-        d2Sbus_dBeqvVm(:, k) = ((diagVnorm*conj(dYbus_dBeq*V) + V.*conj(dYbus_dBeq*(diagVnorm))).')*lam; %AAB- Final d2Sbus_dBeqVm has a size of [nb, nBeqx] 
+            %2nd Derivatives of Sbus w.r.t. VxBeqv
+            d2Sbus_dBeqvVa(kk, k) = ((dVa(:,kk).*conj(dYbus_dBeq*V) + V.*conj(dYbus_dBeq*(dVa(:,kk)))).')*lam;       %AAB- Final d2Sbus_dBeqVa has a size of [nb, nBeqx] 
+            d2Sbus_dBeqvVm(kk, k) = ((dVm(:,kk).*conj(dYbus_dBeq*V) + V.*conj(dYbus_dBeq*(dVm(:,kk)))).')*lam; %AAB- Final d2Sbus_dBeqVm has a size of [nb, nBeqx] 
+
+        end
         
         for kk=1:nBeqz
             %% Second Derivatives %The BeqvBeqz derivative is zero because a VSC type 1 cannot be a type 2 at the same time.
