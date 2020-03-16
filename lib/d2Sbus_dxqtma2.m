@@ -234,11 +234,11 @@ G28 = sparse(d2Sbus_dqtmaVm);
 G58 = sparse(d2Sbus_dqtmaBeqz);
 G68 = sparse(d2Sbus_dqtmaBeqv);
 G78 = sparse(d2Sbus_dqtmash);
-G81 = G18';
-G82 = G28';
-G85 = G58';
-G86 = G68';
-G87 = G78';
+G81 = G18.';
+G82 = G28.';
+G85 = G58.';
+G86 = G68.';
+G87 = G78.';
 G88 = sparse(d2Sbus_dqtma2);
 
 

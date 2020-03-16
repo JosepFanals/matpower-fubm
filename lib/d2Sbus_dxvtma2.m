@@ -260,12 +260,12 @@ G59 = sparse(d2Sbus_dvtmaBeqz);
 G69 = sparse(d2Sbus_dvtmaBeqv);
 G79 = sparse(d2Sbus_dvtmash);
 G89 = sparse(d2Sbus_dvtmaqtma);
-G91 = G19';
-G92 = G29';
-G95 = G59';
-G96 = G69';
-G97 = G79';
-G98 = G89';
+G91 = G19.';
+G92 = G29.';
+G95 = G59.';
+G96 = G69.';
+G97 = G79.';
+G98 = G89.';
 G99 = sparse(d2Sbus_dvtma2);
 
 

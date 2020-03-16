@@ -184,10 +184,10 @@ H15 = sparse(d2St_dshVa);
 H25 = sparse(d2St_dshVm);
 H35 = sparse(d2St_dshBeqz);
 H45 = sparse(d2St_dshBeqv);
-H51 = H15';
-H52 = H25';
-H53 = H35';
-H54 = H45';
+H51 = H15.';
+H52 = H25.';
+H53 = H35.';
+H54 = H45.';
 H55 = sparse(d2St_dsh2);
 
 

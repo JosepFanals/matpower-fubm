@@ -226,12 +226,12 @@ H37 = sparse(d2St_dvtmaBeqz);
 H47 = sparse(d2St_dvtmaBeqv);
 H57 = sparse(d2St_dvtmash);
 H67 = sparse(d2St_dvtmaqtma);
-H71 = H17';
-H72 = H27';
-H73 = H37';
-H74 = H47';
-H75 = H57';
-H76 = H67';
+H71 = H17.';
+H72 = H27.';
+H73 = H37.';
+H74 = H47.';
+H75 = H57.';
+H76 = H67.';
 H77 = sparse(d2St_dvtma2);
 
 

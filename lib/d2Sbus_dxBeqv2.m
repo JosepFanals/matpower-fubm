@@ -149,9 +149,9 @@ end
 G16 = sparse(d2Sbus_dBeqvVa);
 G26 = sparse(d2Sbus_dBeqvVm);
 G56 = sparse(d2Sbus_dBeqvBeqz);
-G61 = G16';
-G62 = G26';
-G65 = G56';
+G61 = G16.';
+G62 = G26.';
+G65 = G56.';
 G66 = sparse(d2Sbus_dBeqv2);
 
 

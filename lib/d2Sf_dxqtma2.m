@@ -221,11 +221,11 @@ H26 = sparse(d2Sf_dqtmaVm);
 H36 = sparse(d2Sf_dqtmaBeqz);
 H46 = sparse(d2Sf_dqtmaBeqv);
 H56 = sparse(d2Sf_dqtmash);
-H61 = H16';
-H62 = H26';
-H63 = H36';
-H64 = H46';
-H65 = H56';
+H61 = H16.';
+H62 = H26.';
+H63 = H36.';
+H64 = H46.';
+H65 = H56.';
 H66 = sparse(d2Sf_dqtma2);
 
 

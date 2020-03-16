@@ -131,8 +131,8 @@ end
 %Assigning the partial derivatives with their respective outputs. 
 H13 = sparse(d2St_dBeqzVa);
 H23 = sparse(d2St_dBeqzVm);
-H31 = H13';
-H32 = H23';
+H31 = H13.';
+H32 = H23.';
 H33 = sparse(d2St_dBeqz2);
 
 

@@ -140,6 +140,7 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     
     t_is(full(H11), num_H11, 4, sprintf('%s - H%s%s', coord, vv{1}, t));
     t_is(full(H12), num_H12, 4, sprintf('%s - H%s%s', coord, vv{2}, t));
+    
     t_is(full(H21), num_H21, 4, sprintf('%s - H%s%s', coord, vv{3}, t));
     t_is(full(H22), num_H22, 4, sprintf('%s - H%s%s', coord, vv{4}, t));
 
@@ -155,9 +156,99 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
 
     t_is(full(G15), num_G15, 4, sprintf('%s - HVaBeqz%s', coord, t));
     t_is(full(G25), num_G25, 4, sprintf('%s - HVmBeqz%s', coord, t));
+    
     t_is(full(G51), num_G51, 4, sprintf('%s - HBeqzVa%s', coord, t));
     t_is(full(G52), num_G52, 4, sprintf('%s - HBeqzVm%s', coord, t));
+    
     t_is(full(G55), num_G55, 4, sprintf('%s - HBeqz2 %s', coord, t));
+
+    %% -----  check d2Sbus_dxBeqv2 code  -----
+    t = ' - d2Sbus_dxBeqv2 (Beqv complex power injections)';
+    lam = 10 * rand(nb   , 1    );
+    %%sparse matrices partial derivatives
+    [G16, G26, G56, G61, G62, G65, G66] = d2Sbus_dxBeqv2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_G16, num_G26, num_G56, num_G61, num_G62, num_G65, num_G66] = d2Sbus_dxBeqv2Pert(baseMVA, bus, branch, V, lam, pert, vcart);  
+
+    t_is(full(G16), num_G16, 4, sprintf('%s - HVaBeqv%s'  , coord, t));
+    t_is(full(G26), num_G26, 4, sprintf('%s - HVmBeqv%s'  , coord, t));
+    t_is(full(G56), num_G56, 4, sprintf('%s - HBeqzBeqv%s', coord, t));
+    
+    t_is(full(G61), num_G61, 4, sprintf('%s - HBeqvVa%s'  , coord, t));
+    t_is(full(G62), num_G62, 4, sprintf('%s - HBeqvVm%s'  , coord, t));
+    t_is(full(G65), num_G65, 4, sprintf('%s - HBeqvBeqz%s', coord, t));
+    
+    t_is(full(G66), num_G66, 4, sprintf('%s - HBeqv2 %s'  , coord, t));
+
+    %% -----  check d2Sbus_dxsh2 code  -----
+    t = ' - d2Sbus_dxsh2 (Pf_sh complex power injections)';
+    lam = 10 * rand(nb   , 1    );
+    %%sparse matrices partial derivatives
+    [G17, G27, G57, G67, G71, G72, G75, G76, G77] = d2Sbus_dxsh2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_G17, num_G27, num_G57, num_G67, num_G71, num_G72, num_G75, num_G76, num_G77] = d2Sbus_dxsh2Pert(baseMVA, bus, branch, V, lam, pert, vcart);  
+
+    t_is(full(G17), num_G17, 4, sprintf('%s - HVaPfsh%s'  , coord, t));
+    t_is(full(G27), num_G27, 4, sprintf('%s - HVmPfsh%s'  , coord, t));
+    t_is(full(G57), num_G57, 4, sprintf('%s - HBeqzPfsh%s', coord, t));
+    t_is(full(G67), num_G67, 4, sprintf('%s - HBeqvPfsh%s', coord, t));
+    
+    t_is(full(G71), num_G71, 4, sprintf('%s - HPfshVa%s'  , coord, t));
+    t_is(full(G72), num_G72, 4, sprintf('%s - HPfshVm%s'  , coord, t));
+    t_is(full(G75), num_G75, 4, sprintf('%s - HPfshBeqz%s', coord, t));
+    t_is(full(G76), num_G76, 4, sprintf('%s - HPfshBeqv%s', coord, t));
+    
+    t_is(full(G77), num_G77, 4, sprintf('%s - HPfsh2 %s'  , coord, t));
+
+    %% -----  check d2Sbus_dxqtma2 code  -----
+    t = ' - d2Sbus_dxqtma2 (Qt_ma complex power injections)';
+    lam = 10 * rand(nb   , 1    );
+    %%sparse matrices partial derivatives
+    [G18, G28, G58, G68, G78, G81, G82, G85, G86, G87, G88] = d2Sbus_dxqtma2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_G18, num_G28, num_G58, num_G68, num_G78, num_G81, num_G82, num_G85, num_G86, num_G87, num_G88] = d2Sbus_dxqtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);  
+
+    t_is(full(G18), num_G18, 4, sprintf('%s - HVaQtma%s'  , coord, t));
+    t_is(full(G28), num_G28, 4, sprintf('%s - HVmQtma%s'  , coord, t));
+    t_is(full(G58), num_G58, 4, sprintf('%s - HBeqzQtma%s', coord, t));
+    t_is(full(G68), num_G68, 4, sprintf('%s - HBeqvQtma%s', coord, t));
+    t_is(full(G78), num_G78, 4, sprintf('%s - HPfshQtma%s', coord, t));
+    
+    t_is(full(G81), num_G81, 4, sprintf('%s - HQtmaVa%s'  , coord, t));
+    t_is(full(G82), num_G82, 4, sprintf('%s - HQtmaVm%s'  , coord, t));
+    t_is(full(G85), num_G85, 4, sprintf('%s - HQtmaBeqz%s', coord, t));
+    t_is(full(G86), num_G86, 4, sprintf('%s - HQtmaBeqv%s', coord, t));
+    t_is(full(G87), num_G87, 4, sprintf('%s - HQtmaPfsh%s', coord, t));
+    
+    t_is(full(G88), num_G88, 4, sprintf('%s - HQtma2 %s'  , coord, t));
+    
+    %% -----  check d2Sbus_dxvtma2 code  -----
+    t = ' - d2Sbus_dxvtma2 (Vt_ma complex power injections)';
+    lam = 10 * rand(nb   , 1    );
+    %%sparse matrices partial derivatives
+    [G19, G29, G59, G69, G79, G89, G91, G92, G95, G96, G97, G98, G99] = d2Sbus_dxqtma2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_G19, num_G29, num_G59, num_G69, num_G79, num_G89, num_G91, num_G92, num_G95, num_G96, num_G97, num_G98, num_G99] = d2Sbus_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);  
+
+    t_is(full(G19), num_G19, 4, sprintf('%s - HVaVtma%s'  , coord, t));
+    t_is(full(G29), num_G29, 4, sprintf('%s - HVmVtma%s'  , coord, t));
+    t_is(full(G59), num_G59, 4, sprintf('%s - HBeqzVtma%s', coord, t));
+    t_is(full(G69), num_G69, 4, sprintf('%s - HBeqvVtma%s', coord, t));
+    t_is(full(G79), num_G79, 4, sprintf('%s - HPfshVtma%s', coord, t));
+    t_is(full(G89), num_G89, 4, sprintf('%s - HQtmaVtma%s', coord, t));
+    
+    t_is(full(G91), num_G91, 4, sprintf('%s - HVtmaVa%s'  , coord, t));
+    t_is(full(G92), num_G92, 4, sprintf('%s - HVtmaVm%s'  , coord, t));
+    t_is(full(G95), num_G95, 4, sprintf('%s - HVtmaBeqz%s', coord, t));
+    t_is(full(G96), num_G96, 4, sprintf('%s - HVtmaBeqv%s', coord, t));
+    t_is(full(G97), num_G97, 4, sprintf('%s - HVtmaPfsh%s', coord, t));
+    t_is(full(G98), num_G98, 4, sprintf('%s - HVtmaQtma%s', coord, t));
+    
+    t_is(full(G99), num_G99, 4, sprintf('%s - HVtma2 %s'  , coord, t));
 
     %% -----  check d2Sbr_dV2 code  -----
     t = ' - d2Sbr_dV2 (complex power flows)';

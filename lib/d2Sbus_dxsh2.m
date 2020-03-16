@@ -192,10 +192,10 @@ G17 = sparse(d2Sbus_dshVa);
 G27 = sparse(d2Sbus_dshVm);
 G57 = sparse(d2Sbus_dshBeqz);
 G67 = sparse(d2Sbus_dshBeqv);
-G71 = G17';
-G72 = G27';
-G75 = G57';
-G76 = G67';
+G71 = G17.';
+G72 = G27.';
+G75 = G57.';
+G76 = G67.';
 G77 = sparse(d2Sbus_dsh2);
 
 

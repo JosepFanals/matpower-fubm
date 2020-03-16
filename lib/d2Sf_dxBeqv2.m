@@ -148,9 +148,9 @@ end
 H14 = sparse(d2Sf_dBeqvVa);
 H24 = sparse(d2Sf_dBeqvVm);
 H34 = sparse(d2Sf_dBeqvBeqz);
-H41 = H14';
-H42 = H24';
-H43 = H34';
+H41 = H14.';
+H42 = H24.';
+H43 = H34.';
 H44 = sparse(d2Sf_dBeqv2);
 
 

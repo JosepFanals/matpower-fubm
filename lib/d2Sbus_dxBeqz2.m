@@ -131,8 +131,8 @@ end
 %Assigning the partial derivatives with their respective outputs. 
 G15 = sparse(d2Sbus_dBeqzVa);
 G25 = sparse(d2Sbus_dBeqzVm);
-G51 = G15';
-G52 = G25';
+G51 = G15.';
+G52 = G25.';
 G55 = sparse(d2Sbus_dBeqz2);
 
 
