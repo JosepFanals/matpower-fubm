@@ -71,11 +71,13 @@ end
 %% constants
 nb = length(V);             %% number of buses
 nl = size(branch, 1);       %% number of lines
-iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqx,1]
-nBeqz = length(iBeqz); %AAB- Number of VSC with active Beq
 Vm = bus(:, VM);
 Va = bus(:, VA) * pi/180;
-%[stat, Cf, Ct, k2, tap] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
+%[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
+
+%% identifier of AC/DC grids
+iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqx,1]
+nBeqz = length(iBeqz); %AAB- Number of VSC with active Beq
 
 if vcart
     error('d2Sbus_dxBeq2Pert: Derivatives of Power balance equations w.r.t Beq using Finite Differences Method in cartasian has not been coded yet')    
@@ -83,8 +85,8 @@ if vcart
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
     diagV = sparse(1:nb, 1:nb, V, nb, nb); %AAB- diagV = sparse(diag(V))
-    diagVnorm=diag(V./abs(V)); %dV_Vm
-    jdiagV=1j*diagV; %dV_Va  
+    dVm=diag(V./abs(V)); %dV_Vm
+    dVa=1j*diagV; %dV_Va  
     
     %Make Ybus, Yf, Yt
     [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);
@@ -107,18 +109,18 @@ else %AAB- Polar Version
     d2Sbus_dBeqz2  = sparse( zeros(nBeqz, nBeqz) );
     
     %BeqzVa
-    for i = 1:nb
+    for k = 1:nb
         V1p = V;
-        V1p(i) = Vm(i) * exp(1j * (Va(i) + pert));  %% perturb Va
+        V1p(k) = Vm(k) * exp(1j * (Va(k) + pert));  %% perturb Va
         [dSbus_dBeqz_PertVa] = dSbus_dBeq(branch, V1p, 1, vcart); %dSbus_dBeqzPertVa
-        d2Sbus_dVaBeqz(:, i) = (dSbus_dBeqz_PertVa - dSbus_dBeqz).' * lam / pert; %VmVa (dSbus_dBeqzPertVa - dSbus_dBeqz)
+        d2Sbus_dVaBeqz(:, k) = (dSbus_dBeqz_PertVa - dSbus_dBeqz).' * lam / pert; %BeqzVa (dSbus_dBeqzPertVa - dSbus_dBeqz)
     end
     %BeqzVm
-    for i = 1:nb
+    for k = 1:nb
         V2p = V;
-        V2p(i) = (Vm(i) + pert) * exp(1j * Va(i));  %% perturb Vm
+        V2p(k) = (Vm(k) + pert) * exp(1j * Va(k));  %% perturb Vm
         [dSbus_dBeqz_PertVm] = dSbus_dBeq(branch, V2p, 1, vcart); %dSbus_dBeqzPertVm
-        d2Sbus_dVmBeqz(:, i) = (dSbus_dBeqz_PertVm - dSbus_dBeqz).' * lam / pert; %VmVa (dSbus_dBeqzPertVm - dSbus_dBeqz)
+        d2Sbus_dVmBeqz(:, k) = (dSbus_dBeqz_PertVm - dSbus_dBeqz).' * lam / pert; %BeqzVm (dSbus_dBeqzPertVm - dSbus_dBeqz)
     end
     %VxBeqz
     for k=1:nBeqz 
@@ -149,21 +151,6 @@ else %AAB- Polar Version
         %2nd Derivatives of Sbus w.r.t. Beqz2   
         d2Sbus_dBeqz2(:, k) = (dSbus_dBeqz_PertBeqz - dSbus_dBeqz).' * lam / pert;  %BeqzBeqz (dSbus_dBeqzPertBeqz - dSbus_dBeqz) %AAB- Final d2Sbus_dBeq2 has a size of [n , n] 
         
-        %for kk=1:nBeqz
-        %    %% Second Derivatives %The BeqzBeqz derivative is zero because in the first derivative the beq is eliminated.
-        %    PertSel2=BeqAux2(:,iBeqz(kk));                                            %AAB- From the zero aux matrix we select the column that we will use so there is only 1 element active at the time. It will be zero, but this is how it would have been obtained if it was not zero
-        %    %Restoring perturbated branch to the original one
-        %    branch_Pert = branch;
-        %
-        %    %Perturbing Beq in the Perturbed branch (One vsc at a time)
-        %    branch_Pert(:,BEQ) = branch(:,BEQ) + (pert.* PertSel2); 
-        % 
-        %    %dSbus_dBeqz evaluated in x+pert
-        %    [dSbus_dBeqz_Pert] = dSbus_dBeq(branch_Pert, V, 1, vcart);
-        %    
-        %    %2nd Derivatives of Sbus w.r.t. Beqz2
-        %    d2Sbus_dBeqz2(kk,k) = (dSbus_dBeqz_Pert - dSbus_dBeqz).' * lam / pert;         %AAB- must be zero           
-        %end
     end
 end
 

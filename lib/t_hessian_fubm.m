@@ -149,7 +149,7 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t = ' - d2Sbus_dxBeqz2 (Beqz complex power injections)';
     lam = 10 * rand(nb   , 1    );
     %%sparse matrices partial derivatives
-    [G15, G25, G51, G52, G55] = t_d2Sbus_dxBeqz2(branch, V, lam, vcart);
+    [G15, G25, G51, G52, G55] = d2Sbus_dxBeqz2(branch, V, lam, vcart);
     
     %%compute numerically to compare (Finite Differences Method)
     [num_G15, num_G25, num_G51, num_G52, num_G55] = d2Sbus_dxBeqz2Pert(baseMVA, bus, branch, V, lam, pert, vcart);  
