@@ -141,7 +141,7 @@ else %AAB- Polar Version
             dYbus_dsh = Cf' * dYf_dsh + Ct' * dYt_dsh;     %AAB- size [nb,nb] per active Theta_Shift       
 
             %2nd Derivatives of Sbus w.r.t. shVx
-            d2Sbus_dshVa(kk, k) = ((dVa(:,kk).*conj(dYbus_dsh*V) + V.*conj(dYbus_dsh*(dVa(:,kk)))).')*lam;       %AAB- Final d2Sbus_dshVa has a size of [nb, nPfsh] 
+            d2Sbus_dshVa(kk, k) = ((dVa(:,kk).*conj(dYbus_dsh*V) + V.*conj(dYbus_dsh*(dVa(:,kk)))).')*lam; %AAB- Final d2Sbus_dshVa has a size of [nb, nPfsh] 
             d2Sbus_dshVm(kk, k) = ((dVm(:,kk).*conj(dYbus_dsh*V) + V.*conj(dYbus_dsh*(dVm(:,kk)))).')*lam; %AAB- Final d2Sbus_dshVm has a size of [nb, nPfsh] 
         end
         for kk=1:nBeqz
@@ -172,6 +172,7 @@ else %AAB- Polar Version
         end
         for kk=1:nPfsh
             ShSel2=diagShSel(:,iPfsh(kk)); %AAB- Selects the column of diagShSel representing only the active Sh
+            Yssh=diagYssh(:,iPfsh(k)); %AAB- Selects the column of diagShsel representing only the active Sh
             
             %% Second Derivatives         
             d2Ytt_dsh2 = sparse( zeros(nl,1) );
@@ -199,6 +200,5 @@ G72 = G27.';
 G75 = G57.';
 G76 = G67.';
 G77 = sparse(d2Sbus_dsh2);
-
 
 

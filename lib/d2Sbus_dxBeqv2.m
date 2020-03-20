@@ -81,7 +81,7 @@ nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC size[nBeqv,1]
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 
-[stat, Cf, Ct, k2, tap] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
+[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 if vcart
     error('d2Sbus_dxBeq2: Derivatives of Power balance equations w.r.t Beq in cartasian has not been coded yet')    

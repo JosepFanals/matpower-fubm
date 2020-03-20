@@ -4,8 +4,8 @@ function [num_G16, num_G26, num_G56, num_G61, num_G62, num_G65, num_G66] = d2Sbu
 %   The derivatives will be take with respect to polar or cartesian coordinates
 %   of voltage, depending on the 7th argument. So far only polar
 %
-%   [GBvVa, GBvVm, GBvBz, GVaBv, GVmBv, GBzBv, GBvBv] = D2SBUS_DXBEQV2(BRANCH, V, LAM)
-%   [GBvVa, GBvVm, GBvBz, GVaBv, GVmBv, GBzBv, GBvBv] = D2SBUS_DXBEQV2(BRANCH, V, LAM, 0)
+%   [GBvVa, GBvVm, GBvBz, GVaBv, GVmBv, GBzBv, GBvBv] = D2SBUS_DXBEQV2(BASEMVA, BUS, BRANCH, V, LAM, PERT, VCART)
+%   [GBvVa, GBvVm, GBvBz, GVaBv, GVmBv, GBzBv, GBvBv] = D2SBUS_DXBEQV2(BASEMVA, BUS, BRANCH, V, LAM, PERT, 0)
 %
 %   Returns 7 matrices containing the partial derivatives the product of a
 %   vector LAM with the 1st partial derivatives of the complex  power 
@@ -103,20 +103,28 @@ else %AAB- Polar Version
     [dSbus_dV1, dSbus_dV2] = dSbus_dV(Ybus, V, vcart);
     [dSbus_dBeqz] = dSbus_dBeq(branch, V, 1, vcart);
     [dSbus_dBeqv] = dSbus_dBeq(branch, V, 2, vcart);
-        
+    
+    %Selector of active Beqz 
+    BeqzAux1 = sparse( zeros(nl,1) );      %AAB- Vector of zeros for the selector
+    BeqzAux1(iBeqz) = 1;                   %AAB- Fill the selector with 1 where Beq is active
+    diagBeqzsel = sparse( diag(BeqzAux1) ); %AAB- Beq Selector [nl,nBeqx]
+    BeqzAux2 = sparse( zeros(nl,nl));      %AAB- Beq second derivative Selector [nl, nl], the second derivative is zero 
+            
     %Selector of active Beqv 
-    BeqAux1 = sparse( zeros(nl,1) );      %AAB- Vector of zeros for the selector
-    BeqAux1(iBeqv) = 1;                   %AAB- Fill the selector with 1 where Beq is active
-    diagBeqsel = sparse( diag(BeqAux1) ); %AAB- Beq Selector [nl,nBeqx]
-    BeqAux2 = sparse( zeros(nl,nl));      %AAB- Beq second derivative Selector [nl, nl], the second derivative is zero 
+    BeqvAux1 = sparse( zeros(nl,1) );      %AAB- Vector of zeros for the selector
+    BeqvAux1(iBeqv) = 1;                   %AAB- Fill the selector with 1 where Beq is active
+    diagBeqvsel = sparse( diag(BeqvAux1) ); %AAB- Beq Selector [nl,nBeqx]
+    BeqvAux2 = sparse( zeros(nl,nl));      %AAB- Beq second derivative Selector [nl, nl], the second derivative is zero 
     
     %Dimensionalize (Allocate for computational speed)  
-    d2Sbus_dVaBeqv   = sparse( zeros(nBeqv,nb   ) ); 
-    d2Sbus_dVmBeqv   = sparse( zeros(nBeqv,nb   ) ); 
-    d2Sbus_dBeqzBeqv = sparse( zeros(nBeqv,nBeqz) );
     d2Sbus_dBeqvVa   = sparse( zeros(nb   ,nBeqv) ); 
     d2Sbus_dBeqvVm   = sparse( zeros(nb   ,nBeqv) ); 
     d2Sbus_dBeqvBeqz = sparse( zeros(nBeqz,nBeqv) );
+    
+    d2Sbus_dVaBeqv   = sparse( zeros(nBeqv,nb   ) ); 
+    d2Sbus_dVmBeqv   = sparse( zeros(nBeqv,nb   ) ); 
+    d2Sbus_dBeqzBeqv = sparse( zeros(nBeqv,nBeqz) );
+    
     d2Sbus_dBeqv2    = sparse( zeros(nBeqv,nBeqv) );
 
     %BeqvVa
@@ -135,7 +143,7 @@ else %AAB- Polar Version
     end
     %BeqvBeqz
     for k=1:nBeqz 
-        PertSel=diagBeqsel(:,iBeqz(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqz
+        PertSel=diagBeqzsel(:,iBeqz(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqz
         %Restoring perturbated branch to the original one
         branch_Pert = branch;
         %Perturbing Beq in the Perturbed branch (One vsc at a time)
@@ -149,7 +157,7 @@ else %AAB- Polar Version
     end
     %VxBeqv
     for k=1:nBeqv 
-        PertSel=diagBeqsel(:,iBeqv(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqv
+        PertSel=diagBeqvsel(:,iBeqv(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqv
         %Restoring perturbated branch to the original one
         branch_Pert = branch;
         %Perturbing Beq in the Perturbed branch (One vsc at a time)
@@ -164,13 +172,13 @@ else %AAB- Polar Version
     end
     %BeqzBeqv
     for k=1:nBeqv 
-        PertSel=diagBeqsel(:,iBeqv(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqv
+        PertSel=diagBeqvsel(:,iBeqv(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqv
         %Restoring perturbated branch to the original one
         branch_Pert = branch;
         %Perturbing Beq in the Perturbed branch (One vsc at a time)
         branch_Pert(:,BEQ) = branch(:,BEQ) + (pert.* PertSel); 
         %Make Ybus, Yf, Yt Perturbated
-        [Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
+        %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbus_dBeqvPertBeqv evaluated in x+pert
         [dSbus_dBeqz_PertBeqv] = dSbus_dBeq(branch_Pert, V, 1, vcart); %dSbus_dBeqzPertBeqzv
         %2nd Derivatives of Sbus w.r.t. BeqzBeqv
@@ -178,13 +186,13 @@ else %AAB- Polar Version
     end
     %BeqvBeqv
     for k=1:nBeqv 
-        PertSel=diagBeqsel(:,iBeqv(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqv
+        PertSel=diagBeqvsel(:,iBeqv(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqv
         %Restoring perturbated branch to the original one
         branch_Pert = branch;
         %Perturbing Beq in the Perturbed branch (One vsc at a time)
         branch_Pert(:,BEQ) = branch(:,BEQ) + (pert.* PertSel); 
         %Make Ybus, Yf, Yt Perturbated
-        [Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
+        %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbus_dBeqvPertBeqv evaluated in x+pert
         [dSbus_dBeqv_PertBeqv] = dSbus_dBeq(branch_Pert, V, 2, vcart); %dSbus_dBeqvPertBeqv
         %2nd Derivatives of Sbus w.r.t. Beqv2   
