@@ -125,8 +125,8 @@ else %AAB- Polar Version
     diagBeqzSel = sparse( diag(BeqzSel));      %AAB- Diagonal of the selector where Beqz is active and controlling Zero Constraint
     diagBeqvSel = sparse( diag(BeqvSel));      %AAB- Diagonal of the selector where Beqv is active and controlling Vf   
     
-    diagYsma = sparse( diag(QtmaSel.*Ys) );      %AAB- ma/tap selector multilied by the series addmitance Ys, size [nl,nl]
-    diagYttBma= sparse( diag(QtmaSel.*YttB) );   %AAB- ma selector multilied by the series addmitance Ytt, size [nl,nl]
+    diagYsQtma = sparse( diag(QtmaSel.*Ys) );      %AAB- ma/tap selector multilied by the series addmitance Ys, size [nl,nl]
+    diagYttBQtma= sparse( diag(QtmaSel.*YttB) );   %AAB- ma selector multilied by the series addmitance Ytt, size [nl,nl]
     
     %Dimensionalize (Allocate for computational speed)
     dYtt_dma = sparse( zeros(nl,nQtma) );
@@ -144,8 +144,8 @@ else %AAB- Polar Version
     for k=1:nQtma 
         for kk=1:nb %dQtmaVx
             %% Second Derivatives  
-            Ysma=diagYsma(:,iQtma(k)); %AAB- Selects the column of diagmasel representing only the active ma
-            YttBma=diagYttBma(:,iQtma(k)); %AAB- Selects the column of diagmaAux representing only the active ma for the specified control
+            Ysma=diagYsQtma(:,iQtma(k)); %AAB- Selects the column of diagmasel representing only the active ma
+            YttBma=diagYttBQtma(:,iQtma(k)); %AAB- Selects the column of diagmaAux representing only the active ma for the specified control
         
             %Partials of Ytt, Yff, Yft and Ytf w.r.t. ma
             dYff_dma(:, k) = sparse( -2*YttBma./( (k2.^2).*((abs(tap)).^3) ) );
@@ -165,6 +165,7 @@ else %AAB- Polar Version
         end
         for kk=1:nBeqz
             qtmaBeqzSel=diagQtmaSel(:,iQtma(k)).*diagBeqzSel(:,iBeqz(kk)); %AAB- Selects only the active element controlling Zero Constraint and Qt with Beq and ma
+
             %% Second Derivatives %The qtmaBeqz derivative is zero because Yft, Ytf and Ytt do not share ma and Beqz for any case.
             d2Yff_dmaBeqz = (-2j*qtmaBeqzSel)./( (k2.^2).*((abs(tap)).^3) );    %AAB-%Original: d2Yff_dmaBeqz = zeros(nl,1);
             d2Yft_dmaBeqz = zeros(nl,1);                                   %AAB- must be zero
@@ -195,6 +196,7 @@ else %AAB- Polar Version
         for kk=1:nPfsh
             qtmaPfshSel=diagQtmaSel(:,iQtma(k)).*diagPfshSel(:,iPfsh(kk)); %AAB- Selects only the active element controlling Pf and Qt with sh and ma
             YsmashSel2=Ys.*qtmaPfshSel;                                    %AAB- Selector multiplied by Ys
+            
             %% Second Derivatives 
             d2Yff_dmash = zeros(nl,1);                                     %AAB- must be zero
             d2Yft_dmash = ( 1j.*YsmashSel2)./( k2.*abs(tap).*conj(tap) );  %AAB- Only active for elements with both Pf and Qt control

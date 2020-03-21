@@ -1,5 +1,5 @@
 function [num_G18, num_G28, num_G58, num_G68, num_G78, num_G81, num_G82, num_G85, num_G86, num_G87, num_G88] = d2Sbus_dxqtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart)
-%D2SBUS_DXQTMA2   Computes 2nd derivatives of power injection w.r.t. qtmaVa, qtmaVm, qtmaBeqz, qtmaBeqv, qtmaSh, Vaqtma, Vmqtma, Beqzqtma, Beqvqtma, Shqtma, qtmaqtma (Finite Differences Method).
+%D2SBUS_DXQTMA2PERT   Computes 2nd derivatives of power injection w.r.t. qtmaVa, qtmaVm, qtmaBeqz, qtmaBeqv, qtmaSh, Vaqtma, Vmqtma, Beqzqtma, Beqvqtma, Shqtma, qtmaqtma (Finite Differences Method).
 %
 %   The derivatives will be take with respect to polar or cartesian coordinates
 %   of voltage, depending on the 7th argument. So far only polar
@@ -139,14 +139,14 @@ else %AAB- Polar Version
     %Selector of active Theta_sh 
     ShSel = sparse( zeros(nl,1) );            %AAB- Vector of zeros for the selector
     ShSel(iPfsh) = 1;                         %AAB- Fill the selector with 1 where Theta_sh is active controlling Pf
-    diagShSel = sparse( diag(ShSel));         %AAB- Diagonal of the selector for derivative w.r.t. ShSh, size [nl,nl]
+    diagShSel = sparse( diag(ShSel));         %AAB- Diagonal of the selector for derivative w.r.t. Theta_shift, size [nl,nl]
     diagYssh = sparse( diag(ShSel.*Ys) );     %AAB- Theta_shift selector multilied by the series addmitance Ys, size [nl,nl]
     
-    %Selector of active ma/tap 
+    %Selector of active Qt ma/tap 
     QtmaSel = sparse( zeros(nl,1) );          %AAB- Vector of zeros for the selector
-    QtmaSel(iQtma) = 1;                       %AAB- Fill the selector with 1 where Theta_sh is active controlling Pf
-    diagQtmaSel = sparse( diag(QtmaSel));     %AAB- Diagonal of the selector for derivative w.r.t. ShSh, size [nl,nl]
-    diagYsQtma = sparse( diag(QtmaSel.*Ys) ); %AAB- Theta_shift selector multilied by the series addmitance Ys, size [nl,nl]
+    QtmaSel(iQtma) = 1;                       %AAB- Fill the selector with 1 where ma is active controlling Qt
+    diagQtmaSel = sparse( diag(QtmaSel));     %AAB- Diagonal of the selector for derivative w.r.t. Qtma, size [nl,nl]
+    diagYsQtma = sparse( diag(QtmaSel.*Ys) ); %AAB- Qtma selector multilied by the series addmitance Ys, size [nl,nl]
     
     %Dimensionalize (Allocate for computational speed)  
     d2Sbus_dQtmaVa   = sparse( zeros(nb,   nQtma) ); 
@@ -263,7 +263,7 @@ else %AAB- Polar Version
         %2nd Derivatives of Sbus w.r.t. BeqvQtma
         d2Sbus_dQtmaBeqv(:, k) = (dSbus_dBeqv_PertQtma - dSbus_dBeqv).' * lam / pert;  %BeqvQtma (dSbus_dBeqvPertQtma - dSbus_dBeqv) size of [nBeqv, nQtma] 
     end
-    %PfshQtma num_G77
+    %PfshQtma num_G78
     for k=1:nQtma
         PertSel=diagQtmaSel(:,iQtma(k)); %AAB- Selects the column of diagQtmaSel representing only the active Qtma
         %Restoring perturbated branch to the original one
