@@ -4,9 +4,9 @@ function [num_G17, num_G27, num_G57, num_G67, num_G71, num_G72, num_G75, num_G76
 %   The derivatives will be take with respect to polar or cartesian coordinates
 %   of voltage, depending on the 7th argument. So far only polar
 %
-%   [GShVa, GShVm, GShBz, GShBv, GVaSh, GVmSh, GBzSh, GBvSh, GShSh] = D2SBUS_DXSH2(BASEMVA, BUS, BRANCH, V, LAM, PERT, VCART)
+%   [GShVa, GShVm, GShBz, GShBv, GVaSh, GVmSh, GBzSh, GBvSh, GShSh] = D2SBUS_DXSH2PERT(BASEMVA, BUS, BRANCH, V, LAM, PERT, VCART)
 
-%   [GShVa, GShVm, GShBz, GShBv, GVaSh, GVmSh, GBzSh, GBvSh, GShSh] = D2SBUS_DXSH2(BASEMVA, BUS, BRANCH, V, LAM, PERT, 0)
+%   [GShVa, GShVm, GShBz, GShBv, GVaSh, GVmSh, GBzSh, GBvSh, GShSh] = D2SBUS_DXSH2PERT(BASEMVA, BUS, BRANCH, V, LAM, PERT, 0)
 %
 %   Returns 9 matrices containing the partial derivatives the product of a
 %   vector LAM with the 1st partial derivatives of the complex  power 
@@ -16,7 +16,7 @@ function [num_G17, num_G27, num_G57, num_G67, num_G71, num_G72, num_G75, num_G76
 %
 %   Examples:
 %       [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);
-%       [GShVa, GShVm, GShBz, GShBv, GVaSh, GVmSh, GBzSh, GBvSh, GShSh] = d2Sbus_dxsh2(branch, V, lam, vcart);
+%       [GShVa, GShVm, GShBz, GShBv, GVaSh, GVmSh, GBzSh, GBvSh, GShSh] = d2Sbus_dxsh2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
 %
 %       Here the output matrices correspond to:
 %           GShVa = d/dVa   (dSbus_dsh.'   * lam)
@@ -99,7 +99,7 @@ end
 iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
 
-[stat, Cf, Ct, k2, tap, Ys, Bc] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
+[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 %% Calculation of derivatives
 if vcart
@@ -124,14 +124,11 @@ else %AAB- Polar Version
     BeqzAux1 = sparse( zeros(nl,1) );      %AAB- Vector of zeros for the selector
     BeqzAux1(iBeqz) = 1;                   %AAB- Fill the selector with 1 where Beq is active
     diagBeqzsel = sparse( diag(BeqzAux1) ); %AAB- Beq Selector [nl,nBeqx]
-    BeqzAux2 = sparse( zeros(nl,nl));      %AAB- Beq second derivative Selector [nl, nl], the second derivative is zero 
-
     
     %Selector of active Beqv 
     BeqvAux1 = sparse( zeros(nl,1) );      %AAB- Vector of zeros for the selector
     BeqvAux1(iBeqv) = 1;                   %AAB- Fill the selector with 1 where Beq is active
     diagBeqvsel = sparse( diag(BeqvAux1) ); %AAB- Beq Selector [nl,nBeqx]
-    BeqvAux2 = sparse( zeros(nl,nl));      %AAB- Beq second derivative Selector [nl, nl], the second derivative is zero 
 
     %Selector of active Theta_sh 
     ShSel = sparse( zeros(nl,1) );        %AAB- Vector of zeros for the selector
@@ -263,4 +260,5 @@ num_G71 = sparse(d2Sbus_dVaPfsh);
 num_G72 = sparse(d2Sbus_dVmPfsh);
 num_G75 = sparse(d2Sbus_dBeqzPfsh);
 num_G76 = sparse(d2Sbus_dBeqvPfsh);
+
 num_G77 = sparse(d2Sbus_dPfsh2);
