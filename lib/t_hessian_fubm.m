@@ -295,6 +295,35 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Gt21), num_Gt21, 4, sprintf('%s - Gt%s%s', coord, vv{3}, t));
     t_is(full(Gt22), num_Gt22, 4, sprintf('%s - Gt%s%s', coord, vv{4}, t));
 
+        %% -----  check d2Sbr_dxBeqz2 code  -----
+    t = ' - d2Sbr_dxBeqz2 (Beqz complex power flows)';
+    lam = 10 * rand(nl, 1);
+    %%sparse matrices partial derivatives
+    [Hf13, Hf23, Hf31, Hf32, Hf33] = d2Sf_dxBeqz2(branch, V, lam, vcart);
+    [Ht13, Ht23, Ht31, Ht32, Ht33] = d2St_dxBeqz2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_Hf13, num_Hf23, num_Hf31, num_Hf32, num_Hf33,...
+     num_Ht13, num_Ht23, num_Ht31, num_Ht32, num_Ht33] = d2Sbr_dxBeqz2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+    
+    br = ' - "from" side';
+    t_is(full(Hf13), num_Hf13, 4, sprintf('%s - HVaBeqz%s%s', coord, t, br));
+    t_is(full(Hf23), num_Hf23, 4, sprintf('%s - HVmBeqz%s%s', coord, t, br));
+    
+    t_is(full(Hf31), num_Hf31, 4, sprintf('%s - HBeqzVa%s%s', coord, t, br));
+    t_is(full(Hf32), num_Hf32, 4, sprintf('%s - HBeqzVm%s%s', coord, t, br));
+    
+    t_is(full(Hf33), num_Hf33, 4, sprintf('%s - HBeqz2 %s%s', coord, t, br));
+    
+    br = ' - " to " side';
+    t_is(full(Ht13), num_Ht13, 4, sprintf('%s - HVaBeqz%s%s', coord, t, br));
+    t_is(full(Ht23), num_Ht23, 4, sprintf('%s - HVmBeqz%s%s', coord, t, br));
+    
+    t_is(full(Ht31), num_Ht31, 4, sprintf('%s - HBeqzVa%s%s', coord, t, br));
+    t_is(full(Ht32), num_Ht32, 4, sprintf('%s - HBeqzVm%s%s', coord, t, br));
+    
+    t_is(full(Ht33), num_Ht33, 4, sprintf('%s - HBeqz2 %s%s', coord, t, br));
+    
     %% -----  check d2Abr_dV2 code  -----
     t = ' - d2Abr_dV2 (squared apparent power flows)';
     lam = 10 * rand(nl, 1);
