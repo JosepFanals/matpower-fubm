@@ -213,7 +213,7 @@ else %AAB- Polar Version
         branch_Pert(:,SHIFT) = branch(:,SHIFT) + (pertDeg.* PertSel); 
         %Make Ybus, Yf, Yt Perturbated
         [Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
-        %dSbr_dVaPertPfsh evaluated in x+pert
+        %dSbr_dVxPertPfsh evaluated in x+pert
         [dSf_dV1_PertPfsh, dSf_dV2_PertPfsh, dSt_dV1_PertPfsh, dSt_dV2_PertPfsh, Sf, St] = dSbr_dV(branch_Pert, Yf_Pert, Yt_Pert, V, vcart);
         %2nd Derivatives of Sbr w.r.t. PfshVx
         d2Sf_dPfshVa(:, k) = (dSf_dV1_PertPfsh - dSf_dV1).' * lam / pert;  %VaPfsh from, size of [nb, nPfsh] 
