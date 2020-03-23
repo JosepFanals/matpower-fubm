@@ -19,7 +19,7 @@ function [num_Hf13, num_Hf23, num_Hf31, num_Hf32, num_Hf33,...
 %
 %   Examples:
 %       [HfBzVa, HfBzVm, HfVaBz, HfVmBz, HfBzBz...
-%           HtBzVa, HtBzVm, HtVaBz, HtVmBz, HtBzBz] = d2Sbr_dxBeqz2Pert(baseMVA, bus, branch, V, lam, pert, 0)
+%        HtBzVa, HtBzVm, HtVaBz, HtVmBz, HtBzBz] = d2Sbr_dxBeqz2Pert(baseMVA, bus, branch, V, lam, pert, 0)
 %
 %       Here the output matrices correspond to:
 %           HfBzVa = d/dBeqz (dSf_dVa.'   * mu)
@@ -90,7 +90,7 @@ iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch lo
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Beq
 
 if vcart
-    error('d2Sf_dxBeq2Pert: Derivatives of Flow Limit equations w.r.t Beq using Finite Differences Method in cartasian have not been coded yet')    
+    error('d2Sbr_dxBeqz2Pert: Derivatives of Flow Limit equations w.r.t Beq using Finite Differences Method in cartasian have not been coded yet')    
 
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
@@ -106,10 +106,10 @@ else %AAB- Polar Version
     [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, vcart);
     
     %Selector of active Beqz 
-    BeqAux1 = sparse( zeros(nl,1) );      %AAB- Vector of zeros for the seclector
-    BeqAux1(iBeqz) = 1;                   %AAB- Fill the selector with 1 where Beq is active
-    diagBeqsel = sparse( diag(BeqAux1) ); %AAB- Beq Selector [nl,nBeqx]
-    BeqAux2 = sparse( zeros(nl,nl));      %AAB- Beq second derivative Selector [nl, nl], the second derivative is zero 
+    BeqzAux1 = sparse( zeros(nl,1) );       %AAB- Vector of zeros for the seclector
+    BeqzAux1(iBeqz) = 1;                    %AAB- Fill the selector with 1 where Beq is active
+    diagBeqzsel = sparse( diag(BeqzAux1) ); %AAB- Beq Selector [nl,nBeqx]
+    BeqzAux2 = sparse( zeros(nl,nl));       %AAB- Beq second derivative Selector [nl, nl], the second derivative is zero 
     
     %Dimensionalize (Allocate for computational speed) 
     d2Sf_dBeqzVa = sparse( zeros(nb,   nBeqz) );
@@ -147,7 +147,7 @@ else %AAB- Polar Version
     
     %VxBeqz
     for k=1:nBeqz 
-        PertSel=diagBeqsel(:,iBeqz(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqz
+        PertSel=diagBeqzsel(:,iBeqz(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqz
         %Restoring perturbated branch to the original one
         branch_Pert = branch;
         %Perturbing Beq in the Perturbed branch (One vsc at a time)
@@ -164,7 +164,7 @@ else %AAB- Polar Version
     end
     %BeqzBeqz
     for k=1:nBeqz 
-        PertSel=diagBeqsel(:,iBeqz(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqz
+        PertSel=diagBeqzsel(:,iBeqz(k)); %AAB- Selects the column of diagBeqsel representing only the active Beqz
         %Restoring perturbated branch to the original one
         branch_Pert = branch;
         %Perturbing Beq in the Perturbed branch (One vsc at a time)

@@ -6,7 +6,8 @@ function t_hessian_fubm(quiet)
 
 %   FINITE DIFFERENCES METHOD
 %   This method calculates the derivatives with an aproximation as:
-%   f'(x) ~~ ( f(x+h) - f(x) ) / h 
+%   f' (x) ~~ ( f(x+h) - f(x) ) / h 
+%   f''(x) ~~ ( f'(x+h) - f'(x) ) / h 
 
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is based and created for MATPOWER
@@ -295,7 +296,7 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Gt21), num_Gt21, 4, sprintf('%s - Gt%s%s', coord, vv{3}, t));
     t_is(full(Gt22), num_Gt22, 4, sprintf('%s - Gt%s%s', coord, vv{4}, t));
 
-        %% -----  check d2Sbr_dxBeqz2 code  -----
+    %% -----  check d2Sbr_dxBeqz2 code  -----
     t = ' - d2Sbr_dxBeqz2 (Beqz complex power flows)';
     lam = 10 * rand(nl, 1);
     %%sparse matrices partial derivatives
@@ -323,6 +324,40 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Ht32), num_Ht32, 4, sprintf('%s - HBeqzVm%s%s', coord, t, br));
     
     t_is(full(Ht33), num_Ht33, 4, sprintf('%s - HBeqz2 %s%s', coord, t, br));
+
+    %% -----  check d2Sbr_dxBeqv2 code  -----
+    t = ' - d2Sbr_dxBeqv2 (Beqv complex power flows)';
+    lam = 10 * rand(nl, 1);
+    %%sparse matrices partial derivatives
+    [Hf14, Hf24, Hf34, Hf41, Hf42, Hf43, Hf44] = d2Sf_dxBeqv2(branch, V, lam, vcart);
+    [Ht14, Ht24, Ht34, Ht41, Ht42, Ht43, Ht44] = d2St_dxBeqv2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_Hf14, num_Hf24, num_Hf34, num_Hf41, num_Hf42, num_Hf43, num_Hf44,...
+     num_Ht14, num_Ht24, num_Ht34, num_Ht41, num_Ht42, num_Ht43, num_Ht44] = d2Sbr_dxBeqv2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+    
+    br = ' - "from" side';
+    t_is(full(Hf14), num_Hf14, 4, sprintf('%s - HVaBeqv%s%s', coord, t, br));
+    t_is(full(Hf24), num_Hf24, 4, sprintf('%s - HVmBeqv%s%s', coord, t, br));
+    t_is(full(Hf34), num_Hf34, 4, sprintf('%s - HBeqzBeqv%s%s', coord, t, br));
+    
+    t_is(full(Hf41), num_Hf41, 4, sprintf('%s - HBeqvVa%s%s', coord, t, br));
+    t_is(full(Hf42), num_Hf42, 4, sprintf('%s - HBeqvVm%s%s', coord, t, br));
+    t_is(full(Hf43), num_Hf43, 4, sprintf('%s - HBeqvBeqz%s%s', coord, t, br));
+    
+    t_is(full(Hf44), num_Hf44, 4, sprintf('%s - HBeqv2 %s%s', coord, t, br));
+    
+    br = ' - " to " side';
+    t_is(full(Ht14), num_Ht14, 4, sprintf('%s - HVaBeqv%s%s', coord, t, br));
+    t_is(full(Ht24), num_Ht24, 4, sprintf('%s - HVmBeqv%s%s', coord, t, br));
+    t_is(full(Ht34), num_Ht34, 4, sprintf('%s - HBeqzBeqv%s%s', coord, t, br));
+    
+    t_is(full(Ht41), num_Ht41, 4, sprintf('%s - HBeqvVa%s%s', coord, t, br));
+    t_is(full(Ht42), num_Ht42, 4, sprintf('%s - HBeqvVm%s%s', coord, t, br));
+    t_is(full(Ht43), num_Ht43, 4, sprintf('%s - HBeqvBeqz%s%s', coord, t, br));
+    
+    t_is(full(Ht44), num_Ht44, 4, sprintf('%s - HBeqv2 %s%s', coord, t, br));
+    
     
     %% -----  check d2Abr_dV2 code  -----
     t = ' - d2Abr_dV2 (squared apparent power flows)';
