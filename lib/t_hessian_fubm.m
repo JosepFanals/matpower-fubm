@@ -28,7 +28,7 @@ if nargin < 1
     quiet = 0;
 end
 
-t_begin(96, quiet); %AAB-initializes the global test counters (Number of Total Tests)
+t_begin(150, quiet); %AAB-initializes the global test counters (Number of Total Tests)
 %casefile = 'case30';
 %casefile = 'fubm_caseHVDC_qt';
 %casefile = 'fubm_caseHVDC_vt';
@@ -358,7 +358,130 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     
     t_is(full(Ht44), num_Ht44, 4, sprintf('%s - HBeqv2 %s%s', coord, t, br));
     
+    %% -----  check d2Sbr_dxPfsh2 code  -----
+    t = ' - d2Sbr_dxPfsh2 (Pfsh complex power flows)';
+    lam = 10 * rand(nl, 1);
+    %%sparse matrices partial derivatives
+    [Hf15, Hf25, Hf35, Hf45, Hf51, Hf52, Hf53, Hf54, Hf55] = d2Sf_dxsh2(branch, V, lam, vcart);
+    [Ht15, Ht25, Ht35, Ht45, Ht51, Ht52, Ht53, Ht54, Ht55] = d2St_dxsh2(branch, V, lam, vcart);
     
+    %%compute numerically to compare (Finite Differences Method)
+    [num_Hf15, num_Hf25, num_Hf35, num_Hf45, num_Hf51, num_Hf52, num_Hf53, num_Hf54, num_Hf55,...
+     num_Ht15, num_Ht25, num_Ht35, num_Ht45, num_Ht51, num_Ht52, num_Ht53, num_Ht54, num_Ht55] = d2Sbr_dxsh2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+    
+    br = ' - "from" side';
+    t_is(full(Hf15), num_Hf15, 4, sprintf('%s - HVaPfsh%s%s'  , coord, t, br));
+    t_is(full(Hf25), num_Hf25, 4, sprintf('%s - HVmPfsh%s%s'  , coord, t, br));
+    t_is(full(Hf35), num_Hf35, 4, sprintf('%s - HBeqzPfsh%s%s', coord, t, br));
+    t_is(full(Hf45), num_Hf45, 4, sprintf('%s - HBeqvPfsh%s%s', coord, t, br));
+    
+    t_is(full(Hf51), num_Hf51, 4, sprintf('%s - HPfshVa%s%s'  , coord, t, br));
+    t_is(full(Hf52), num_Hf52, 4, sprintf('%s - HPfshVm%s%s'  , coord, t, br));
+    t_is(full(Hf53), num_Hf53, 4, sprintf('%s - HPfshBeqz%s%s', coord, t, br));
+    t_is(full(Hf54), num_Hf54, 4, sprintf('%s - HPfshBeqv%s%s', coord, t, br));
+    
+    t_is(full(Hf55), num_Hf55, 4, sprintf('%s - HPfsh2 %s%s'  , coord, t, br));
+    
+    br = ' - " to " side';
+    t_is(full(Ht15), num_Ht15, 4, sprintf('%s - HVaPfsh%s%s'  , coord, t, br));
+    t_is(full(Ht25), num_Ht25, 4, sprintf('%s - HVmPfsh%s%s'  , coord, t, br));
+    t_is(full(Ht35), num_Ht35, 4, sprintf('%s - HBeqzPfsh%s%s', coord, t, br));
+    t_is(full(Ht45), num_Ht45, 4, sprintf('%s - HBeqvPfsh%s%s', coord, t, br));
+    
+    t_is(full(Ht51), num_Ht51, 4, sprintf('%s - HPfshVa%s%s'  , coord, t, br));
+    t_is(full(Ht52), num_Ht52, 4, sprintf('%s - HPfshVm%s%s'  , coord, t, br));
+    t_is(full(Ht53), num_Ht53, 4, sprintf('%s - HPfshBeqz%s%s', coord, t, br));
+    t_is(full(Ht54), num_Ht54, 4, sprintf('%s - HPfshBeqv%s%s', coord, t, br));
+    
+    t_is(full(Ht55), num_Ht55, 4, sprintf('%s - HPfsh2 %s%s'  , coord, t, br));
+
+    %% -----  check d2Sbr_dxQtma2 code  -----
+    t = ' - d2Sbr_dxQtma2 (Qtma complex power flows)';
+    lam = 10 * rand(nl, 1);
+    %%sparse matrices partial derivatives
+    [Hf16, Hf26, Hf36, Hf46, Hf56, Hf61, Hf62, Hf63, Hf64, Hf65, Hf66] = d2Sf_dxqtma2(branch, V, lam, vcart);
+    [Ht16, Ht26, Ht36, Ht46, Ht56, Ht61, Ht62, Ht63, Ht64, Ht65, Ht66] = d2St_dxqtma2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_Hf16, num_Hf26, num_Hf36, num_Hf46, num_Hf56, num_Hf61, num_Hf62, num_Hf63, num_Hf64, num_Hf65, num_Hf66,...
+     num_Ht16, num_Ht26, num_Ht36, num_Ht46, num_Ht56, num_Ht61, num_Ht62, num_Ht63, num_Ht64, num_Ht65, num_Ht66] = d2Sbr_dxqtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+    
+    br = ' - "from" side';
+    t_is(full(Hf16), num_Hf16, 4, sprintf('%s - HVaQtma%s%s'  , coord, t, br));
+    t_is(full(Hf26), num_Hf26, 4, sprintf('%s - HVmQtma%s%s'  , coord, t, br));
+    t_is(full(Hf36), num_Hf36, 4, sprintf('%s - HBeqzQtma%s%s', coord, t, br));
+    t_is(full(Hf46), num_Hf46, 4, sprintf('%s - HBeqvQtma%s%s', coord, t, br));
+    t_is(full(Hf56), num_Hf56, 4, sprintf('%s - HPfshQtma%s%s', coord, t, br));
+    
+    t_is(full(Hf61), num_Hf61, 4, sprintf('%s - HQtmaVa%s%s'  , coord, t, br));
+    t_is(full(Hf62), num_Hf62, 4, sprintf('%s - HQtmaVm%s%s'  , coord, t, br));
+    t_is(full(Hf63), num_Hf63, 4, sprintf('%s - HQtmaBeqz%s%s', coord, t, br));
+    t_is(full(Hf64), num_Hf64, 4, sprintf('%s - HQtmaBeqv%s%s', coord, t, br));
+    t_is(full(Hf65), num_Hf65, 4, sprintf('%s - HQtmaPfsh%s%s', coord, t, br));
+    
+    t_is(full(Hf66), num_Hf66, 4, sprintf('%s - HQtma2 %s%s'  , coord, t, br));
+    
+    br = ' - " to " side';
+    t_is(full(Ht16), num_Ht16, 4, sprintf('%s - HVaQtma%s%s'  , coord, t, br));
+    t_is(full(Ht26), num_Ht26, 4, sprintf('%s - HVmQtma%s%s'  , coord, t, br));
+    t_is(full(Ht36), num_Ht36, 4, sprintf('%s - HBeqzQtma%s%s', coord, t, br));
+    t_is(full(Ht46), num_Ht46, 4, sprintf('%s - HBeqvQtma%s%s', coord, t, br));
+    t_is(full(Ht56), num_Ht56, 4, sprintf('%s - HPfshQtma%s%s', coord, t, br));
+    
+    t_is(full(Ht61), num_Ht61, 4, sprintf('%s - HQtmaVa%s%s'  , coord, t, br));
+    t_is(full(Ht62), num_Ht62, 4, sprintf('%s - HQtmaVm%s%s'  , coord, t, br));
+    t_is(full(Ht63), num_Ht63, 4, sprintf('%s - HQtmaBeqz%s%s', coord, t, br));
+    t_is(full(Ht64), num_Ht64, 4, sprintf('%s - HQtmaBeqv%s%s', coord, t, br));
+    t_is(full(Ht65), num_Ht65, 4, sprintf('%s - HQtmaPfsh%s%s', coord, t, br));
+    
+    t_is(full(Ht66), num_Ht66, 4, sprintf('%s - HQtma2 %s%s'  , coord, t, br));
+    
+    %% -----  check d2Sbr_dxVtma2 code  -----
+    t = ' - d2Sbr_dxVtma2 (Vtma complex power flows)';
+    lam = 10 * rand(nl, 1);
+    %%sparse matrices partial derivatives
+    [Hf17, Hf27, Hf37, Hf47, Hf57, Hf67, Hf71, Hf72, Hf73, Hf74, Hf75, Hf76, Hf77] = d2Sf_dxvtma2(branch, V, lam, vcart);
+    [Ht17, Ht27, Ht37, Ht47, Ht57, Ht67, Ht71, Ht72, Ht73, Ht74, Ht75, Ht76, Ht77] = d2St_dxvtma2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_Hf17, num_Hf27, num_Hf37, num_Hf47, num_Hf57, num_Hf67, num_Hf71, num_Hf72, num_Hf73, num_Hf74, num_Hf75, num_Hf76, num_Hf77,...
+     num_Ht17, num_Ht27, num_Ht37, num_Ht47, num_Ht57, num_Ht67, num_Ht71, num_Ht72, num_Ht73, num_Ht74, num_Ht75, num_Ht76, num_Ht77] = d2Sbr_dxqtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+    
+    br = ' - "from" side';
+    t_is(full(Hf17), num_Hf17, 4, sprintf('%s - HVaVtma%s%s'  , coord, t, br));
+    t_is(full(Hf27), num_Hf27, 4, sprintf('%s - HVmVtma%s%s'  , coord, t, br));
+    t_is(full(Hf37), num_Hf37, 4, sprintf('%s - HBeqzVtma%s%s', coord, t, br));
+    t_is(full(Hf47), num_Hf47, 4, sprintf('%s - HBeqvVtma%s%s', coord, t, br));
+    t_is(full(Hf57), num_Hf57, 4, sprintf('%s - HPfshVtma%s%s', coord, t, br));
+    t_is(full(Hf67), num_Hf57, 4, sprintf('%s - HQtmaVtma%s%s', coord, t, br));
+    
+    t_is(full(Hf71), num_Hf71, 4, sprintf('%s - HVtmaVa%s%s'  , coord, t, br));
+    t_is(full(Hf72), num_Hf72, 4, sprintf('%s - HVtmaVm%s%s'  , coord, t, br));
+    t_is(full(Hf73), num_Hf73, 4, sprintf('%s - HVtmaBeqz%s%s', coord, t, br));
+    t_is(full(Hf74), num_Hf74, 4, sprintf('%s - HVtmaBeqv%s%s', coord, t, br));
+    t_is(full(Hf75), num_Hf75, 4, sprintf('%s - HVtmaPfsh%s%s', coord, t, br));
+    t_is(full(Hf76), num_Hf75, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
+    
+    t_is(full(Hf77), num_Hf77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
+    
+    br = ' - " to " side';
+    t_is(full(Ht17), num_Ht17, 4, sprintf('%s - HVaVtma%s%s'  , coord, t, br));
+    t_is(full(Ht27), num_Ht27, 4, sprintf('%s - HVmVtma%s%s'  , coord, t, br));
+    t_is(full(Ht37), num_Ht37, 4, sprintf('%s - HBeqzVtma%s%s', coord, t, br));
+    t_is(full(Ht47), num_Ht47, 4, sprintf('%s - HBeqvVtma%s%s', coord, t, br));
+    t_is(full(Ht57), num_Ht57, 4, sprintf('%s - HPfshVtma%s%s', coord, t, br));
+    t_is(full(Ht67), num_Ht57, 4, sprintf('%s - HQtmaVtma%s%s', coord, t, br));
+    
+    t_is(full(Ht71), num_Ht71, 4, sprintf('%s - HVtmaVa%s%s'  , coord, t, br));
+    t_is(full(Ht72), num_Ht72, 4, sprintf('%s - HVtmaVm%s%s'  , coord, t, br));
+    t_is(full(Ht73), num_Ht73, 4, sprintf('%s - HVtmaBeqz%s%s', coord, t, br));
+    t_is(full(Ht74), num_Ht74, 4, sprintf('%s - HVtmaBeqv%s%s', coord, t, br));
+    t_is(full(Ht75), num_Ht75, 4, sprintf('%s - HVtmaPfsh%s%s', coord, t, br));
+    t_is(full(Ht76), num_Ht75, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
+   
+    t_is(full(Ht77), num_Ht77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
+    
+        
     %% -----  check d2Abr_dV2 code  -----
     t = ' - d2Abr_dV2 (squared apparent power flows)';
     lam = 10 * rand(nl, 1);

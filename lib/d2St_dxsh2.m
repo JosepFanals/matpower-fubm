@@ -176,7 +176,7 @@ else %AAB- Polar Version
             %d2Yf_dsh2 = d2Yff_dsh2.*Cf + d2Yft_dsh2.*Ct;          
             d2Yt_dsh2 = d2Ytf_dsh2.*Cf + d2Ytt_dsh2.*Ct;          
             
-            d2St_dBeqv2(kk,k) = (diag(Ct*V)*conj(d2Yt_dsh2*V)).'*mu;     %AAB- must be zero           
+            d2St_dsh2(kk,k) = (diag(Ct*V)*conj(d2Yt_dsh2*V)).'*mu;     %AAB- must be zero           
         end
     end
 end

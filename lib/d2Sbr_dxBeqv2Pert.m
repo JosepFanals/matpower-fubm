@@ -8,7 +8,7 @@ function [num_Hf14, num_Hf24, num_Hf34, num_Hf41, num_Hf42, num_Hf43, num_Hf44,.
 %   [HfBvVa, HfBvVm, HfBvBz, HfVaBv, HfVmBv, HfBzBv, HfBvBv,...
 %    HtBvVa, HtBvVm, HtBvBz, HtVaBv, HtVmBv, HtBzBv, HtBvBv] = D2SBR_DXBEQV2PERT(BASEMVA, BUS, BRANCH, V, LAM, PERT, 0)
 %
-%   Returns 7 matrices containing the partial derivatives w.r.t. Va, Vm,
+%   Returns 14 matrices containing the partial derivatives w.r.t. Va, Vm,
 %   Beq of the product of a vector MU with the 1st partial derivatives of 
 %   the complex branch power flows.
 %
@@ -96,6 +96,7 @@ nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC size[nBeqv,1]
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 
+%% Calculation of derivatives
 if vcart
     error('d2Sbr_dxBeqv2Pert: Derivatives of Flow Limit equations w.r.t Beq using Finite Differences Method in cartasian have not been coded yet')    
 
