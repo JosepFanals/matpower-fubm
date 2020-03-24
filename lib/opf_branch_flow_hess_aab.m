@@ -166,8 +166,8 @@ else %<-----AAB-OFSBSR Type == P, 2, S
     d2St_dPfsh2 = @(V, mu)d2St_dxsh2(branch(il,:), V, mu, mpopt.opf.v_cartesian);     %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_sh of St
     d2Sf_dQtma2 = @(V, mu)d2Sf_dxqtma2(branch(il,:), V, mu, mpopt.opf.v_cartesian);   %AAB-Anonymus function for the 2nd derivatives w.r.t. qtma     of Sf
     d2St_dQtma2 = @(V, mu)d2St_dxqtma2(branch(il,:), V, mu, mpopt.opf.v_cartesian);   %AAB-Anonymus function for the 2nd derivatives w.r.t. qtma     of St
-    d2Sf_dVtma2 = @(V, mu)d2Sf_dxvtma2(branch(il,:), V, mu, mpopt.opf.v_cartesian);   %AAB-Anonymus function for the 2nd derivatives w.r.t. vtma     of Sf %<<Needs to be done
-    d2St_dVtma2 = @(V, mu)d2St_dxvtma2(branch(il,:), V, mu, mpopt.opf.v_cartesian);   %AAB-Anonymus function for the 2nd derivatives w.r.t. vtma     of St %<<Needs to be done
+    d2Sf_dVtma2 = @(V, mu)d2Sf_dxvtma2(branch(il,:), V, mu, mpopt.opf.v_cartesian);   %AAB-Anonymus function for the 2nd derivatives w.r.t. vtma     of Sf
+    d2St_dVtma2 = @(V, mu)d2St_dxvtma2(branch(il,:), V, mu, mpopt.opf.v_cartesian);   %AAB-Anonymus function for the 2nd derivatives w.r.t. vtma     of St
     
     %----------------------------------------------------------------------
     if lim_type == '2'        %% square of real power
@@ -192,8 +192,8 @@ else %<-----AAB-OFSBSR Type == P, 2, S
         [Ht15, Ht25, Ht35, Ht45, Ht51, Ht52, Ht53, Ht54, Ht55] = d2Abr_dxsh2(d2St_dPfsh2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, St, V, muT); 
         [Hf16, Hf26, Hf36, Hf46, Hf56, Hf61, Hf62, Hf63, Hf64, Hf65, Hf66] = d2Abr_dxqtma2(d2Sf_dQtma2, dSf_dV1, dSf_dV2, dSf_dBeqz, dSf_dBeqv, dSf_dPfsh, dSf_dQtma, Sf, V, muF); 
         [Ht16, Ht26, Ht36, Ht46, Ht56, Ht61, Ht62, Ht63, Ht64, Ht65, Ht66] = d2Abr_dxqtma2(d2St_dQtma2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, dSt_dQtma, St, V, muT); 
-        [Hf17, Hf27, Hf37, Hf47, Hf57, Hf67, Hf71, Hf72, Hf73, Hf74, Hf75, Hf76, Hf77] = d2Abr_dxvtma2(d2Sf_dVtma2, dSf_dV1, dSf_dV2, dSf_dBeqz, dSf_dBeqv, dSf_dPfsh, dSf_dQtma, dSf_dVtma, Sf, V, muF);%<<Needs to be done 
-        [Ht17, Ht27, Ht37, Ht47, Ht57, Ht67, Ht71, Ht72, Ht73, Ht74, Ht75, Ht76, Ht77] = d2Abr_dxvtma2(d2St_dVtma2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, dSt_dQtma, dSt_dVtma, St, V, muT);%<<Needs to be done        
+        [Hf17, Hf27, Hf37, Hf47, Hf57, Hf67, Hf71, Hf72, Hf73, Hf74, Hf75, Hf76, Hf77] = d2Abr_dxvtma2(d2Sf_dVtma2, dSf_dV1, dSf_dV2, dSf_dBeqz, dSf_dBeqv, dSf_dPfsh, dSf_dQtma, dSf_dVtma, Sf, V, muF); 
+        [Ht17, Ht27, Ht37, Ht47, Ht57, Ht67, Ht71, Ht72, Ht73, Ht74, Ht75, Ht76, Ht77] = d2Abr_dxvtma2(d2St_dVtma2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, dSt_dQtma, dSt_dVtma, St, V, muT);        
         %------------------------------------------------------------------
     end
 end

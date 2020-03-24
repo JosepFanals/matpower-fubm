@@ -73,7 +73,7 @@ nl = length(branch(:,1)); %% number of lines
 nb = length(V);  %% number of buses
 iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqx,1]
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Beq
-[stat, Cf, Ct, k2, tap] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
+[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 if vcart
     error('d2Sf_dxBeq2: Derivatives of Flow Limit equations w.r.t Beq in cartasian have not been coded yet')    

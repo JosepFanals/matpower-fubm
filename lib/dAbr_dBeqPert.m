@@ -30,7 +30,7 @@ function [num_dAf_dBeqx, num_dAt_dBeqx] = ...
 %
 %   then ...
 %
-%   Partial w.r.t Theta_sh 
+%   Partial w.r.t Beqz 
 %       dAf/dBeq = (AfPert - Af)/pert 
 %       dAt/dBeq = (AtPert - At)/pert
 %
