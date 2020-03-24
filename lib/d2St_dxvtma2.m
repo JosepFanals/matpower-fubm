@@ -86,8 +86,12 @@ nb = length(V);  %% number of buses
 iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 %%identifier of elements with Vf controlled by Beq
-iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC size[nBeqv,1]
-nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
+iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
+if nBeqz
+    nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
+else
+    nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
+end
 
 %% Identify if grid has controls
 iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
@@ -102,24 +106,35 @@ YttB = Ys + 1j*Bc/2 + 1j*Beq;
 
 %% Calculation of derivatives
 if vcart
-    error('d2Sf_dxvtma2: Derivatives of Flow Limit equations w.r.t ma in cartasian have not been coded yet')    
+    error('d2St_dxvtma2: Derivatives of Flow Limit equations w.r.t ma in cartasian have not been coded yet')    
 
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
     diagV = sparse(1:nb, 1:nb, V, nb, nb); %AAB- diagV = sparse(diag(V))
     dVm=diag(V./abs(V)); %dV_Vm
     dVa=1j*diagV; %dV_Va  
-    
+     
     %Selector of active ma/tap 
-    vtmaSel = sparse( zeros(nl,1) );               %AAB- Vector of zeros for the selector ma
-    shSel = sparse( zeros(nl,1) );                 %AAB- Vector of zeros for the selector sh    
-    vtmaSel(iQtma) = 1;                            %AAB- Fill the selector with 1 where ma is active and controlling Qt
-    shSel(iPfsh) = 1;                              %AAB- Fill the selector with 1 where sh is active and controlling Pf
-    YsvtmashSel = Ys.*vtmaSel.*shSel;              %AAB- Fill the selector with 1 where ma and sh are active and controlling both Qt and Pf with the same element
-    diagYsvtmashSel = sparse( diag(YsvtmashSel));  %AAB- Diagonal of the selector for derivative w.r.t. mash, size [nl,nl]
-    diagvtmaSel = sparse( diag(vtmaSel));          %AAB- Diagonal of the selector for derivative w.r.t. mama, size [nl,nl]
-    diagYsvtma = sparse( diag(vtmaSel.*Ys) );      %AAB- ma/tap selector multilied by the series addmitance Ys, size [nl,nl]
-    diagYttBvtma= sparse( diag(vtmaSel.*YttB) );   %AAB- ma selector multilied by the series addmitance Ytt, size [nl,nl]
+    QtmaSel = sparse( zeros(nl,1) );           %AAB- Vector of zeros for the selector ma controlling Qt
+    VtmaSel = sparse( zeros(nl,1) );           %AAB- Vector of zeros for the selector ma controlling Vt
+    BeqzSel = sparse( zeros(nl,1) );           %AAB- Vector of zeros for the selector Beqz controlling Zero Constraint
+    BeqvSel = sparse( zeros(nl,1) );           %AAB- Vector of zeros for the selector Beqv controlling Vf
+    PfshSel = sparse( zeros(nl,1) );           %AAB- Vector of zeros for the selector sh controlling Pf  
+    
+    QtmaSel(iQtma) = 1;                        %AAB- Fill the selector with 1 where ma is active and controlling Qt
+    VtmaSel(iVtma) = 1;                        %AAB- Fill the selector with 1 where ma is active and controlling Vt
+    BeqzSel(iBeqz) = 1;                        %AAB- Fill the selector with 1 where Beqz is active and controlling Zero Constraint
+    BeqvSel(iBeqv) = 1;                        %AAB- Fill the selector with 1 where Beqv is active and controlling Vf
+    PfshSel(iPfsh) = 1;                        %AAB- Fill the selector with 1 where sh is active and controlling Pf
+    
+    diagQtmaSel = sparse( diag(QtmaSel));      %AAB- Diagonal of the selector where ma is active and controlling Qt
+    diagVtmaSel = sparse( diag(VtmaSel));      %AAB- Diagonal of the selector where ma is active and controlling Qt
+    diagPfshSel = sparse( diag(PfshSel));      %AAB- Diagonal of the selector where sh is active and controlling Pf
+    diagBeqzSel = sparse( diag(BeqzSel));      %AAB- Diagonal of the selector where Beqz is active and controlling Zero Constraint
+    diagBeqvSel = sparse( diag(BeqvSel));      %AAB- Diagonal of the selector where Beqv is active and controlling Vf   
+    
+    diagYsVtma   = sparse( diag(VtmaSel.*Ys) );        %AAB- ma/tap selector multilied by the series addmitance Ys, size [nl,nl]
+    diagYttBVtma = sparse( diag(VtmaSel.*YttB) );      %AAB- ma selector multilied by the series addmitance Ytt, size [nl,nl]
 
     %Dimensionalize (Allocate for computational speed)
     dYff_dvtma = sparse( zeros(nl,nVtma) );
@@ -138,8 +153,8 @@ else %AAB- Polar Version
     for k=1:nVtma 
         for kk=1:nb %dQtmaVx
             %% Second Derivatives
-            Ysvtma=diagYsvtma(:,iVtma(k)); %AAB- Selects the column of diagShsel representing only the active Sh
-            YttBvtma=diagYttBvtma(:,iVtma(k)); %AAB- Selects the column of diagmaAux representing only the active ma for the specified control
+            Ysvtma=diagYsVtma(:,iVtma(k)); %AAB- Selects the column of diagShsel representing only the active Sh
+            YttBvtma=diagYttBVtma(:,iVtma(k)); %AAB- Selects the column of diagmaAux representing only the active ma for the specified control
         
             %Partials of Ytt, Yff, Yft and Ytf w.r.t. ma
             %dYff_dvtma(:, k) = sparse( -2*YttBvtma./( (k2.^2).*((abs(tap)).^3) ) );
@@ -151,12 +166,16 @@ else %AAB- Polar Version
             %dYf_dvtma = dYff_dvtma(:, k).* Cf + dYft_dvtma(:, k).* Ct; %AAB- size [nl,nb] per active ma
             dYt_dvtma = dYtf_dvtma(:, k).* Cf + dYtt_dvtma(:, k).* Ct; %AAB- size [nl,nb] per active ma
 
-            %2nd Derivatives of Sf w.r.t. qtmaVx
-            d2St_dqtmaVa(kk, k) = ((diag(Ct*V)*conj(dYt_dvtma*dVa(:,kk))   +   (Ct*dVa(:,kk)).*conj(dYt_dvtma*V)).')*mu; %AAB- Final dSt_dmaVa has a size of [nl, nVtma] 
-            d2St_dqtmaVm(kk, k) = ((diag(Ct*V)*conj(dYt_dvtma*dVm(:,kk))   +   (Ct*dVm(:,kk)).*conj(dYt_dvtma*V)).')*mu; %AAB- Final dSt_dmaVm has a size of [nl, nVtma]  
+            %2nd Derivatives of Sf w.r.t. VtmaVx
+            d2St_dvtmaVa(kk, k) = ((diag(Ct*V)*conj(dYt_dvtma*dVa(:,kk))   +   (Ct*dVa(:,kk)).*conj(dYt_dvtma*V)).')*mu; %AAB- Final dSt_dmaVa has a size of [nl, nVtma] 
+            d2St_dvtmaVm(kk, k) = ((diag(Ct*V)*conj(dYt_dvtma*dVm(:,kk))   +   (Ct*dVm(:,kk)).*conj(dYt_dvtma*V)).')*mu; %AAB- Final dSt_dmaVm has a size of [nl, nVtma]  
         end      
         for kk=1:nBeqz
+            %VtmaBeqzSel=diagVtmaSel(:,iVtma(k)).*diagBeqzSel(:,iBeqz(kk)); %AAB- Selects the column of diagVtmaBeqzSel representing only the active element controlling Zero Constraint and Vt with Beqz and ma
+            
             %% Second Derivatives %The vtmaBeqz derivative is zero because Yft, Ytf and Ytt do not share ma and Beqz for any case.
+            
+            %d2Yff_dvtmaBeqz = (-2j*VtmaBeqzSel)./( (k2.^2).*((abs(tap)).^3) );    %AAB-%Original: d2Yff_dvtmaBeqz = zeros(nl,1);
             %d2Yft_dvtmaBeqz = zeros(nl,1);                                  %AAB- must be zero
             d2Ytf_dvtmaBeqz = zeros(nl,1);                                   %AAB- must be zero
             d2Ytt_dvtmaBeqz = zeros(nl,1);                                   %AAB- must be zero
@@ -167,7 +186,10 @@ else %AAB- Polar Version
             d2St_dvtmaBeqz(kk,k) = (diag(Ct*V)*conj(d2Yt_dvtmaBeqz*V)).'*mu; %AAB- must be zero
         end
         for kk=1:nBeqv
+            %VtmaBeqvSel=diagVtmaSel(:,iVtma(k)).*diagBeqvSel(:,iBeqv(kk)); %AAB- Selects the column of diagVtmaBeqvSel representing only the active element controlling Vf and Vt with Beqv and ma
+           
             %% Second Derivatives %The vtmaBeqv derivative is zero becauseYff, Yft, Ytf and Ytt do not share ma and Beqv for any case.
+            %d2Yff_dvtmaBeqv = (-2j*VtmaBeqvSel)./( (k2.^2).*((abs(tap)).^3) );    %AAB-%Original: d2Yff_dvtmaBeqv = zeros(nl,1);
             %d2Yft_dvtmaBeqv = zeros(nl,1);                                  %AAB- must be zero
             d2Ytf_dvtmaBeqv = zeros(nl,1);                                   %AAB- must be zero
             d2Ytt_dvtmaBeqv = zeros(nl,1);                                   %AAB- must be zero
@@ -178,12 +200,13 @@ else %AAB- Polar Version
             d2St_dvtmaBeqv(kk,k) = (diag(Ct*V)*conj(d2Yt_dvtmaBeqv*V)).'*mu; %AAB- must be zero
         end
         for kk=1:nPfsh
-            YsvtmashSel2=diagYsvtmashSel(:,iPfsh(kk)); %AAB- Selects the column of diagmashSel representing only the active element controlling Pf and Qt with sh and ma
+            VtmaPfshSel=diagVtmaSel(:,iVtma(k)).*diagPfshSel(:,iPfsh(kk)); %AAB- Selects only the active element controlling Pf and Vt with sh and ma
+            YsVtmashSel=Ys.*VtmaPfshSel;
             
             %% Second Derivatives 
             %d2Yff_dvtmash = zeros(nl,1);                                       %AAB- must be zero
-            %d2Yft_dvtmash = ( 1j.*YsvtmashSel2)./( k2.*abs(tap).*conj(tap) );  %AAB- Only active for elements with both Pf and Qt control
-            d2Ytf_dvtmash = (-1j.*YsvtmashSel2)./( k2.*abs(tap).*     tap  );   %AAB- Only active for elements with both Pf and Qt control
+            %d2Yft_dvtmash = ( 1j.*YsvtmashSel)./( k2.*abs(tap).*conj(tap) );  %AAB- Only active for elements with both Pf and Qt control
+            d2Ytf_dvtmash = (-1j.*YsVtmashSel)./( k2.*abs(tap).*     tap  );   %AAB- Only active for elements with both Pf and Qt control
             d2Ytt_dvtmash = zeros(nl,1);                                        %AAB- must be zero
             
             %d2Yf_dvtmash = d2Yff_dvtmash.*Cf + d2Yft_dvtmash.*Ct;                
@@ -204,7 +227,7 @@ else %AAB- Polar Version
             d2St_dvtmaqtma(kk,k) = (diag(Ct*V)*conj(d2Yt_dvtmaqtma*V)).'*mu;                  
         end
         for kk=1:nVtma
-            vtmaSel2=diagvtmaSel(:,iVtma(kk)); %AAB- Selects the column of diagmaSel representing only the active ma
+            vtmaSel2=diagVtmaSel(:,iVtma(kk)); %AAB- Selects the column of diagmaSel representing only the active ma
             
             %% Second Derivatives         
             %d2Yff_dma2 = sparse( ( 6.*YttBvtma.*vtmaSel2 )./( (k2.^2).*((abs(tap)).^4) ) );       %AAB- Only when ma selector 1 and ma selector 2 match there will be a derivative (When k = kk). Otherwise zero

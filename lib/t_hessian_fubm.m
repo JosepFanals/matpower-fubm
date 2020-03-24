@@ -445,7 +445,7 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     
     %%compute numerically to compare (Finite Differences Method)
     [num_Hf17, num_Hf27, num_Hf37, num_Hf47, num_Hf57, num_Hf67, num_Hf71, num_Hf72, num_Hf73, num_Hf74, num_Hf75, num_Hf76, num_Hf77,...
-     num_Ht17, num_Ht27, num_Ht37, num_Ht47, num_Ht57, num_Ht67, num_Ht71, num_Ht72, num_Ht73, num_Ht74, num_Ht75, num_Ht76, num_Ht77] = d2Sbr_dxqtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+     num_Ht17, num_Ht27, num_Ht37, num_Ht47, num_Ht57, num_Ht67, num_Ht71, num_Ht72, num_Ht73, num_Ht74, num_Ht75, num_Ht76, num_Ht77] = d2Sbr_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
     
     br = ' - "from" side';
     t_is(full(Hf17), num_Hf17, 4, sprintf('%s - HVaVtma%s%s'  , coord, t, br));
@@ -453,14 +453,14 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Hf37), num_Hf37, 4, sprintf('%s - HBeqzVtma%s%s', coord, t, br));
     t_is(full(Hf47), num_Hf47, 4, sprintf('%s - HBeqvVtma%s%s', coord, t, br));
     t_is(full(Hf57), num_Hf57, 4, sprintf('%s - HPfshVtma%s%s', coord, t, br));
-    t_is(full(Hf67), num_Hf57, 4, sprintf('%s - HQtmaVtma%s%s', coord, t, br));
+    t_is(full(Hf67), num_Hf67, 4, sprintf('%s - HQtmaVtma%s%s', coord, t, br));
     
     t_is(full(Hf71), num_Hf71, 4, sprintf('%s - HVtmaVa%s%s'  , coord, t, br));
     t_is(full(Hf72), num_Hf72, 4, sprintf('%s - HVtmaVm%s%s'  , coord, t, br));
     t_is(full(Hf73), num_Hf73, 4, sprintf('%s - HVtmaBeqz%s%s', coord, t, br));
     t_is(full(Hf74), num_Hf74, 4, sprintf('%s - HVtmaBeqv%s%s', coord, t, br));
     t_is(full(Hf75), num_Hf75, 4, sprintf('%s - HVtmaPfsh%s%s', coord, t, br));
-    t_is(full(Hf76), num_Hf75, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
+    t_is(full(Hf76), num_Hf76, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
     
     t_is(full(Hf77), num_Hf77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
     
@@ -470,14 +470,14 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Ht37), num_Ht37, 4, sprintf('%s - HBeqzVtma%s%s', coord, t, br));
     t_is(full(Ht47), num_Ht47, 4, sprintf('%s - HBeqvVtma%s%s', coord, t, br));
     t_is(full(Ht57), num_Ht57, 4, sprintf('%s - HPfshVtma%s%s', coord, t, br));
-    t_is(full(Ht67), num_Ht57, 4, sprintf('%s - HQtmaVtma%s%s', coord, t, br));
+    t_is(full(Ht67), num_Ht67, 4, sprintf('%s - HQtmaVtma%s%s', coord, t, br));
     
     t_is(full(Ht71), num_Ht71, 4, sprintf('%s - HVtmaVa%s%s'  , coord, t, br));
     t_is(full(Ht72), num_Ht72, 4, sprintf('%s - HVtmaVm%s%s'  , coord, t, br));
     t_is(full(Ht73), num_Ht73, 4, sprintf('%s - HVtmaBeqz%s%s', coord, t, br));
     t_is(full(Ht74), num_Ht74, 4, sprintf('%s - HVtmaBeqv%s%s', coord, t, br));
     t_is(full(Ht75), num_Ht75, 4, sprintf('%s - HVtmaPfsh%s%s', coord, t, br));
-    t_is(full(Ht76), num_Ht75, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
+    t_is(full(Ht76), num_Ht76, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
    
     t_is(full(Ht77), num_Ht77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
     

@@ -249,7 +249,7 @@ else %AAB- Polar Version
         d2Sbus_dQtmaVtma(:, k) = (dSbus_dVtma_PertQtma - dSbus_dVtma).' * lam / pert;  %VtmaQtma (dSbus_dVtmaPertQtma - dSbus_dVtma) size of [nVtma, nQtma] 
     end 
     
-    %VxQtma num_G19 num_G29
+    %VxVtma num_G19 num_G29
     for k=1:nVtma 
         PertSel=diagVtmaSel(:,iVtma(k)); %AAB- Selects the column of diagVtmasel representing only the active Vtma
         %Restoring perturbated branch to the original one
