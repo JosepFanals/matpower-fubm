@@ -8,7 +8,8 @@ function [num_Hf13, num_Hf23, num_Hf31, num_Hf32, num_Hf33,...
 %   (So far only complex power has been coded). Notation below is based on 
 %   complex power.
 %
-%   [H13, H23, H31, H32, H33] = D2ABR_DXBEQZ2PERT(D2SBR_DXBEQZ2, DSBR_DVA, DSBR_DVM, DSBR_DBEQ, SBR, V, MU)
+%   [NUM_HF13, NUM_HF23, NUM_HF31, NUM_HF32, NUM_HF33,...
+%    NUM_HT13, NUM_HT23, NUM_HT31, NUM_HT32, NUM_HT33] = D2ABR_DXBEQZ2PERT(BASEMVA, BUS, BRANCH, V, LAM, PERT, VCART)
 %
 %   Returns 10 matrices containing the 2nd partial derivatives of Abr
 %   where:
@@ -35,13 +36,8 @@ function [num_Hf13, num_Hf23, num_Hf31, num_Hf32, num_Hf33,...
 %   H33 = HBzBz = d2Abr_dBeqz2    =  (  2*real(d2Sbr_dBeqz2  )*conj(Sbr)  +  dSbr_dBeqz *conj(dSbr_dBeqz ))'*mu
 %
 %   Example:
-%
-%      [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch(il,:));
-%      d2Sf_dBeqz2 = @(V, mu)d2Sf_dxBeqz2(branch(il,:), V, mu);
-%      [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch(il,:), Yf, Yt, V);
-%      [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch(il,:), V, 1);
-%      [Hf13, Hf23, Hf31, Hf32, Hf33] = d2Abr_dxBeqz2(d2Sf_dxBeqz2, dSf_dVa, dSf_dVm, dSf_dBeq, Sf, V, mu)
-%      [Ht13, Ht23, Ht31, Ht32, Ht33] = d2Abr_dxBeqz2(d2St_dxBeqz2, dSt_dVa, dSt_dVm, dSt_dBeq, St, V, mu)
+%   [NUM_HF13, NUM_HF23, NUM_HF31, NUM_HF32, NUM_HF33,...
+%    NUM_HT13, NUM_HT23, NUM_HT31, NUM_HT32, NUM_HT33] = D2ABR_DXBEQZ2PERT(BASEMVA, BUS, BRANCH, V, LAM, PERT, VCART)
 %
 %   See also DABR_DV, DIBR_DV, DSBR_DV, D2ABR_DV2.
 %
@@ -95,7 +91,7 @@ iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch lo
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Beq
 
 if vcart
-    error('d2Sbr_dxBeqz2Pert: Derivatives of Flow Limit equations w.r.t Beq using Finite Differences Method in cartasian have not been coded yet')    
+    error('d2Abr_dxBeqz2Pert: Derivatives of Flow Limit equations w.r.t Beq using Finite Differences Method in cartasian have not been coded yet')    
 
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
@@ -118,7 +114,6 @@ else %AAB- Polar Version
     BeqzAux1 = sparse( zeros(nl,1) );       %AAB- Vector of zeros for the seclector
     BeqzAux1(iBeqz) = 1;                    %AAB- Fill the selector with 1 where Beq is active
     diagBeqzsel = sparse( diag(BeqzAux1) ); %AAB- Beq Selector [nl,nBeqx]
-    BeqzAux2 = sparse( zeros(nl,nl));       %AAB- Beq second derivative Selector [nl, nl], the second derivative is zero 
     
     %Dimensionalize (Allocate for computational speed) 
     d2Af_dBeqzVa = sparse( zeros(nb,   nBeqz) );

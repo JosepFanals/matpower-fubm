@@ -28,7 +28,7 @@ if nargin < 1
     quiet = 0;
 end
 
-t_begin(245, quiet); %AAB-initializes the global test counters (Number of Total Tests)
+t_begin(200, quiet); %AAB-initializes the global test counters (Number of Total Tests)
 %casefile = 'case30';
 %casefile = 'fubm_caseHVDC_qt';
 %casefile = 'fubm_caseHVDC_vt';
@@ -577,9 +577,9 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     [num_Hf15, num_Hf25, num_Hf35, num_Hf45, num_Hf51, num_Hf52, num_Hf53, num_Hf54, num_Hf55,...
      num_Ht15, num_Ht25, num_Ht35, num_Ht45, num_Ht51, num_Ht52, num_Ht53, num_Ht54, num_Ht55] = d2Abr_dxsh2Pert(baseMVA, bus, branch, V, lam, pert, vcart); 
     [num_Hf16, num_Hf26, num_Hf36, num_Hf46, num_Hf56, num_Hf61, num_Hf62, num_Hf63, num_Hf64, num_Hf65, num_Hf66,...
-     num_Ht16, num_Ht26, num_Ht36, num_Ht46, num_Ht56, num_Ht61, num_Ht62, num_Ht63, num_Ht64, num_Ht65, num_Ht66] = d2Abr_dxqtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart); 
-    [num_Hf17, num_Hf27, num_Hf37, num_Hf47, num_Hf57, num_Hf67, num_Hf71, num_Hf72, num_Hf73, num_Hf74, num_Hf75, num_Hf76, num_Hf77,...
-     num_Ht17, num_Ht27, num_Ht37, num_Ht47, num_Ht57, num_Ht67, num_Ht71, num_Ht72, num_Ht73, num_Ht74, num_Ht75, num_Ht76, num_Ht77] = d2Abr_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);   
+     num_Ht16, num_Ht26, num_Ht36, num_Ht46, num_Ht56, num_Ht61, num_Ht62, num_Ht63, num_Ht64, num_Ht65, num_Ht66] = d2Abr_dxqtma2Pert(d2St_dQtma2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, dSt_dQtma, St, V, lam); 
+    %[num_Hf17, num_Hf27, num_Hf37, num_Hf47, num_Hf57, num_Hf67, num_Hf71, num_Hf72, num_Hf73, num_Hf74, num_Hf75, num_Hf76, num_Hf77] = d2Abr_dxvtma2Pert(d2Sf_dVtma2, dSf_dV1, dSf_dV2, dSf_dBeqz, dSf_dBeqv, dSf_dPfsh, dSf_dQtma, dSf_dVtma, Sf, V, lam); 
+    %[num_Ht17, num_Ht27, num_Ht37, num_Ht47, num_Ht57, num_Ht67, num_Ht71, num_Ht72, num_Ht73, num_Ht74, num_Ht75, num_Ht76, num_Ht77] = d2Abr_dxvtma2Pert(d2St_dVtma2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, dSt_dQtma, dSt_dVtma, St, V, lam);   
     
     t = ' - d2Abr_dxBeqz2 (Beqz complex power flows)';
     br = ' - "from" side';
@@ -635,7 +635,7 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Ht54), num_Ht54, 4, sprintf('%s - HPfshBeqv%s%s', coord, t, br));
     t_is(full(Ht55), num_Ht55, 4, sprintf('%s - HPfsh2 %s%s'  , coord, t, br));
     
-    t = ' - d2Abr_dxQtma2 (Qtma complex power flows)';  
+    t = ' - d2Abr_dxQtma2 (Pfsh complex power flows)';  
     br = ' - "from" side';
     t_is(full(Hf16), num_Hf16, 4, sprintf('%s - HVaQtma%s%s'  , coord, t, br));
     t_is(full(Hf26), num_Hf26, 4, sprintf('%s - HVmQtma%s%s'  , coord, t, br));
@@ -661,7 +661,7 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Ht65), num_Ht65, 4, sprintf('%s - HQtmaPfsh%s%s', coord, t, br));
     t_is(full(Ht66), num_Ht66, 4, sprintf('%s - HQtma2 %s%s'  , coord, t, br));    
     
-    t = ' - d2Abr_dxVtma2 (Vtma complex power flows)';  
+    t = ' - d2Abr_dxVtma2 (Pfsh complex power flows)';  
     br = ' - "from" side';
     t_is(full(Hf17), num_Hf17, 4, sprintf('%s - HVaVtma%s%s'  , coord, t, br));
     t_is(full(Hf27), num_Hf27, 4, sprintf('%s - HVmVtma%s%s'  , coord, t, br));
@@ -690,5 +690,4 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Ht75), num_Ht75, 4, sprintf('%s - HVtmaPfsh%s%s', coord, t, br));
     t_is(full(Ht76), num_Ht76, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
     t_is(full(Ht77), num_Ht77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
-
 t_end;
