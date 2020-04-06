@@ -163,11 +163,11 @@ else    %% AC or AC/DC
       alg = upper(mpopt.opf.ac.solver);  %AAB- Type of algorithm
       switch alg
       case {'MIPS'}
-          if nb > 10
-            warning('opf_setup: SOLVER = ''%s'',  The selected solver has not been fully tested for large AC/DC grids or grids with Controls, we recomend to use ''KNITRO'' solver in this case.', alg)
+          %if nb > 10
+          %  warning('opf_setup: SOLVER = ''%s'',  The selected solver has not been fully tested for large AC/DC grids or grids with Controls, we recomend to use ''KNITRO'' solver in this case.', alg)
             %fprintf('Read warning and press any key to continue.\n');
             %pause;
-          end
+          %end
       case {'IPOPT', 'TRALM', 'MINOPF', 'FMINCON', 'SDPOPF'}
           error('opf_setup: SOLVER = ''%s'',  AC/DC grids or Controls have only been coded for ''KNITRO'' solver.', alg)
       end
