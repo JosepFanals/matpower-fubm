@@ -215,15 +215,6 @@ if ~isempty(mpc.bus)
         gen(refgen, PG) = gen(refgen, PG) + (B(ref, :) * Va - Pbus(ref)) * baseMVA;
     else                                %% AC and AC/DC formulation
         alg = upper(mpopt.pf.alg);
-        if (nBeqz || nPfsh || nQtma || nVtma) %AC/DC Grids and Controls using FUBM have only been coded for Newton Raphson
-            switch alg
-                case {'NR'}
-                    fprintf('FUBM Formulation\n')
-                otherwise
-                error('runpf: SOLVER = ''%s'', AC/DC grids or Controls have only been coded for Newton Raphson algorithm ''NR''. Please change solver.', alg)
-            end
-        end  
-        
         switch alg
             case 'NR-SP'
                 mpopt = mpoption(mpopt, 'pf.current_balance', 0, 'pf.v_cartesian', 0);
@@ -268,6 +259,14 @@ if ~isempty(mpc.bus)
                     solver = 'unknown';
             end
             fprintf(' -- AC Power Flow (%s)\n', solver);
+        end
+        if (nBeqz || nPfsh || nQtma || nVtma)
+            %AC/DC Grids and Controls using FUBM have only been coded for SP Newton Raphson
+            if mpopt.pf.current_balance || mpopt.pf.v_cartesian
+                error('runpf: AC/DC grids or Controls not yet supported for power flow algorithm ''%s''. Please use power balance, polar version of Newton Raphson, i.e. ''NR'' or ''NR-SP''.', alg);
+            elseif mpopt.verbose > 0
+                fprintf('FUBM Formulation\n')
+            end
         end
         switch alg
             case {'NR', 'NR-SP', 'NR-SC', 'NR-SH', 'NR-IP', 'NR-IC', 'NR-IH'}  %% all 6 variants supported
