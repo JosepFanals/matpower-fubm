@@ -168,7 +168,8 @@ else    %% AC or AC/DC
             %fprintf('Read warning and press any key to continue.\n');
             %pause;
           %end
-      case {'IPOPT', 'TRALM', 'MINOPF', 'FMINCON', 'SDPOPF'}
+%       case {'IPOPT', 'TRALM', 'MINOPF', 'FMINCON', 'SDPOPF'}
+      case {'TRALM', 'MINOPF', 'SDPOPF'}
           error('opf_setup: SOLVER = ''%s'',  AC/DC grids or Controls have only been coded for ''KNITRO'' solver.', alg)
       end
   end
