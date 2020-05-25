@@ -46,12 +46,18 @@ nl = size(branch, 1);       %% number of lines
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM-extra fields for FUBM
 
 %% check that bus numbers are equal to indices to bus (one set of bus numbers)
 if any(bus(:, BUS_I) ~= (1:nb)')
     error('makeYbus: buses must be numbered consecutively in bus matrix; use ext2int() to convert to internal ordering')
 end
+%% Identify FUBM formulation
+if (size(branch,2) < ALPH3) 
+    fubm = 0; %Its not a fubm formulation
+else
+    fubm = 1; %Its a fubm formulation
+end 
 
 %% for each branch, compute the elements of the branch admittance matrix where
 %%
@@ -62,23 +68,28 @@ end
 stat = branch(:, BR_STATUS);                    %% ones at in-service branches
 Ys = stat ./ (branch(:, BR_R) + 1j * branch(:, BR_X));  %% series admittance
 Bc = stat .* branch(:, BR_B);                           %% line charging susceptance
-%%AAB-----
-Beq= stat .* branch(:, BEQ);                            %%AAB- VSC Equivalent Reactor for absorbing or supplying reactive power and zero constraint in DC side   
-Gsw= stat .* branch(:, GSW);                             %%AAB- VSC Switching losses
-%%---------
 ma = ones(nl, 1);                               %% default tap ratio = 1
 i = find(branch(:, TAP));                       %% indices of non-zero tap ratios
 ma(i) = branch(i, TAP);                         %% assign non-zero tap ratios
-%%AAB-----
-ShAng = branch(:, SHIFT)* pi/180;               %%AAB- Shift angle (in degrees from branch) and changed to radians
+ShAng = branch(:, SHIFT)* pi/180;               %% Shift angle (in degrees from branch) and changed to radians
 tap = ma .* exp(1j* ShAng);                     %% add phase shifters to the tap
-k2 = branch(:, K2);                             %% VSC constant depending of how many levels does the VSC is simulating. Default k2 for branches = 1, Default k2 for VSC = sqrt(3)/2
-%%---------
-Ytt = Ys + 1j*Bc/2;
-Yff = Gsw+( (Ytt+1j*Beq) ./ ((k2.^2).*tap .* conj(tap))  ); %%<<AAB- FUBM formulation- Original: Yff = Ytt ./ (tap .* conj(tap));
-Yft = - Ys ./ ( k2.*conj(tap) );                            %%<<AAB- FUBM formulation- Original: Yft = - Ys ./ conj(tap) ;
-Ytf = - Ys ./ ( k2.*tap );                                  %%<<AAB- FUBM formulation- Original: Ytf = - Ys ./ tap ;
 
+%% Build Yff, Yft, Ytf and Ytt
+if fubm %FUBM formulation
+    Beq= stat .* branch(:, BEQ);                                %%FUBM- VSC Equivalent Reactor for absorbing or supplying reactive power and zero constraint in DC side   
+    Gsw= stat .* branch(:, GSW);                                %%FUBM- VSC Switching losses
+    k2 = branch(:, K2);                                         %%FUBM- VSC constant depending of how many levels does the VSC is simulating. Default k2 for branches = 1, Default k2 for VSC = sqrt(3)/2
+    
+    Ytt = Ys + 1j*Bc/2;
+    Yff = Gsw+( (Ytt+1j*Beq) ./ ((k2.^2).*tap .* conj(tap))  ); %%FUBM- FUBM formulation
+    Yft = - Ys ./ ( k2.*conj(tap) );                            %%FUBM- FUBM formulation
+    Ytf = - Ys ./ ( k2.*tap );                                  %%FUBM- FUBM formulation
+else %Matpower Formulation
+    Ytt = Ys + 1j*Bc/2;
+    Yff =  Ytt ./ (tap .* conj(tap));
+    Yft = - Ys ./ conj(tap) ;
+    Ytf = - Ys ./ tap ;
+end
 %% compute shunt admittance
 %% if Psh is the real power consumed by the shunt at V = 1.0 p.u.
 %% and Qsh is the reactive power injected by the shunt at V = 1.0 p.u.

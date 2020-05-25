@@ -36,6 +36,14 @@ function [stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb)
 %% constants
 nl = size(branch, 1);       %% number of lines
 
+%% Identify FUBM formulation
+if (size(branch,2) < ALPH3) 
+    fubm = 0; %Its not a fubm formulation
+    error('getbranchdata: There is missing data in the branch matrix. FUBM formulation')
+else
+    fubm = 1; %Its a fubm formulation
+end 
+%--------------------------------------------------------------------------
 %% calculations
 stat = branch(:, BR_STATUS);                    %% ones at in-service branches
 Ys = stat ./ (branch(:, BR_R) + 1j * branch(:, BR_X));  %% series admittance

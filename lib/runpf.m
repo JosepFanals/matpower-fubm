@@ -82,7 +82,7 @@ function [MVAbase, bus, gen, branch, success, et] = ...
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM -extra fields for FUBM
 [GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN, ...
     MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PC1, PC2, QC1MIN, QC1MAX, ...
     QC2MIN, QC2MAX, RAMP_AGC, RAMP_10, RAMP_30, RAMP_Q, APF] = idx_gen;
@@ -113,16 +113,12 @@ if size(mpc.branch,2) < QT
   mpc.branch = [ mpc.branch zeros(size(mpc.branch, 1), QT-size(mpc.branch,2)) ];
 end
 
-%% add FUBM columns to the branch matrix if needed
-%the FUBM for DC power flows has not been coded yet, so if DC no extra columns are added
+%% Identify FUBM formulation
+%the FUBM for DC power flows has not been coded yet
 if (size(mpc.branch,2) < ALPH3 && ~dc ) 
-  nl   = size(mpc.branch, 1); %% number of branches
-  mpc.branch = [ mpc.branch zeros(nl, ALPH3-size(mpc.branch,2)) ];
-  mpc.branch(:,TAP_MAX)=1;
-  mpc.branch(:,TAP_MIN)=1;
-  mpc.branch(:,K2)=1;
-  mpc.branch(:,SH_MIN)=-360;
-  mpc.branch(:,SH_MAX)= 360;
+    fubm = 0; %Its not a fubm formulation
+else
+    fubm = 1; %Its a fubm formulation
 end
 
 %% convert to internal indexing
@@ -131,7 +127,7 @@ mpc = ext2int(mpc, mpopt);
 
 if ~isempty(mpc.bus)
     %% get bus index lists of each type of bus
-    [ref, pv, pq] = bustypes_aab(bus, gen, branch);
+    [ref, pv, pq] = bustypes_fubm(bus, gen, branch);
 
     %% generator info
     on = find(gen(:, GEN_STATUS) > 0);      %% which generators are on?
@@ -144,41 +140,38 @@ if ~isempty(mpc.bus)
         v = mpver('all');
         fprintf('\nMATPOWER Version %s, %s', v.Version, v.Date);
     end
-    if ~dc
+    if fubm
         %% Identify if the grid is AC/DC or has Controls
-        %%AAB-----------------------------------------------------------------
-        iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-        nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-        iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1  & branch(:,VF_SET)~=0); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-        nBeqv = length(iBeqv); %AAB- Number of VSC with active Zero Constraint control
-        iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
-        nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
-        iQtma = find (branch(:,QT)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma [nQtma,1]
-        nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma
-        iVtma = find (branch(:,VT_SET)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX))); %AAB- Find branch locations with Vt controlled by ma [nVtma,1]
-        nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma
-        iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-        nVscL = length(iVscL); %AAB- Number of VSC with active PWM Losses Calculation   
-        if nBeqv
-            if ~nBeqz
-                error('mainpf: Vdc controlled by Beq is only possible in AC/DC grids. Each AC/DC grid must include a VSC type 1');
-            end
-        end
+        %%FUBM-----------------------------------------------------------------
+        iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+        nBeqz = length(iBeqz); %FUBM- Number of VSC with active Zero Constraint control
+        iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1  & branch(:,VF_SET)~=0); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+        nBeqv = length(iBeqv); %FUBM- Number of VSC with active Zero Constraint control
+        iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %FUBM- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+        nPfsh = length(iPfsh); %FUBM- Number of elements with active Pf controlled by Theta_shift
+        iQtma = find (branch(:,QT)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %FUBM- Find branch locations with Qt controlled by ma [nQtma,1]
+        nQtma = length(iQtma); %FUBM- Number of elements with active Qt controlled by ma
+        iVtma = find (branch(:,VT_SET)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX))); %FUBM- Find branch locations with Vt controlled by ma [nVtma,1]
+        nVtma = length(iVtma); %FUBM- Number of elements with active Vt controlled by ma
+        iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %FUBM- Find VSC with active PWM Losses Calculation [nVscL,1]
+        nVscL = length(iVscL); %FUBM- Number of VSC with active PWM Losses Calculation   
+
         %Identify elements that control V and their buses
-        iVt_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VT_SET)~=0)); %AAB- Location of all the elements that control Vt with ma
-        iVf_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VF_SET)~=0)); %AAB- Location of all the elements that control Vf with either ma or Beq
-        Vt_ctrl_bus = branch(iVt_ctrl, T_BUS); %AAB- Saves the bus  "to"  of the element that controls voltage
-        Vf_ctrl_bus = branch(iVf_ctrl, F_BUS); %AAB- Saves the bus "from" of the element that controls voltage
+        iVt_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VT_SET)~=0)); %FUBM- Location of all the elements that control Vt with ma
+        iVf_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VF_SET)~=0)); %FUBM- Location of all the elements that control Vf with either ma or Beq
+        Vt_ctrl_bus = branch(iVt_ctrl, T_BUS); %FUBM- Saves the bus  "to"  of the element that controls voltage
+        Vf_ctrl_bus = branch(iVf_ctrl, F_BUS); %FUBM- Saves the bus "from" of the element that controls voltage
         %%---------------------------------------------------------------------    
     else %DCPF using FUBM has not been coded yet
         nBeqz=0;
         nPfsh=0;
         nQtma=0;
         nVtma=0;
+        nBeqv=0;
     end
     if dc                               %% DC formulation
-        if (nBeqz || nPfsh || nQtma || nVtma)
-            error('runpf: DC power flow for AC/DC grids or grids with active controls have not been coded yet');
+        if fubm
+            error('runpf: DC power flow for AC/DC grids or grids with active controls have not been coded yet, fubm formulation');
         end 
         if mpopt.verbose > 0
           fprintf(' -- DC Power Flow\n');
@@ -260,7 +253,7 @@ if ~isempty(mpc.bus)
             end
             fprintf(' -- AC Power Flow (%s)\n', solver);
         end
-        if (nBeqz || nPfsh || nQtma || nVtma)
+        if fubm
             %AC/DC Grids and Controls using FUBM have only been coded for SP Newton Raphson
             if mpopt.pf.current_balance || mpopt.pf.v_cartesian
                 error('runpf: AC/DC grids or Controls not yet supported for power flow algorithm ''%s''. Please use power balance, polar version of Newton Raphson, i.e. ''NR'' or ''NR-SP''.', alg);
@@ -296,13 +289,15 @@ if ~isempty(mpc.bus)
         vcb = ones(size(V0));           %% create mask of voltage-controlled buses
         vcb(pq) = 0;                    %% exclude PQ buses
         k = find(vcb(gbus));            %% in-service gens at v-c buses
-        %AAB---------------------------------------------------------------
-        ht = find(vcb(Vt_ctrl_bus));    %% AAB- in-service elements at v-c buses %finds the id of the ones that are in service
-        hf = find(vcb(Vf_ctrl_bus));    %% AAB- in-service elements at v-c buses %finds the id of the ones that are in service
+        if fubm
+            %FUBM---------------------------------------------------------------
+            ht = find(vcb(Vt_ctrl_bus));    %% FUBM- in-service elements at v-c buses %finds the id of the ones that are in service
+            hf = find(vcb(Vf_ctrl_bus));    %% FUBM- in-service elements at v-c buses %finds the id of the ones that are in service
         
-        V0(Vt_ctrl_bus(ht)) = branch(iVt_ctrl(ht), VT_SET) ./ abs(V0(Vt_ctrl_bus(ht))).* V0(Vt_ctrl_bus(ht));  %AAB- Sets the Voltage magnitude "from" for the bus to be constant during the solution. It also adds the Va to the vector
-        V0(Vf_ctrl_bus(hf)) = branch(iVf_ctrl(hf), VF_SET) ./ abs(V0(Vf_ctrl_bus(hf))).* V0(Vf_ctrl_bus(hf));  %AAB- Sets the Voltage magnitude  "to"  for the bus to be constant during the solution. It also adds the Va to the vector
-        %------------------------------------------------------------------
+            V0(Vt_ctrl_bus(ht)) = branch(iVt_ctrl(ht), VT_SET) ./ abs(V0(Vt_ctrl_bus(ht))).* V0(Vt_ctrl_bus(ht));  %FUBM- Sets the Voltage magnitude "from" for the bus to be constant during the solution. It also adds the Va to the vector
+            V0(Vf_ctrl_bus(hf)) = branch(iVf_ctrl(hf), VF_SET) ./ abs(V0(Vf_ctrl_bus(hf))).* V0(Vf_ctrl_bus(hf));  %FUBM- Sets the Voltage magnitude  "to"  for the bus to be constant during the solution. It also adds the Va to the vector
+            %------------------------------------------------------------------
+        end
         V0(gbus(k)) = gen(on(k), VG) ./ abs(V0(gbus(k))).* V0(gbus(k));
 
         if qlim
@@ -313,11 +308,11 @@ if ~isempty(mpc.bus)
         end
 
         %% build admittance matrices
-        %AAB---------------------------------------------------------------
-        if (nBeqz || nPfsh || nQtma || nVtma) %FUBM formulation
+        %FUBM---------------------------------------------------------------
+        if fubm %FUBM formulation
             switch alg
                 case 'NR'
-                    getYbus = @(branch)makeYbus(baseMVA, bus, branch); %AAB- Annonymus function of Ybus Since it will be calculated inside newton 
+                    getYbus = @(branch)makeYbus(baseMVA, bus, branch); %FUBM- Annonymus function of Ybus Since it will be calculated inside newton 
                 otherwise
                     error('mainpf: ''%s'' is not a valid AC/DC power flow algorithm. So far only NR has been addapted.', alg);
             end
@@ -348,9 +343,9 @@ if ~isempty(mpc.bus)
                     else
                         switch mpopt.pf.v_cartesian
                             case 0                  %% default - power, polar
-                                %AAB-------------------------------------------
+                                %FUBM-------------------------------------------
                                 if (nBeqz || nPfsh || nQtma || nVtma) %FUBM formulation
-                                    newtonpf_fcn = @newtonpf_aab;
+                                    newtonpf_fcn = @newtonpf_fubm;
                                 else    %% default - power, polar
                                     newtonpf_fcn = @newtonpf;
                                 end
@@ -361,8 +356,8 @@ if ~isempty(mpc.bus)
                                 newtonpf_fcn = @newtonpf_S_hybrid;
                         end
                     end
-                    %AAB---------------------------------------------------
-                    if (nBeqz || nPfsh || nQtma || nVtma) %FUBM formulation
+                    %FUBM---------------------------------------------------
+                    if fubm %FUBM formulation
                         [V, branch, success, iterations] = newtonpf_fcn(branch, Sbus, getYbus, V0, ref, pv, pq, baseMVA, mpopt);
                         [Ybus, Yf, Yt] = getYbus(branch); %To update the results in branch to Ybus
                     else    %% default - power, polar
