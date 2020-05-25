@@ -1,5 +1,5 @@
-function [h, dh] = opf_branch_flow_fcn_aab(x, mpc, il, mpopt)
-%OPF_BRANCH_FLOW_FCN_AAB  Evaluates AC/DC branch flow constraints and Jacobian.
+function [h, dh] = opf_branch_flow_fcn_fubm(x, mpc, il, mpopt)
+%OPF_BRANCH_FLOW_FCN_FUBM  Evaluates AC/DC branch flow constraints and Jacobian.
 %   [H, DH] = OPF_BRANCH_FLOW_FCN_AAB(X, OM, IL, MPOPT)
 %
 %   Branch Flow Limit inequality constraints for AC/DC optimal power flow.

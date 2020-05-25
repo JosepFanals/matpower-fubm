@@ -120,33 +120,42 @@ end
 %% find branches with flow limits
 il = find(branch(:, RATE_A) ~= 0 & branch(:, RATE_A) < 1e10);
 nl2 = length(il);           %% number of constrained lines
+
+%% Identify FUBM formulation
+%the FUBM for DC power flows has not been coded yet
+if (size(branch,2) < ALPH3) 
+    fubm = 0; %Its not a fubm formulation
+else
+    fubm = 1; %Its a fubm formulation
+end
+
 %% identifier of AC/DC grids
 %%AAB--------------------------------------------------------------------- 
-iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
-nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-%%identifier of elements with Vf controlled by Beq
-iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
-if nBeqz
+if fubm
+    iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+    nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
+    %%identifier of elements with Vf controlled by Beq
+    iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
     nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
-else
-    nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
-    
-end
-iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-if nBeqz
+    iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
     nVscL = length(iVscL); %AAB- Number of VSC with power losses
-else
-    nVscL = 0; %AAB- Number of VSC with power losses
-end
-%% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
-nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
-iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
-nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
-iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
-nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
-%%------------------------------------------------------------------------- 
 
+    %% Identify if grid has controls
+    iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+    nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
+    iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
+    nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
+    iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
+    nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+    %%------------------------------------------------------------------------- 
+else
+    nBeqz = 0;
+    nBeqv = 0;
+    nPfsh = 0;
+    nQtma = 0;
+    nVtma = 0;
+    nVscL = 0;
+end
 %%-----  run opf  -----
 [x, f, eflag, output, lambda] = om.solve(opt);
 success = (eflag > 0);

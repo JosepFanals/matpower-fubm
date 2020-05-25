@@ -1,5 +1,5 @@
-function d2G = opf_power_balance_hess_aab(x, lambda, mpc, mpopt)
-%OPF_POWER_BALANCE_HESS_AAB  Evaluates Hessian of power balance constraints.
+function d2G = opf_power_balance_hess_fubm(x, lambda, mpc, mpopt)
+%OPF_POWER_BALANCE_HESS_FUBM  Evaluates Hessian of power balance constraints.
 %   D2G = OPF_POWER_BALANCE_HESS_AAB(X, LAMBDA, OM, MPOPT)
 %
 %   Hessian evaluation function for AC/DC active and reactive power balance
@@ -42,7 +42,7 @@ function d2G = opf_power_balance_hess_aab(x, lambda, mpc, mpopt)
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM-extra fields for FUBM
 %% unpack data
 [baseMVA, bus, gen, branch] = deal(mpc.baseMVA, mpc.bus, mpc.gen, mpc.branch);
 

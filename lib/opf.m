@@ -176,7 +176,7 @@ t0 = tic;       %% start timer
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM-extra fields for FUBM
 [PW_LINEAR, POLYNOMIAL, MODEL, STARTUP, SHUTDOWN, NCOST, COST] = idx_cost;
 
 %% process input arguments
@@ -203,7 +203,7 @@ if mpopt.opf.start == 3
     rpf = runpf(mpc, mpopt_pf);
     if rpf.success
         if mpopt.verbose
-            fprintf('Power flow initialization converged.\n');%AAB- Just a flag for Power flow convergency
+            fprintf('Power flow initialization converged.\n');%Just a flag for Power flow convergency
         end
         mpc = rpf;      %% or should I just copy Va, Vm, Pg, Qg?
     end
@@ -223,14 +223,13 @@ if size(mpc.branch,2) < MU_ANGMAX
   mpc.branch = [ mpc.branch zeros(nl, MU_ANGMAX-size(mpc.branch,2)) ];
 end
 dc  = strcmp(upper(mpopt.model), 'DC');
-%% add FUBM columns to the branch matrix if needed
-if (size(mpc.branch,2) < ALPH3 && ~dc)
-  mpc.branch = [ mpc.branch zeros(nl, ALPH3-size(mpc.branch,2)) ];
-  mpc.branch(:,TAP_MAX)=1;
-  mpc.branch(:,TAP_MIN)=1;
-  mpc.branch(:,K2)=1;
-  mpc.branch(:,SH_MIN)=-360;
-  mpc.branch(:,SH_MAX)= 360;
+
+%% Identify FUBM formulation
+%the FUBM for DC power flows has not been coded yet
+if (size(mpc.branch,2) < ALPH3 && ~dc ) 
+    fubm = 0; %Its not a fubm formulation
+else
+    fubm = 1; %Its a fubm formulation
 end
 
 %% -----  convert to internal numbering, remove out-of-service stuff  -----

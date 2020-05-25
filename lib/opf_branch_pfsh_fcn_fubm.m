@@ -1,5 +1,5 @@
-function [g, dg] = opf_branch_pfsh_fcn_aab(x, mpc, iPfsh, mpopt)
-%OPF_BRANCH_PFSH_FCN_AAB  Evaluates Pf control constraints and Jacobian for elements with active power "from" control using Theta_sh
+function [g, dg] = opf_branch_pfsh_fcn_fubm(x, mpc, iPfsh, mpopt)
+%OPF_BRANCH_PFSH_FCN_fubm  Evaluates Pf control constraints and Jacobian for elements with active power "from" control using Theta_sh
 %   [G, DG] = OPF_BRANCH_FLOW_FCN_AAB(X, OM, IL, MPOPT)
 %
 %   Element Active Power "from" Control equality constraints for Pf = Pf_set.

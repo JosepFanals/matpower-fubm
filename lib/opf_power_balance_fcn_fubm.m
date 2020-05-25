@@ -1,5 +1,5 @@
-function [g, dg] = opf_power_balance_fcn_aab(x, mpc, mpopt)
-%OPF_POWER_BALANCE_FCN_AAB  Evaluates AC/DC power balance constraints and their gradients.
+function [g, dg] = opf_power_balance_fcn_fubm(x, mpc, mpopt)
+%OPF_POWER_BALANCE_FCN_FUBM  Evaluates AC/DC power balance constraints and their gradients.
 %   [G, DG] = OPF_POWER_BALANCE_FCN_AAB(X, OM, MPOPT)
 %
 %   Computes the Ybus and then computes the active and reactive power balance

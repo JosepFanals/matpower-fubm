@@ -1,30 +1,30 @@
-function [g, dg] = opf_branch_zero_fcn_aab(x, mpc, iBeqz, mpopt)
-%OPF_BRANCH_ZERO_FCN_AAB  Evaluates AC/DC branch zero constraints and Jacobian for VSC
-%   [G, DG] = OPF_BRANCH_FLOW_FCN_AAB(X, OM, IL, MPOPT)
+function [g, dg] = opf_branch_qtma_fcn_fubm(x, mpc, iQtma, mpopt)
+%OPF_BRANCH_QTMA_FCN_FUBM  Evaluates Qt control constraints and Jacobian for elements with reactive power "to" control using ma
+%   [G, DG] = OPF_BRANCH_QTMA_FCN_AAB(X, MPC, IQTMA, MPOPT)
 %
-%   Branch Zero Q flow equality constraints for AC/DC optimal power flow.
+%   Element reactive power "to" control equality constraints for Qt = Qt_set.
 %   Computes constraint vectors and their gradients.
 %
 %   Inputs:
 %     X     : optimization vector
 %     MPC   : MATPOWER case struct
-%     IBEQ  : vector of branch indices corresponding to branches with
-%             VSC for "Qf=0" Reactive power control to the DC side.
+%     IQTMA : vector of branch indices corresponding to elements with
+%             reactive power control "Qt = Qt_set".
 %     MPOPT : MATPOWER options struct
 %
 %   Outputs:
-%     G  : vector of equality constraint values (Qf, for all iBeq) 
-%          where the flow will be the reactive power seen from "from" side
-%          The constraint is expressed as (Qf-ZERO, or  Qf = 0).
+%     G  : vector of equality constraint values (Pf, for all iPfsh) 
+%          where the flow will be the active power seen from "from" side
+%          The constraint is expressed as (Pf-Pf_set = 0).
 %          So far only coded in polar coordinates
 %     DG : (optional) equality constraint gradients, column j is
 %          gradient of G(j)
 %
 %   Examples:
-%       g = opf_branch_zero_fcn_aab(x, mpc, iBeq, mpopt);
-%       [g, dg] = opf_branch_zero_fcn_aab(x, mpc, iBeq, mpopt);
+%       g = opf_branch_qtma_fcn_aab(x, mpc, iQtma, mpopt);
+%       [g, dg] = opf_branch_qtma_fcn_aab(x, mpc, iQtma, mpopt);
 %
-%   See also OPF_BRANCH_FLOW_FCN, OPF_BRANCH_FLOW_FCN_AAB, OPF_BRANCH_ZERO_HESS_AAB, .
+%   See also OPF_BRANCH_FLOW_FCN, OPF_BRANCH_FLOW_FCN_AAB, OPF_BRANCH_ZERO_FCN_AAB, OPF_BRANCH_PFSH_FCN_AAB.
                                            
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is a modification of MATPOWER code to include
@@ -53,36 +53,28 @@ function [g, dg] = opf_branch_zero_fcn_aab(x, mpc, iBeqz, mpopt)
 
 %% identifier of AC/DC grids
 %%AAB---------------------------------------------------------------------- 
+iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 %%identifier of elements with Vf controlled by Beq
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
-if nBeqz
-    nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
-else
-    nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
-end
-iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-if nBeqz
-    nVscL = length(iVscL); %AAB- Number of VSC with power losses
-else
-    nVscL = 0; %AAB- Number of VSC with power losses
-end
-%% Identify if elements for zero constraint control have other controls
+nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
+
+%% Identify if grid has controls
 iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift    
-iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+%%------------------------------------------------------------------------- 
 
 %% Reconstruction of V
 if mpopt.opf.v_cartesian
-    error('opf_branch_zero_fcn_aab: FUBM formulation with voltages in cartesian coordinates has not been coded yet.')
+    error('opf_branch_pfsh_fcn_aab: FUBM formulation with voltages in cartesian coordinates has not been coded yet.')
     %[Vr, Vi, Pg, Qg] = deal(x{:}); %AAB-This is not ready for FUBM
     %V = Vr + 1j * Vi;           %% reconstruct V
 else %AAB- Polar variables
     %%AAB------------------------------------------------------------------
-    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, 3); %AAB- Deals optimisation variables
+    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, 4); %AAB- Deals optimisation variables
     V = Vm .* exp(1j * Va);     %% reconstruct V
     %%---------------------------------------------------------------------
 end
@@ -91,6 +83,9 @@ end
 %%update mpc.branch with FUBM from x
 if nBeqz % AC/DC Formulation
     branch(iBeqz,BEQ)=Beqz; %AAB- Update the data from Beqz to the branch matrix
+    if nBeqv
+        branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqv to the branch matrix  
+    end
 end
 if nPfsh
     branch(iPfsh,SHIFT) = ShAng*180/pi;  %AAB- Update the data from Theta_shift to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
@@ -98,8 +93,11 @@ end
 if nQtma
     branch(iQtma,TAP) = maQt;  %AAB- Update the data from ma/tap to the branch matrix.
 end
-if nVtma
-    branch(iVtma,TAP) = maVt;  %AAB- Update the data from ma/tap to the branch matrix.
+iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
+if nBeqz
+    nVscL = length(iVscL); %AAB- Number of VSC with power losses
+else
+    nVscL = 0; %AAB- Number of VSC with power losses
 end
 %% Calculation of admittance matrices
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
@@ -113,44 +111,45 @@ if nVscL
     branch(iVscL,GSW) = PLoss_IEC./(abs(V(brf(iVscL))).^2);    %%AAB- VSC Gsw Update
     [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables
 end
+Yf=Yf(iQtma,:); %AAB- Use only the branches within the index iPfsh
+Yt=Yt(iQtma,:); %AAB- Use only the branches within the index iPfsh
+
 %% problem dimensions
 nb = length(V);         %% number of buses
 
 %% ----- evaluate constraints -----
-if nBeqz > 0 %AAB- If there are branches with power flow limits
-    %% compute branch reactive power flows of the zero constrained branches
-    Qf = imag(V(branch(iBeqz, F_BUS)) .* conj(Yf(iBeqz,:) * V));  %% reactive power injected at "from" bus (p.u.)
-    %Qt = imag(V(branch(iBeq, T_BUS)) .* conj(Yt * V));  %% reactive power injected at "to" bus (p.u.)
-    g = [Qf];    %% branch reactive power for "zero constraint" (from bus)
-        %Qt];    %% branch reactive power for "zero constraint" (to   bus)
+if nQtma > 0 %AAB- If there are Qt control elements
+    %% compute branch active power flows of the controlled elements
+    Qt = imag(V(branch(iQtma, T_BUS)) .* conj(Yt * V));  %% reactive power injected at "to" bus (p.u.)
+    Qtset = branch(iQtma, QT)./ mpc.baseMVA; %Setting for active power control in [pu]
+    g = [Qt - Qtset];    %% branch reactive power for Power control (Qt -  Qt_set = 0) (to bus)
 else
     g = zeros(0,1);
 end
 
 %%----- evaluate partials of constraints -----
 if nargout > 1
-    if nBeqz > 0
-        %% compute partials of Flows w.r.t. V and Beq
-        [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch(iBeqz,:), Yf(iBeqz,:), Yt(iBeqz,:), V, mpopt.opf.v_cartesian); %AAB-Obtains the derivatives of the Sf and St w.r.t V   - Yf and Yt are constant here.
-        [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch(iBeqz,:), V, 1, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq - V remains constant here because Beq is the only variable
-        %[dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch(iBeqz,:), V, 2, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq - V remains constant here because Beq is the only variable 
-        [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch, V, 1, mpopt.opf.v_cartesian); %% w.r.t. Theta_sh               %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_sh - V remains constant here because Theta_sh is the only variable 
-        [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch, V, 2, mpopt.opf.v_cartesian); %% w.r.t. ma/tap                 %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma       is the only variable 
-        [dSf_dVtma, dSt_dVtma] = dSbr_dma(branch, V, 4, mpopt.opf.v_cartesian); %% w.r.t. ma/tap                 %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma       is the only variable 
-       
-        %% Selecting imaginary part, Qf = imag(Sf)
-        dQf_dV1  = imag(dSf_dV1);
-        dQf_dV2  = imag(dSf_dV2);
-        dQf_dBeqz = imag(dSf_dBeqz);
-        dQf_dPfsh = imag(dSf_dPfsh(iBeqz,:));
-        dQf_dQtma = imag(dSf_dQtma(iBeqz,:));
-        dQf_dVtma = imag(dSf_dVtma(iBeqz,:));
+    if nQtma > 0
+        %% compute partials of Flows w.r.t. V, Beq, Theta Shift and ma
+        [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch(iQtma,:), Yf, Yt, V, mpopt.opf.v_cartesian);    %AAB-Obtains the derivatives of the Sf and St w.r.t V   - Yf and Yt are constant here.
+        [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, mpopt.opf.v_cartesian); %% w.r.t. Beqz              %AAB-Obtains the derivatives of the Sf and St w.r.t Beq - V remains constant here because Beq is the only variable
+        [dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch, V, 2, mpopt.opf.v_cartesian); %% w.r.t. Beqv              %AAB-Obtains the derivatives of the Sf and St w.r.t Beq - V remains constant here because Beq is the only variable
+        [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch, V, 1, mpopt.opf.v_cartesian); %% w.r.t. Theta_sh           %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_sh - V remains constant here because Theta_sh is the only variable 
+        [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch(iQtma,:), V, 2, mpopt.opf.v_cartesian); %% w.r.t. ma        %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma/tap   is the only variable
+        %[dSf_dVtma, dSt_dVtma] = dSbr_dma(branch(iQtma,:), V, 4, mpopt.opf.v_cartesian); %% w.r.t. ma        %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma/tap   is the only variable
+
+        %% Selecting imaginary part, Qt = imag(St)
+        dQt_dV1  = imag(dSt_dV1);
+        dQt_dV2  = imag(dSt_dV2);
+        dQt_dBeqz = imag(dSt_dBeqz(iQtma,:));
+        dQt_dBeqv = imag(dSt_dBeqv(iQtma,:));
+        dQt_dPfsh = imag(dSt_dPfsh(iQtma,:));
+        dQt_dQtma = imag(dSt_dQtma);
         
-        %% construct Jacobian of "from" and "to" branch flow ineq constraints
-        dg = [ dQf_dV1 dQf_dV2 dQf_dBeqz dQf_dPfsh, dQf_dQtma, dQf_dVtma];                  %% "from" flow limit
+        %% construct Jacobian of "to" branch flow inequality constraints
+        dg = [ dQt_dV1 dQt_dV2 dQt_dBeqz dQt_dBeqv dQt_dPfsh dQt_dQtma];   %% "from" flow limit
 
     else
-
-        dg = sparse(0, 2*nb+nBeqz+nPfsh+nQtma+nVtma);%<<AAB- No Zero Constrained lines Including FUBM- Original: dh = sparse(0, 2*nb);
+        dg = sparse(0, 2*nb+nBeqz+nBeqv+nPfsh+nQtma);%<<AAB- No Zero Constrained lines Including FUBM- Original: dh = sparse(0, 2*nb);
     end
 end

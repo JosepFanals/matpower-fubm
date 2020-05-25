@@ -1,25 +1,25 @@
-function d2G = opf_branch_qtma_hess_aab(x, lambda, mpc, iQtma, mpopt)
-%OPF_BRANCH_QTMA_HESS_AAB  Evaluates Hessian of branch Qt control constraints for elements with reactive power "to" control.
-%   D2G = OPF_BRANCH_QTMA_HESS_AAB(X, LAMBDA, MPC, IQTMA, MPOPT)
+function d2G = opf_branch_pfsh_hess_fubm(x, lambda, mpc, iPfsh, mpopt)
+%OPF_BRANCH_PFSH_HESS_FUBM  Evaluates Hessian of branch Pf control constraints for elements with active power "from" control.
+%   D2G = OPF_BRANCH_PFSH_HESS_AAB(X, LAMBDA, OM, IBEQZ, MPOPT)
 %
-%   Hessian evaluation function for elements with Qt control (Qt - Qtset = 0).
+%   Hessian evaluation function for elements with Pf control (Pf - Pfset = 0).
 %
 %   Inputs:
 %     X      : optimization vector
 %     LAMBDA : column vector of Kuhn-Tucker multipliers on constrained
-%              branch reactive power Qt_set
+%              branch active power Pf_set
 %     MPC    : MATPOWER case struct
-%     IQTMA : vector of branch indices corresponding to elements with
-%             Active power control "Qt = Qt_set".
+%     IPFSH : vector of branch indices corresponding to elements with
+%             Active power control "Pf = Pf_set".
 %     MPOPT  : MATPOWER options struct
 %
 %   Outputs:
-%     D2G : Hessian of Qt control constraints.
+%     D2G : Hessian of Pf control constraints.
 %
 %   Example:
-%       d2G = opf_branch_qtma_hess_aab(x, lambda, mpc, iQtma, mpopt);
+%       d2G = opf_branch_pfsh_hess_aab(x, lambda, mpc, iPfsh, mpopt);
 %
-%   See also OPF_BRANCH_ZERO_HESS, OPF_BRANCH_FLOW_HESS_AAB, OPF_BRANCH_FLOW_HESS, OPF_BRANCH_PFSH_HESS_AAB.
+%   See also OPF_BRANCH_ZERO_HESS, OPF_BRANCH_FLOW_HESS_AAB, OPF_BRANCH_FLOW_HESS.
                                            
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is a modification of MATPOWER code to include
@@ -54,8 +54,8 @@ iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
+iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
@@ -68,7 +68,7 @@ if mpopt.opf.v_cartesian
     %V = Vr + 1j * Vi;           %% reconstruct V
 else %AAB- Polar variables
     %%AAB------------------------------------------------------------------
-    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, 4); %AAB- Deals optimisation variables
+    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, 2); %AAB- Deals optimisation variables
     V = Vm .* exp(1j * Va);     %% reconstruct V
     %%---------------------------------------------------------------------
 end
@@ -85,6 +85,9 @@ if nPfsh
 end
 if nQtma
     branch(iQtma,TAP) = maQt;  %AAB- Update the data from ma/tap to the branch matrix.
+end
+if nVtma
+    branch(iVtma,TAP) = maVt;  %AAB- Update the data from ma/tap to the branch matrix.
 end
 iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
 if nBeqz
@@ -103,7 +106,7 @@ if nVscL
     branch(iVscL,GSW) = PLoss_IEC./(abs(V(brf(iVscL))).^2);    %%AAB- VSC Gsw Update
     [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables
 end
-Yt=Yt(iQtma,:);
+Yf=Yf(iPfsh,:);
 
 %% problem dimensions
 nb = length(V);           %% number of buses
@@ -114,43 +117,44 @@ nl = length(branch(:,1)); %% number of lines
 %%on cases with all lines unconstrained)
 nmu = length(lambda);
 if nmu
-    muT = lambda(1:nmu);
+    muF = lambda(1:nmu);
 else    %% keep dimensions of empty matrices/vectors compatible
-    muT = zeros(0,1);   %% required to avoid problems when using Knitro
+    muF = zeros(0,1);   %% required to avoid problems when using Knitro
 end
-muTaux=sparse(zeros(nl,1)); %% This aux is to select all only the branches that have the Qtma constraint.
-muTaux(iQtma)=muT; %% Fill in the location of the constraint the values of mu
+muFaux=sparse(zeros(nl,1)); %% This aux is to select all only the branches that have the Pfsh constraint.
+muFaux(iPfsh)=muF; %% Fill in the location of the constraint the values of mu
 
-    t = branch(iQtma, T_BUS);    %% list of "to" buses
-    Ct = sparse(1:nQtma, t, ones(nQtma, 1), nQtma, nb);   %% connection matrix for line & to buses
-    d2St_dV2 = @(V, mu)d2Sbr_dV2(Ct, Yt, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. V of St 
-    d2St_dBeqz2 = @(V, mu)d2St_dxBeqz2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Beq of St 
-    d2St_dBeqv2 = @(V, mu)d2St_dxBeqv2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Beq of St 
-    d2St_dsh2 = @(V, mu)d2St_dxsh2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_sh of St 
-    d2St_dqtma2 = @(V, mu)d2St_dxqtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. ma       of St 
-    %d2St_dvtma2 = @(V, mu)d2St_dxvtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. ma       of St 
+    f = branch(iPfsh, F_BUS);    %% list of "from" buses
+    Cf = sparse(1:nPfsh, f, ones(nPfsh, 1), nPfsh, nb);   %% connection matrix for line & from buses
+    d2Sf_dV2 = @(V, mu)d2Sbr_dV2(Cf, Yf, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. V of Sf 
+    d2Sf_dBeqz2 = @(V, mu)d2Sf_dxBeqz2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Beq of Sf 
+    d2Sf_dBeqv2 = @(V, mu)d2Sf_dxBeqv2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Beq of Sf 
+    d2Sf_dsh2 = @(V, mu)d2Sf_dxsh2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_sh of Sf 
+    d2Sf_dqtma2 = @(V, mu)d2Sf_dxqtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. qtma of Sf 
+    d2Sf_dvtma2 = @(V, mu)d2Sf_dxvtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. vtma of Sf 
 
-    [Gt11, Gt12, Gt21, Gt22] = d2St_dV2(V, muT);
-    [Gt11, Gt12, Gt21, Gt22] = deal(imag(Gt11), imag(Gt12), imag(Gt21), imag(Gt22));
-    [Gt13, Gt23, Gt31, Gt32, Gt33] = d2St_dBeqz2(V,muTaux);
-    [Gt13, Gt23, Gt31, Gt32, Gt33] = deal(imag(Gt13), imag(Gt23), imag(Gt31), imag(Gt32), imag(Gt33));
-    [Gt14, Gt24, Gt34, Gt41, Gt42, Gt43, Gt44] = d2St_dBeqv2(V,muTaux);
-    [Gt14, Gt24, Gt34, Gt41, Gt42, Gt43, Gt44] = deal(imag(Gt14), imag(Gt24), imag(Gt34), imag(Gt41), imag(Gt42), imag(Gt43), imag(Gt44));
-    [Gt15, Gt25, Gt35, Gt45, Gt51, Gt52, Gt53, Gt54, Gt55] = d2St_dsh2(V,muTaux);
-    [Gt15, Gt25, Gt35, Gt45, Gt51, Gt52, Gt53, Gt54, Gt55] = deal(imag(Gt15), imag(Gt25), imag(Gt35), imag(Gt45), imag(Gt51), imag(Gt52), imag(Gt53), imag(Gt54), imag(Gt55));
-    [Gt16, Gt26, Gt36, Gt46, Gt56, Gt61, Gt62, Gt63, Gt64, Gt65, Gt66] = d2St_dqtma2(V,muTaux);
-    [Gt16, Gt26, Gt36, Gt46, Gt56, Gt61, Gt62, Gt63, Gt64, Gt65, Gt66] = deal(imag(Gt16), imag(Gt26), imag(Gt36), imag(Gt46), imag(Gt56), imag(Gt61), imag(Gt62), imag(Gt63), imag(Gt64), imag(Gt65), imag(Gt66));
-    %[Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = d2St_dvtma2(V,muTaux);
-    %[Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = deal(imag(Gt17), imag(Gt27), imag(Gt37), imag(Gt47), imag(Gt57), imag(Gt67), imag(Gt71), imag(Gt72), imag(Gt73), imag(Gt74), imag(Gt75), imag(Gt76), imag(Gt77));
+    [Gf11, Gf12, Gf21, Gf22] = d2Sf_dV2(V, muF);
+    [Gf11, Gf12, Gf21, Gf22] = deal(real(Gf11), real(Gf12), real(Gf21), real(Gf22));
+    [Gf13, Gf23, Gf31, Gf32, Gf33] = d2Sf_dBeqz2(V,muFaux);
+    [Gf13, Gf23, Gf31, Gf32, Gf33] = deal(real(Gf13), real(Gf23), real(Gf31), real(Gf32), real(Gf33));
+    [Gf14, Gf24, Gf34, Gf41, Gf42, Gf43, Gf44] = d2Sf_dBeqv2(V,muFaux);
+    [Gf14, Gf24, Gf34, Gf41, Gf42, Gf43, Gf44] = deal(real(Gf14), real(Gf24), real(Gf34), real(Gf41), real(Gf42), real(Gf43), real(Gf44));
+    [Gf15, Gf25, Gf35, Gf45, Gf51, Gf52, Gf53, Gf54, Gf55] = d2Sf_dsh2(V,muFaux);
+    [Gf15, Gf25, Gf35, Gf45, Gf51, Gf52, Gf53, Gf54, Gf55] = deal(real(Gf15), real(Gf25), real(Gf35), real(Gf45), real(Gf51), real(Gf52), real(Gf53), real(Gf54), real(Gf55));
+    [Gf16, Gf26, Gf36, Gf46, Gf56, Gf61, Gf62, Gf63, Gf64, Gf65, Gf66] = d2Sf_dqtma2(V,muFaux);
+    [Gf16, Gf26, Gf36, Gf46, Gf56, Gf61, Gf62, Gf63, Gf64, Gf65, Gf66] = deal(real(Gf16), real(Gf26), real(Gf36), real(Gf46), real(Gf56), real(Gf61), real(Gf62), real(Gf63), real(Gf64), real(Gf65), real(Gf66));
+    [Gf17, Gf27, Gf37, Gf47, Gf57, Gf67, Gf71, Gf72, Gf73, Gf74, Gf75, Gf76, Gf77] = d2Sf_dvtma2(V,muFaux);
+    [Gf17, Gf27, Gf37, Gf47, Gf57, Gf67, Gf71, Gf72, Gf73, Gf74, Gf75, Gf76, Gf77] = deal(real(Gf17), real(Gf27), real(Gf37), real(Gf47), real(Gf57), real(Gf67), real(Gf71), real(Gf72), real(Gf73), real(Gf74), real(Gf75), real(Gf76), real(Gf77));
     
     %% construct Hessian
-      %Va    Vm    Beqz  Beqv  ShAng Qtma
-d2G = [Gt11  Gt12  Gt13  Gt14  Gt15  Gt16;  
-       Gt21  Gt22  Gt23  Gt24  Gt25  Gt26;
-       Gt31  Gt32  Gt33  Gt34  Gt35  Gt36;
-       Gt41  Gt42  Gt43  Gt44  Gt45  Gt46;
-       Gt51  Gt52  Gt53  Gt54  Gt55  Gt56;
-       Gt61  Gt62  Gt63  Gt64  Gt65  Gt66];%AAB Reactive Flow Qt Constraint Hessian including FUBM
+      %Va    Vm    Beqz  Beqv  ShAng Qtma  Vtma
+d2G = [Gf11  Gf12  Gf13  Gf14  Gf15  Gf16  Gf17;  
+       Gf21  Gf22  Gf23  Gf24  Gf25  Gf26  Gf27;
+       Gf31  Gf32  Gf33  Gf34  Gf35  Gf36  Gf37;
+       Gf41  Gf42  Gf43  Gf44  Gf45  Gf46  Gf47;
+       Gf51  Gf52  Gf53  Gf54  Gf55  Gf56  Gf57;
+       Gf61  Gf62  Gf63  Gf64  Gf65  Gf66  Gf67;
+       Gf71  Gf72  Gf73  Gf74  Gf75  Gf76  Gf77];%AAB Active Flow Pf constraint Hessian including FUBM
 
 
 

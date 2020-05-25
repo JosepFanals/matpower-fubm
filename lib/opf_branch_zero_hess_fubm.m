@@ -1,5 +1,5 @@
-function d2G = opf_branch_zero_hess_aab(x, lambda, mpc, iBeqz, mpopt)
-%OPF_BRANCH_ZERO_HESS_AAB  Evaluates Hessian of branch Qf zero constraints for VSC.
+function d2G = opf_branch_zero_hess_fubm(x, lambda, mpc, iBeqz, mpopt)
+%OPF_BRANCH_ZERO_HESS_FUBM  Evaluates Hessian of branch Qf zero constraints for VSC.
 %   D2G = OPF_BRANCH_ZERO_HESS_AAB(X, LAMBDA, OM, IBEQZ, MPOPT)
 %
 %   Hessian evaluation function for AC/DC branch Qf zero constraints for VSC.

@@ -1,5 +1,5 @@
-function d2H = opf_branch_flow_hess_aab(x, lambda, mpc, il, mpopt)
-%OPF_BRANCH_FLOW_HESS_AAB  Evaluates Hessian of branch flow constraints.
+function d2H = opf_branch_flow_hess_fubm(x, lambda, mpc, il, mpopt)
+%OPF_BRANCH_FLOW_HESS_FUBM  Evaluates Hessian of branch flow constraints.
 %   D2H = OPF_BRANCH_FLOW_HESS_AAB(X, LAMBDA, OM, IL, MPOPT)
 %
 %   Hessian evaluation function for AC/DC branch flow constraints.

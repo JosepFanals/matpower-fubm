@@ -115,7 +115,7 @@ end
 
 %% Identify FUBM formulation
 %the FUBM for DC power flows has not been coded yet
-if (size(mpc.branch,2) < ALPH3 && ~dc ) 
+if (size(mpc.branch,2) < ALPH3 || dc ) 
     fubm = 0; %Its not a fubm formulation
 else
     fubm = 1; %Its a fubm formulation
