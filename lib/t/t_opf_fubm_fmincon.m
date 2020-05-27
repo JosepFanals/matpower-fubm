@@ -1,5 +1,5 @@
-function t_opf_fubm_knitro(quiet)
-%T_OPF_FUBM_KNITRO  Tests for optimal power flow using FUBM formulation KNITRO.
+function t_opf_fubm_fmincon(quiet)
+%T_OPF_FUBM_FMINCON  Tests for FMINCON-based optimal power flow.
 
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is based and created for MATPOWER
@@ -47,18 +47,24 @@ else
     verbose = 0;
 end
 
-%solver options
-mpopt = mpoption('opf.violation', 1e-9);
-mpopt = mpoption(mpopt, 'out.all', 0, 'verbose', verbose, 'opf.ac.solver', 'KNITRO');
-mpopt = mpoption(mpopt, 'knitro.tol_x', 1e-10, 'knitro.tol_f', 1e-4);
+mpopt = mpoption('opf.violation', 1e-6);
+mpopt = mpoption(mpopt, 'out.all', 0, 'verbose', verbose, 'opf.ac.solver', 'FMINCON');
+mpopt = mpoption(mpopt, 'fmincon.tol_x', 1e-7, 'fmincon.tol_f', 1e-9);
+
+%% use active-set method for MATLAB 7.6-7.9 (R2008a-R2009b)
+vstr = have_fcn('matlab', 'vstr');
+if strcmp(vstr, '7.6') || strcmp(vstr, '7.7') || ...
+        strcmp(vstr, '7.8') || strcmp(vstr, '7.9')
+    mpopt = mpoption(mpopt, 'fmincon.alg', 1);
+end
 
 for k = 1:length(options)
     if options{k}{1}, bal = 'I';  else, bal = 'S'; end  %% nodal balance
     if options{k}{2}, crd = 'c';  else, crd = 'p'; end  %% V coordinates
-    t0 = sprintf('Knitro OPF (%s,%s) : ', bal, crd);
+    t0 = sprintf('fmincon OPF (%s,%s) : ', bal, crd);
 
-    if ~have_fcn('knitro')
-        t_skip(num_tests, 'Artelys Knitro not available');
+    if ~have_fcn('fmincon')
+        t_skip(num_tests, 'fmincon not available');
         continue;
     end
 
@@ -79,12 +85,11 @@ for k = 1:length(options)
     ibr_angmu   = [MU_ANGMIN MU_ANGMAX];
     ibr_beq     = [BEQ];
     ibr_gsw     = [GSW];
-
     %% get solved ACDC OPF case from MAT-file
     load soln57-14MTDC_ctrls_fubm_opf;     %% defines bus_soln, gen_soln, branch_soln, f_soln
 
-    %% run OPF Knitro
-    for s = 0:3 %start type
+    %% run OPF
+    for s = 0:3
         mpopt = mpoption(mpopt, 'opf.start', s);
         t = sprintf('%s(start=%d): ', t0, s);
         [baseMVA, bus, gen, gencost, branch, f, success, et] = runopf(casefile, mpopt);
@@ -105,10 +110,6 @@ for k = 1:length(options)
     end
     mpopt = mpoption(mpopt, 'opf.start', 0);    %% set 'opf.start' back to default
 
-end
-
-if have_fcn('octave')
-    warning(s1.state, file_in_path_warn_id);
 end
 
 t_end;

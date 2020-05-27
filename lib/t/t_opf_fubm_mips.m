@@ -1,5 +1,5 @@
-function t_opf_fubm_knitro(quiet)
-%T_OPF_FUBM_KNITRO  Tests for optimal power flow using FUBM formulation KNITRO.
+function t_opf_fubm_mips(quiet)
+%T_OPF_FUBM_MIPS  Tests for MIPS-based ACDC optimal power flow using FUBM formulation.
 
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is based and created for MATPOWER
@@ -19,9 +19,9 @@ if nargin < 1
     quiet = 0;
 end
 
-%% current mismatch, cartesian V
+%% current mismatch, cartesian V, step-control, linsolver
 options = {
-    {0, 0},
+    {0, 0, 0, '\'      },
 };
 
 num_tests = 56;
@@ -46,24 +46,37 @@ if quiet
 else
     verbose = 0;
 end
+if have_fcn('octave')
+    if have_fcn('octave', 'vnum') >= 4
+        file_in_path_warn_id = 'Octave:data-file-in-path';
+    else
+        file_in_path_warn_id = 'Octave:load-file-in-path';
+    end
+    s1 = warning('query', file_in_path_warn_id);
+    warning('off', file_in_path_warn_id);
+end
 
 %solver options
-mpopt = mpoption('opf.violation', 1e-9);
-mpopt = mpoption(mpopt, 'out.all', 0, 'verbose', verbose, 'opf.ac.solver', 'KNITRO');
-mpopt = mpoption(mpopt, 'knitro.tol_x', 1e-10, 'knitro.tol_f', 1e-4);
+mpopt = mpoption('opf.violation', 1e-6);
+mpopt = mpoption(mpopt, 'out.all', 0, 'verbose', verbose, 'opf.ac.solver', 'MIPS');
+mpopt = mpoption(mpopt, 'mips.gradtol', 1e-8, ...
+    'mips.comptol', 1e-8, 'mips.costtol', 1e-9);
 
 for k = 1:length(options)
     if options{k}{1}, bal = 'I';  else, bal = 'S'; end  %% nodal balance
     if options{k}{2}, crd = 'c';  else, crd = 'p'; end  %% V coordinates
-    t0 = sprintf('Knitro OPF (%s,%s) : ', bal, crd);
+    if options{k}{3}, sc = '-sc'; else, sc  = '';  end  %% step control
+    t0 = sprintf('MIPS%s (%s,%s,%s) : ', sc, bal, crd, options{k}{4});
 
-    if ~have_fcn('knitro')
-        t_skip(num_tests, 'Artelys Knitro not available');
+    if strcmp(options{k}{4}, 'PARDISO') && ~have_fcn('pardiso')
+        t_skip(num_tests, [t0 'PARDISO not available']);
         continue;
     end
 
     mpopt = mpoption(mpopt, 'opf.current_balance',  options{k}{1}, ...
-                            'opf.v_cartesian',      options{k}{2} );
+                            'opf.v_cartesian',      options{k}{2}, ...
+                            'mips.step_control',    options{k}{3}, ...
+                            'mips.linsolver',       options{k}{4} );
 
     %% set up indices
     ib_data     = [1:BUS_AREA BASE_KV:VMIN];
@@ -79,12 +92,11 @@ for k = 1:length(options)
     ibr_angmu   = [MU_ANGMIN MU_ANGMAX];
     ibr_beq     = [BEQ];
     ibr_gsw     = [GSW];
-
     %% get solved ACDC OPF case from MAT-file
     load soln57-14MTDC_ctrls_fubm_opf;     %% defines bus_soln, gen_soln, branch_soln, f_soln
 
-    %% run OPF Knitro
-    for s = 0:3 %start type
+    %% run OPF
+    for s = 0:3
         mpopt = mpoption(mpopt, 'opf.start', s);
         t = sprintf('%s(start=%d): ', t0, s);
         [baseMVA, bus, gen, gencost, branch, f, success, et] = runopf(casefile, mpopt);
@@ -104,7 +116,6 @@ for k = 1:length(options)
         t_is(branch(:,ibr_gsw   ), branch_soln(:,ibr_gsw   ),  3, [t 'branch Gsw']);
     end
     mpopt = mpoption(mpopt, 'opf.start', 0);    %% set 'opf.start' back to default
-
 end
 
 if have_fcn('octave')

@@ -1,4 +1,4 @@
-function [results, iBeqz, iBeqv] = sim_fubm
+function [results] = sim_fubm
 %% SIM_FUBM Quick Simulation of some cases for the FUBM 
 clear all;
 clc; 
@@ -14,7 +14,7 @@ mpopt = mpoption(mpopt, 'verbose', 2);
 %[results] = runopf('fubm_caseHVDC_vt',mpopt);
 %[results] = runopf('fubm_case_57_14_2MTDC_ctrls',mpopt);
 %[results] = runopf('fubm_case_30_2MTDC_ctrls_vt1_pf',mpopt);
-[results] = runopf('fubm_case_30_2MTDC_ctrls_vt2_pf',mpopt);
+%[results] = runopf('fubm_case_30_2MTDC_ctrls_vt2_pf',mpopt);
 
 %Constants
 [F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
