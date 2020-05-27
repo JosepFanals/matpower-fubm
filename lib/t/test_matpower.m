@@ -71,6 +71,7 @@ tests{end+1} = 't_hasPQcap';
 
 tests{end+1} = 't_pf_ac';
 tests{end+1} = 't_pf_dc';
+tests{end+1} = 't_pf_acdc_fubm';
 tests{end+1} = 't_pf_radial';
 tests{end+1} = 't_cpf';
 tests{end+1} = 't_islands';
@@ -79,11 +80,13 @@ tests{end+1} = 't_opf_model_legacy';
 tests{end+1} = 't_opf_default';
 if have_fcn('fmincon')
     tests{end+1} = 't_opf_fmincon';
+    tests{end+1} = 't_opf_fubm_fmincon';
 end
 if have_fcn('minopf')
     tests{end+1} = 't_opf_minopf';
 end
 tests{end+1} = 't_opf_mips';
+tests{end+1} = 't_opf_fubm_mips';
 if have_fcn('pdipmopf')
     tests{end+1} = 't_opf_tspopf_pdipm';
 end
@@ -95,9 +98,11 @@ if have_fcn('tralmopf')
 end
 if have_fcn('ipopt')
     tests{end+1} = 't_opf_ipopt';
+    tests{end+1} = 't_opf_fubm_ipopt';
 end
 if have_fcn('knitro')
     tests{end+1} = 't_opf_knitro';
+    tests{end+1} = 't_opf_fubm_knitro';
 end
 tests{end+1} = 't_opf_dc_default';
 if have_fcn('bpmpd')
