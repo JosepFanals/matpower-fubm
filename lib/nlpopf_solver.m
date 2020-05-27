@@ -176,35 +176,27 @@ Pg = x(vv.i1.Pg:vv.iN.Pg);
 Qg = x(vv.i1.Qg:vv.iN.Qg);
 
 %AAB-----------------------------------------------------------------------
-if nBeqz %%update mpc.branch with FUBM from x
-    Beqz = x(vv.i1.Beqz:vv.iN.Beqz);
-    branch(iBeqz,BEQ)=Beqz; %AAB- Update the data from Beqz to the branch matrix
-    disp('Beqz')
-    disp(Beqz)
-end
-if nBeqv %%update mpc.branch with FUBM from x
-    Beqv = x(vv.i1.Beqv:vv.iN.Beqv);
-    branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqz to the branch matrix
-    disp('Beqv')
-    disp(Beqv)
-end
-if nPfsh %%update mpc.branch with FUBM from x
-    ShAng = x(vv.i1.ShAng:vv.iN.ShAng);
-    branch(iPfsh,SHIFT)=ShAng*180/pi; %AAB- Update the data from Theta_sh to the branch matrix (the updated value is changed from radians to degrees)
-    disp('ShAng')
-    disp(ShAng)
-end
-if nQtma %%update mpc.branch with FUBM from x
-    maQt = x(vv.i1.maQt:vv.iN.maQt);
-    branch(iQtma,TAP)=maQt; %AAB- Update the data from ma/tap to the branch matrix 
-    disp('maQt')
-    disp(maQt)
-end
-if nVtma %%update mpc.branch with FUBM from x
-    maVt = x(vv.i1.maVt:vv.iN.maVt);
-    branch(iVtma,TAP)=maVt; %AAB- Update the data from ma/tap to the branch matrix 
-    disp('maVt')
-    disp(maVt)
+if fubm
+    if nBeqz %%update mpc.branch with FUBM from x
+        Beqz = x(vv.i1.Beqz:vv.iN.Beqz);
+        branch(iBeqz,BEQ)=Beqz; %AAB- Update the data from Beqz to the branch matrix
+    end
+    if nBeqv %%update mpc.branch with FUBM from x
+        Beqv = x(vv.i1.Beqv:vv.iN.Beqv);
+        branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqz to the branch matrix
+    end
+    if nPfsh %%update mpc.branch with FUBM from x
+        ShAng = x(vv.i1.ShAng:vv.iN.ShAng);
+        branch(iPfsh,SHIFT)=ShAng*180/pi; %AAB- Update the data from Theta_sh to the branch matrix (the updated value is changed from radians to degrees)
+    end
+    if nQtma %%update mpc.branch with FUBM from x
+        maQt = x(vv.i1.maQt:vv.iN.maQt);
+        branch(iQtma,TAP)=maQt; %AAB- Update the data from ma/tap to the branch matrix 
+    end
+    if nVtma %%update mpc.branch with FUBM from x
+        maVt = x(vv.i1.maVt:vv.iN.maVt);
+        branch(iVtma,TAP)=maVt; %AAB- Update the data from ma/tap to the branch matrix 
+    end
 end
 
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
