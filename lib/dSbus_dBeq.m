@@ -115,7 +115,7 @@ nb = length(V);             %% number of buses
 nl = size(branch, 1);       %% number of lines
 nBeqx = length(iBeqx);      %% AAB- Number of VSC with active Beq
 
-[stat, Cf, Ct, k2, tap] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
+[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 if vcart
     error('dSbus_dBeq: Derivatives of Power balance equations w.r.t Beq in cartasian has not been coded yet')    

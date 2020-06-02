@@ -120,7 +120,7 @@ nb = length(V);             %% number of buses
 nl = size(branch, 1);       %% number of lines
 nPxsh = length(iPxsh);      %% AAB- Number of elements with active power flow controlled by theta_sh  
 
-[stat, Cf, Ct, k2, tap, Ys] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
+[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 if vcart
     error('dSbus_dsh: Derivatives of Power balance equations w.r.t Theta_shift in cartasian have not been coded yet')    
