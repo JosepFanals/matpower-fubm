@@ -61,17 +61,10 @@ iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch lo
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 %%identifier of elements with Vf controlled by Beq
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
-if nBeqz
-    nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
-else
-    nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
-end
+nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-if nBeqz
-    nVscL = length(iVscL); %AAB- Number of VSC with power losses
-else
-    nVscL = 0; %AAB- Number of VSC with power losses
-end
+nVscL = length(iVscL); %AAB- Number of VSC with power losses
+
 %% Identify if grid has controls
 iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
@@ -97,9 +90,9 @@ end
 %%update mpc.branch with FUBM from x
 if nBeqz % AC/DC Formulation
     branch(iBeqz,BEQ)=Beqz; %AAB- Update the data from Beqz to the branch matrix
-    if nBeqv
-        branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqv to the branch matrix  
-    end
+end
+if nBeqv
+    branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqv to the branch matrix  
 end
 if nPfsh
     branch(iPfsh,SHIFT) = ShAng*180/pi;  %AAB- Update the data from Theta_shift to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).

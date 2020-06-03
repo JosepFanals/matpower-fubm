@@ -105,13 +105,7 @@ end
 if vsc == 1 %VSC I
     iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
 elseif vsc ==2 %VSC II
-    %iBeqz = find (branch(:,CONV) == 1   & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
-    %nBeqz = length(iBeqz); %AAB- Identifier if there case is an AC/DC grid
-    %if nBeqz
-        iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1 &  branch(:, VF_SET)~=0) ; %AAB- Find branch locations of VSC size[nBeqv,1]
-    %else
-    %    error('dSbr_dBeq: There must be an AC/DC grid in order to use VSC Vf control')
-    %end
+    iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1 &  branch(:, VF_SET)~=0) ; %AAB- Find branch locations of VSC size[nBeqv,1]
 else
     error('dSbr_dBeq: VSC can only be type 1 or 2')    
 end  

@@ -83,9 +83,9 @@ end
 %%update mpc.branch with FUBM from x
 if nBeqz % AC/DC Formulation
     branch(iBeqz,BEQ)=Beqz; %AAB- Update the data from Beqz to the branch matrix
-    if nBeqv
-        branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqv to the branch matrix  
-    end
+end
+if nBeqv
+    branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqv to the branch matrix  
 end
 if nPfsh
     branch(iPfsh,SHIFT) = ShAng*180/pi;  %AAB- Update the data from Theta_shift to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
