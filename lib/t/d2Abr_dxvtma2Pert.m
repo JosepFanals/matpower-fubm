@@ -68,9 +68,9 @@ function [num_Hf17, num_Hf27, num_Hf37, num_Hf47, num_Hf57, num_Hf67, num_Hf71, 
                                            
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is based and created for MATPOWER
-%   This is part of the Flexible Universal Branch Model (FUBM) for Matpower
-%   For more info about the model, email: 
-%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+%   This is part of the Flexible Universal Branch Model (FUBM) for MATPOWER
+%   For more info about the model, email:
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk
 
 %   MATPOWER
 %   Copyright (c) 2008-2018, Power Systems Engineering Research Center (PSERC)

@@ -62,9 +62,9 @@ function [dAf_dPxsh, dAt_dPxsh] = ...
                                             
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is based and created for MATPOWER
-%   This is part of the Flexible Universal Branch Model (FUBM) for Matpower
-%   For more info about the model, email: 
-%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+%   This is part of the Flexible Universal Branch Model (FUBM) for MATPOWER
+%   For more info about the model, email:
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk
 
 %   MATPOWER
 %   Copyright (c) 1996-2018, Power Systems Engineering Research Center (PSERC)

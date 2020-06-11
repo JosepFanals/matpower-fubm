@@ -70,9 +70,9 @@ function [H16, H26, H36, H46, H56, H61, H62, H63, H64, H65, H66] = d2Abr_dxqtma2
                                            
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is based and created for MATPOWER
-%   This is part of the Flexible Universal Branch Model (FUBM) for Matpower
-%   For more info about the model, email: 
-%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+%   This is part of the Flexible Universal Branch Model (FUBM) for MATPOWER
+%   For more info about the model, email:
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk
 
 %   MATPOWER
 %   Copyright (c) 2008-2018, Power Systems Engineering Research Center (PSERC)

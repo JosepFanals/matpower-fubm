@@ -45,9 +45,9 @@ function [H13, H23, H31, H32, H33] = d2Sf_dxBeqz2(branch, V, mu, vcart)
                                           
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is a modification of MATPOWER code to include
-%   The Flexible Universal Branch Model (FUBM) for Matpower
-%   For more info about the model, email: 
-%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+%   The Flexible Universal Branch Model (FUBM) for MATPOWER
+%   For more info about the model, email:
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk
 
 %   MATPOWER
 %   Copyright (c) 2008-2018, Power Systems Engineering Research Center (PSERC)

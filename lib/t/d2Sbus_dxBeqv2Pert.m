@@ -47,9 +47,9 @@ function [num_G16, num_G26, num_G56, num_G61, num_G62, num_G65, num_G66] = d2Sbu
                                            
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is based and created for MATPOWER
-%   This is part of the Flexible Universal Branch Model (FUBM) for Matpower
-%   For more info about the model, email: 
-%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+%   This is part of the Flexible Universal Branch Model (FUBM) for MATPOWER
+%   For more info about the model, email:
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk
 
 
 %   MATPOWER

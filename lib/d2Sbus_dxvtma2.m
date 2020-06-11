@@ -55,9 +55,9 @@ function [G19, G29, G59, G69, G79, G89, G91, G92, G95, G96, G97, G98, G99] = d2S
                                            
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is based and created for MATPOWER
-%   This is part of the Flexible Universal Branch Model (FUBM) for Matpower
-%   For more info about the model, email: 
-%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+%   This is part of the Flexible Universal Branch Model (FUBM) for MATPOWER
+%   For more info about the model, email:
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk
 
 
 %   MATPOWER

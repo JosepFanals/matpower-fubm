@@ -28,9 +28,9 @@ function [g, dg] = opf_branch_zero_fcn_fubm(x, mpc, iBeqz, mpopt)
                                            
 %   ABRAHAM ALVAREZ BUSTOS
 %   This code is a modification of MATPOWER code to include
-%   The Flexible Universal Branch Model (FUBM) for Matpower
-%   For more info about the model, email: 
-%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk 
+%   The Flexible Universal Branch Model (FUBM) for MATPOWER
+%   For more info about the model, email:
+%   snoop_and@hotmail.com, abraham.alvarez-bustos@durham.ac.uk
 
 %   MATPOWER
 %   Copyright (c) 1996-2018, Power Systems Engineering Research Center (PSERC)
