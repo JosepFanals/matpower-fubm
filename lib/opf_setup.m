@@ -38,7 +38,7 @@ vcart = ~dc && mpopt.opf.v_cartesian;
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<FUBM-extra fields for FUBM
 [PW_LINEAR, POLYNOMIAL, MODEL, STARTUP, SHUTDOWN, NCOST, COST] = idx_cost;
 
 %% define flag to indicate whether we are tied to legacy formulation
@@ -87,7 +87,7 @@ end
 
 %% Identify FUBM formulation
 %the FUBM for DC power flows has not been coded yet
-if (size(mpc.branch,2) < ALPH3 || dc ) 
+if (size(mpc.branch,2) < KDP || dc ) 
     fubm = 0; %Its not a fubm formulation
 else
     fubm = 1; %Its a fubm formulation
@@ -97,20 +97,23 @@ if dc
   if fubm
     %% Identify if grid is AC/DC or has controls
     %%FUBM--------------------------------------------------------------------
-    iBeqz = find (mpc.branch(:,CONV)==1 & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-    nBeqz = length(iBeqz); %FUBM- Number of VSC with active Zero Constraint control
-    iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360)); %FUBM- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
-    nPfsh = length(iPfsh); %FUBM- Number of elements with active Pf controlled by Theta_shift
+    iBeqz = find ( (mpc.branch(:,CONV)==1 | mpc.branch(:,CONV)==3) & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+    nBeqz = length(iBeqz); %FUBM- Number of VSCs with active Zero Constraint control
+    iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360) & (mpc.branch(:, CONV)~=3) & (mpc.branch(:, CONV)~=4)); %FUBM- Find branch locations with Pf controlled by Theta_shift [nPfsh,1] (Converters and Phase Shifter Transformers, but no VSCIII)
+    nPfsh = length(iPfsh); %FUBM- Number of elements with active Pf controlled by Theta_shift (Converters and Phase Shifter Transformers, but no VSCIII)
     iQtma = find (mpc.branch(:,QT)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) ); %FUBM- Find branch locations with Qt controlled by ma/tap [nQtma,1]
     nQtma = length(iQtma); %FUBM- Number of elements with active Qt controlled by ma/tap
     iVtma = find (mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & mpc.branch(:, VT_SET)~=0 ); %FUBM- Find branch locations with Vt controlled by ma/tap [nVtma,1]
     nVtma = length(iVtma); %FUBM- Number of elements with active Vt controlled by ma/tap
+    iPfdp = find( (mpc.branch(:,VF_SET)~=0) & (mpc.branch(:,KDP)~=0) & (mpc.branch(:, BR_STATUS)~=0) & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360) & (mpc.branch(:, CONV)==3 | mpc.branch(:, CONV)==4) ); %FUBM- Find branch locations of the branch elements with Pf-Vdc Droop Control [nPfdp,1] (VSCIII)
+    nPfdp = length(iPfdp); %FUBM- Number of VSC with Voltage Droop Control by theta_shift
   else %%no fubm extra columns
       nBeqz=0;
       nBeqv=0;
       nPfsh=0; 
       nQtma=0; 
       nVtma=0;
+      nPfdp=0;
   end
   if fubm
       error('opf_setup: DC opf for AC/DC grids or grids with controls have not been coded yet');
@@ -145,18 +148,20 @@ else    %% AC or AC/DC
   if fubm 
     %% Identify if grid is AC/DC
     %%FUBM--------------------------------------------------------------------
-    iBeqz = find (mpc.branch(:,CONV)==1 & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+    iBeqz = find ( (mpc.branch(:,CONV)==1 | mpc.branch(:,CONV)==3) & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1] (VSCI and VSCIIIz)
     nBeqz = length(iBeqz); %FUBM- Number of VSC with active Zero Constraint control
     iBeqv = find (mpc.branch(:,CONV)==2 & mpc.branch(:, BR_STATUS)==1 & mpc.branch(:,VF_SET)~=0); %FUBM- Find branch locations of VSC for Vf Constraint control size[nBeqv,1]
     nBeqv = length(iBeqv); %FUBM- Number of VSC with active Vf control
     %% Identify if grid has controls
-    iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360)); %FUBM- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
-    nPfsh = length(iPfsh); %FUBM- Number of elements with active Pf controlled by Theta_shift
+    iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360) & (mpc.branch(:, CONV)~=3) & (mpc.branch(:, CONV)~=4)); %FUBM- Find branch locations with Pf controlled by Theta_shift [nPfsh,1] (Converters and Phase Shifter Transformers, but no VSCIII)
+    nPfsh = length(iPfsh); %FUBM- Number of elements with active Pf controlled by Theta_shift (Converters and Phase Shifter Transformers, but no VSCIII)
     iQtma = find (mpc.branch(:,QT)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & mpc.branch(:, VT_SET)==0 ); %FUBM- Find branch locations with Qt controlled by ma/tap [nQtma,1]
     nQtma = length(iQtma); %FUBM- Number of elements with active Qt controlled by ma/tap
     iVtma = find (mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & mpc.branch(:, VT_SET)~=0 ); %FUBM- Find branch locations with Vt controlled by ma/tap [nVtma,1]
     nVtma = length(iVtma); %FUBM- Number of elements with active Vt controlled by ma/tap
-
+    iPfdp = find( (mpc.branch(:,VF_SET)~=0) & (mpc.branch(:,KDP)~=0) & (mpc.branch(:, BR_STATUS)~=0) & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360) & (mpc.branch(:, CONV)==3 | mpc.branch(:, CONV)==4) ); %FUBM- Find branch locations of the branch elements with Pf-Vdc Droop Control [nPfdp,1] (VSCIII)
+    nPfdp = length(iPfdp); %FUBM- Number of VSC with Voltage Droop Control by theta_shift    
+    
     %% Solver check for FUBM
       alg = upper(mpopt.opf.ac.solver);  %FUBM- Type of algorithm
       switch alg
@@ -169,6 +174,7 @@ else    %% AC or AC/DC
     nPfsh = 0;
     nQtma = 0;
     nVtma = 0;
+    nPfdp = 0;
   end
   %------------------------------------------------------------------------
   %% Voltage Control with VSC and ma/tap
@@ -399,7 +405,7 @@ else                %% AC model
   end
   if nPfsh %FUBM-If there is any Pf controlled by Theta_shifter
       ShAng  = branch(iPfsh,SHIFT) * (pi/180); %FUBM-Initial condition [rad]
-      [ShAngmin, ShAngmax]  = ShBounds(branch,iPfsh,nPfsh); %Obtains the Beq boundaries for the Pf control constraint
+      [ShAngmin, ShAngmax]  = ShBounds(branch,iPfsh,nPfsh); %Obtains the Theta_sh boundaries for the Pf control constraint
   end
   if nQtma %FUBM-If there is any Qt controlled by ma/tap
       maQt  = branch(iQtma,TAP); %FUBM-Initial condition [pu]
@@ -408,6 +414,10 @@ else                %% AC model
   if nVtma %FUBM-If there is any Vt controlled by ma/tap
       maVt  = branch(iVtma,TAP); %FUBM-Initial condition [pu]
       [Vtmamin, Vtmamax]  = maBounds(branch,iVtma,nVtma); %Obtains the ma boundaries for the Vt control constraint
+  end
+  if nPfdp %FUBM-If there is any Pf-Vf Voltage Droop controlled by Theta_shifter
+      ShAngDp  = branch(iPfdp,SHIFT) * (pi/180); %FUBM-Initial condition [rad]
+      [ShAngDpmin, ShAngDpmax]  = ShBounds(branch,iPfdp,nPfdp); %Obtains the Theta_sh boundaries for the Pf-Vf Voltage Droop control constraint
   end
   %%-----------------------------------------------------------------------
 
@@ -435,6 +445,7 @@ else                %% AC model
       zero_lim_vars = flow_lim_vars;
       pfsh_lim_vars = flow_lim_vars;
       qtma_lim_vars = flow_lim_vars;
+      pfdp_lim_vars = flow_lim_vars;
       if nBeqz
           user_vars{end+1} = 'Beqz'; %FUBM- Adds the Beq variable at the end
           nodal_balance_vars{end+1} = 'Beqz'; %FUBM- Adds the Beq variable at the end because Ybus depends on Beq and Ybus is used in the power balance equations
@@ -467,6 +478,15 @@ else                %% AC model
           flow_lim_vars{end+1} = 'maVt'; %FUBM- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
           zero_lim_vars{end+1} = 'maVt'; %FUBM- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
           pfsh_lim_vars{end+1} = 'maVt';  %FUBM- ShAng it's included  
+      end
+      if nPfdp
+          user_vars{end+1} = 'ShAngDp'; %FUBM- Adds the Theta_shift Droop variable at the end
+          nodal_balance_vars{end+1} = 'ShAngDp'; %FUBM- Adds the Theta_shift Droop variable at the end because Ybus depends on Theta_shift and Ybus is used in the power balance equations
+          flow_lim_vars{end+1} = 'ShAngDp'; %FUBM- Adds the Theta_shift Droop variable at the end. Theta_shift will be changing to control the active power in the branch, therefore affecting the branch flow
+          zero_lim_vars{end+1} = 'ShAngDp'; %FUBM- Adds the Theta_shift Droop variable at the end. Theta_shift will be changing to control the active power in the branch, therefore affecting the branch flow
+          pfsh_lim_vars{end+1} = 'ShAngDp'; %FUBM- ShAng it's included
+          qtma_lim_vars{end+1} = 'ShAngDp'; %FUBM- ma/tap it's included
+          pfdp_lim_vars = flow_lim_vars;  %FUBM- ShAngDp it's included Droop Control 
       end
       %%-------------------------------------------------------------------
   end
@@ -516,6 +536,10 @@ else                %% AC model
       fcn_qtma = @(x)opf_branch_qtma_fcn_fubm(x, mpc, iQtma, mpopt); %FUBM- Creating an annonymus function of the reactive power "to" controlled by ma/tap constraint, where Yf and Yt are calculated inside
       hess_qtma = @(x, lam)opf_branch_qtma_hess_fubm(x, lam, mpc, iQtma, mpopt); %FUBM- Creating an annonymus function of the hessian for the reactive power "to" controlled by ma/tap constraint, where Yf and Yt are calculated inside
   end 
+  if nPfdp %FUBM- FUBM Formulation for branch active power control Pf-Vf Droop Control "from" bus constraints with Theta_sh (Pf = Pf_set and Vmf = Vf_set for the Droop Ramp Pf - Pfset = Kdp*(Vmf - Vmfset))
+      fcn_pfdp = @(x)opf_branch_pfdp_fcn_fubm(x, mpc, iPfdp, mpopt); %FUBM- Creating an annonymus function of the active power "from" Droop controlled by Theta_sh constraint, where Yf and Yt are calculated inside
+      hess_pfdp = @(x, lam)opf_branch_pfdp_hess_fubm(x, lam, mpc, iPfdp, mpopt); %FUBM- Creating an annonymus function of the hessian for the active power "from" Droop controlled by Theta_sh constraint, where Yf and Yt are calculated inside
+  end
   %------------------------------------------------------------------------
   if vcart
     fcn_vref = @(x)opf_vref_fcn(x, mpc, refs, mpopt);
@@ -559,7 +583,7 @@ if any(gencost(:, MODEL) ~= POLYNOMIAL & gencost(:, MODEL) ~= PW_LINEAR)
 end
 
 %% more problem dimensions
-nx    = nb+nv + ng+nq + nBeqz+nBeqv + nPfsh + nQtma+nVtma;  %% number of standard OPF control variables, plus the FUBM variables.
+nx    = nb+nv + ng+nq + nBeqz+nBeqv + nPfsh + nQtma+nVtma +nPfdp;  %% number of standard OPF control variables, plus the FUBM variables.
 if nlin
   nz = size(mpc.A, 2) - nx; %% number of user z variables
   if nz < 0
@@ -629,6 +653,9 @@ else % AC or AC/DC Formulation
   if nVtma
       om.add_var('maVt', nVtma, maVt, Vtmamin, Vtmamax); %FUBM- Adds ma/tap as an optimisation variable to the "om"
   end
+  if nPfdp
+      om.add_var('ShAngDp', nPfdp, ShAngDp, ShAngDpmin, ShAngDpmax); %FUBM- Adds Theta_shift Droop as an optimisation variable to the "om"
+  end
   %------------------------------------------------------------------------ 
   %% nonlinear constraints
   om.add_nln_constraint(mis_cons, [nb;nb], 1, fcn_mis, hess_mis, nodal_balance_vars);
@@ -657,6 +684,13 @@ else % AC or AC/DC Formulation
           error('opf_setup: Legacy formulation for systems modeled with FUBM is not coded yet.');
       else %<-----FUBM-other solver- OFSBSR 
           om.add_nln_constraint({'misQtma'}, nQtma, 1, fcn_qtma, hess_qtma, qtma_lim_vars); %FUBM- Adds the nonlinear constraint of the reactive power control equations, Qt-Qt_set = 0, (Name, size, (equality 'nle' 1 or inequality 'nli' 0), function/gradient, Hessian, Variables)
+      end 
+  end
+  if nPfdp 
+      if legacy_formulation %FUBM- Only for: MINOPF, PDIPM, TRALM, SDPOPF
+          error('opf_setup: Legacy formulation for systems modeled with FUBM is not coded yet.');
+      else %<-----FUBM-other solver- OFSBSR 
+          om.add_nln_constraint({'misPfdp'}, nPfdp, 1, fcn_pfdp, hess_pfdp, pfdp_lim_vars); %FUBM- Adds the nonlinear constraint of the active power control equations, Pf = Pf_set and Vmf = Vf_set for the Droop Ramp Pf - Pfset = Kdp*(Vmf - Vmfset), (Name, size, (equality 'nle' 1 or inequality 'nli' 0), function/gradient, Hessian, Variables)
       end 
   end
   %------------------------------------------------------------------------  

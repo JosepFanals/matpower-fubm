@@ -176,7 +176,7 @@ t0 = tic;       %% start timer
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<FUBM-extra fields for FUBM
 [PW_LINEAR, POLYNOMIAL, MODEL, STARTUP, SHUTDOWN, NCOST, COST] = idx_cost;
 
 %% process input arguments
@@ -226,7 +226,7 @@ dc  = strcmp(upper(mpopt.model), 'DC');
 
 %% Identify FUBM formulation
 %the FUBM for DC power flows has not been coded yet
-if (size(mpc.branch,2) < ALPH3 && ~dc ) 
+if (size(mpc.branch,2) < KDP && ~dc ) 
     fubm = 0; %Its not a fubm formulation
 else
     fubm = 1; %Its a fubm formulation
