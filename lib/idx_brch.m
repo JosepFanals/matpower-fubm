@@ -2,7 +2,7 @@ function [F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch
 %IDX_BRCH   Defines constants for named column indices to branch matrix.
 %   Example:
 %
@@ -68,6 +68,7 @@ function [F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, ...
 %    34 ALPH1       Alpha constant 1 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
 %    34 ALPH2       Alpha constant 2 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
 %    34 ALPH3       Alpha constant 3 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
+%    37 KDP         Constant for VSC Droop Control  (p.u.)   (   Pf - Pfset = Kdp*(Vf - Vfset)  )
 
 %   See also DEFINE_CONSTANTS.
 
@@ -128,3 +129,4 @@ GSW         = 33;   %% Initial condition for VSC Power Loss (p.u.) (Ploss = Gsw.
 ALPH1       = 34;   %% Alpha constant 1 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
 ALPH2       = 35;   %% Alpha constant 2 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
 ALPH3       = 36;   %% Alpha constant 3 for VSC Power Loss (Ploss = ALPH3*It^2 + ALPH2*It + ALPH1)
+KDP         = 37;   %% Constant for VSC Droop Control (p.u.)     (   Pf - Pfset = Kdp*(Vf - Vfset)  ) 
