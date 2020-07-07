@@ -82,7 +82,7 @@ function [MVAbase, bus, gen, branch, success, et] = ...
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM -extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<FUBM -extra fields for FUBM
 [GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN, ...
     MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PC1, PC2, QC1MIN, QC1MAX, ...
     QC2MIN, QC2MAX, RAMP_AGC, RAMP_10, RAMP_30, RAMP_Q, APF] = idx_gen;
@@ -115,7 +115,7 @@ end
 
 %% Identify FUBM formulation
 %the FUBM for DC power flows has not been coded yet
-if (size(mpc.branch,2) < ALPH3 || dc ) 
+if (size(mpc.branch,2) < KDP || dc ) 
     fubm = 0; %Its not a fubm formulation
 else
     fubm = 1; %Its a fubm formulation
@@ -143,19 +143,21 @@ if ~isempty(mpc.bus)
     if fubm
         %% Identify if the grid is AC/DC or has Controls
         %%FUBM-----------------------------------------------------------------
-        iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-        nBeqz = length(iBeqz); %FUBM- Number of VSC with active Zero Constraint control
-        iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1  & branch(:,VF_SET)~=0); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-        nBeqv = length(iBeqv); %FUBM- Number of VSC with active Zero Constraint control
-        iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %FUBM- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
-        nPfsh = length(iPfsh); %FUBM- Number of elements with active Pf controlled by Theta_shift
+        iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSCI and VSCIII for Zero Constraint control size[nBeqz,1]
+        nBeqz = length(iBeqz); %FUBM- Number of VSCI and VSCIII with active Zero Constraint control
+        iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1  & branch(:,VF_SET)~=0); %FUBM- Find branch locations of VSCII for Voltage DC Fixed Control size[nBeqv,1]
+        nBeqv = length(iBeqv); %FUBM- Number of VSCII with active Voltage DC Fixed Control
+        iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & branch(:, CONV)~=3 & branch(:, CONV)~=4 ); %FUBM- Find branch locations with Pf controlled by Theta_shift [nPfsh,1] and that they are not VSCII
+        nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift (but not controlled with Voltage Droop Control)
         iQtma = find (branch(:,QT)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %FUBM- Find branch locations with Qt controlled by ma [nQtma,1]
         nQtma = length(iQtma); %FUBM- Number of elements with active Qt controlled by ma
         iVtma = find (branch(:,VT_SET)~=0 & branch(:, BR_STATUS)==1 & (mpc.branch(:, TAP_MIN)~= mpc.branch(:, TAP_MAX))); %FUBM- Find branch locations with Vt controlled by ma [nVtma,1]
         nVtma = length(iVtma); %FUBM- Number of elements with active Vt controlled by ma
         iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %FUBM- Find VSC with active PWM Losses Calculation [nVscL,1]
         nVscL = length(iVscL); %FUBM- Number of VSC with active PWM Losses Calculation   
-
+        iPfdp = find (branch(:,VF_SET)~=0 & branch(:,KDP)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)==3 | branch(:, CONV)==4) ); %AAB- Find branch locations of VSCIII with Pf-Vdc Droop Control [nPfdp,1]
+        nPfdp = length(iPfdp); %AAB- Number of elements with active Pf controlled by Theta_shift (but not controlled with Voltage Droop Control)
+ 
         %Identify elements that control V and their buses
         iVt_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VT_SET)~=0)); %FUBM- Location of all the elements that control Vt with ma
         iVf_ctrl = find((branch(:,BR_STATUS)~=0)&(branch(:,VF_SET)~=0)); %FUBM- Location of all the elements that control Vf with either ma or Beq
@@ -164,10 +166,11 @@ if ~isempty(mpc.bus)
         %%---------------------------------------------------------------------    
     else %DCPF using FUBM has not been coded yet
         nBeqz=0;
+        nBeqv=0;
         nPfsh=0;
         nQtma=0;
         nVtma=0;
-        nBeqv=0;
+        nPfdp=0;
     end
     if dc                               %% DC formulation
         if fubm
@@ -344,7 +347,7 @@ if ~isempty(mpc.bus)
                         switch mpopt.pf.v_cartesian
                             case 0                  %% default - power, polar
                                 %FUBM-------------------------------------------
-                                if (nBeqz || nPfsh || nQtma || nVtma) %FUBM formulation
+                                if fubm %FUBM formulation
                                     newtonpf_fcn = @newtonpf_fubm;
                                 else    %% default - power, polar
                                     newtonpf_fcn = @newtonpf;

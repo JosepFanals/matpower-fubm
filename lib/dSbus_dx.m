@@ -1,9 +1,9 @@
 function [dSbus_dVa, dSbus_dVm, dSbus_dPfsh, dSbus_dQfma, dSbus_dBeqz,...
-    dSbus_dBeqv, dSbus_dVtma, dSbus_dQtma] = dSbus_dx(Ybus, branch, V, vcart)
+    dSbus_dBeqv, dSbus_dVtma, dSbus_dQtma, dSbus_dPfdp] = dSbus_dx(Ybus, branch, V, vcart)
 %%DSBUS_DX  Calls all functions that compute the partial derivatives of power injection w.r.t. x.
 %
 %   [DSBUS_DVA, DSBUS_DVM, DSBUS_DPFSH, DSBUS_DQFMA, DSBUS_DBEQZ,...
-%        DSBUS_DBEQV, DSBUS_DVTMA, DSBUS_DQTMA] = DSBUS_DX(YBUS, BRANCH, V)
+%        DSBUS_DBEQV, DSBUS_DVTMA, DSBUS_DQTMA, DSBUS_DPFDP] = DSBUS_DX(YBUS, BRANCH, V)
 %   Returns sparse matrices containing the partial derivatives w.r.t. x.
 %
 %   where:
@@ -52,7 +52,8 @@ function [dSbus_dVa, dSbus_dVm, dSbus_dPfsh, dSbus_dQfma, dSbus_dBeqz,...
 %% Beq Partials
 [dSbus_dBeqz] = dSbus_dBeq(branch, V, 1, vcart);
 [dSbus_dBeqv] = dSbus_dBeq(branch, V, 2, vcart);
-
+%% Shift Angle Partials for Voltage Droop Control
+[dSbus_dPfdp] = dSbus_dsh(branch, V, 3, vcart);
 
 
 

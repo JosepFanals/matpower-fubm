@@ -54,7 +54,7 @@ if fubm
     %%AAB----------------------------------------------------------------------
     %find elements that Control Vm and their buses
     iVt_ctrl = find((branch(:,BR_STATUS)~=0) & (branch(:,VT_SET)~=0)); %location of the elements that control Vt
-    iVf_ctrl = find((branch(:,BR_STATUS)~=0) & (branch(:,VF_SET)~=0)); %location of the elements that control Vf
+    iVf_ctrl = find((branch(:,BR_STATUS)~=0) & (branch(:,VF_SET)~=0) & ( branch(:, CONV)== 2 | (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) )); %location of the elements that control Vf
     
     Vt_ctrl_bus = branch(iVt_ctrl, T_BUS); %Locate the  "to"  bus of the elements with voltage  "to"  control 
     Vf_ctrl_bus = branch(iVf_ctrl, F_BUS); %Locate the "from" bus of the elements with voltage "from" control

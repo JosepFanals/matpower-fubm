@@ -46,14 +46,14 @@ nl = size(branch, 1);       %% number of lines
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<FUBM-extra fields for FUBM
 
 %% check that bus numbers are equal to indices to bus (one set of bus numbers)
 if any(bus(:, BUS_I) ~= (1:nb)')
     error('makeYbus: buses must be numbered consecutively in bus matrix; use ext2int() to convert to internal ordering')
 end
 %% Identify FUBM formulation
-if (size(branch,2) < ALPH3) 
+if (size(branch,2) < KDP) 
     fubm = 0; %Its not a fubm formulation
 else
     fubm = 1; %Its a fubm formulation

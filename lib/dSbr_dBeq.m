@@ -4,11 +4,11 @@ function [dSf_dBeqx, dSt_dBeqx] = dSbr_dBeq(branch, V, vsc, vcart)
 %   Beq can be used either to control the Vdc to a certain set value Vfset 
 %   or the Qf to match zero (zero constraint). So the derivatives are
 %   separated for each function. The derivatives w.r.t. Beq will be 
-%   chosen for either VSC type 1 or type 2, depending on the 3rd argument.
+%   chosen for either VSCI and VSCIIIz or VSCII, depending on the 3rd argument.
 %   So that:
 %
-%   VSC = 1 : Qf = 0,    Zero constraint
-%   VSC = 2 : Vf = Vset, Vdc control 
+%   VSC = 1 : Qf = 0,    Zero constraint   VSCI and VSCIIIz
+%   VSC = 2 : Vf = Vset, Vdc control       VSCII
 %
 %   The derivatives will be taken with respect to polar or cartesian coordinates
 %   of voltage, depending on the 4th argument. So far only polar
@@ -102,13 +102,13 @@ if nargin < 4
 end
 
 %% selection of VSC
-if vsc == 1 %VSC I
-    iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
+if vsc == 1 %VSC I and VSCIIIz
+    iBeqx = find ( ( branch(:,CONV) == 1 | branch(:,CONV) == 3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
 elseif vsc ==2 %VSC II
     iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1 &  branch(:, VF_SET)~=0) ; %AAB- Find branch locations of VSC size[nBeqv,1]
 else
     error('dSbr_dBeq: VSC can only be type 1 or 2')    
-end  
+end   
 %% constants
 nb = length(V);             %% number of buses
 nl = size(branch, 1);       %% number of lines

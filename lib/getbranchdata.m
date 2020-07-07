@@ -37,7 +37,7 @@ function [stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb)
 nl = size(branch, 1);       %% number of lines
 
 %% Identify FUBM formulation
-if (size(branch,2) < ALPH3) 
+if (size(branch,2) < KDP) 
     fubm = 0; %Its not a fubm formulation
     error('getbranchdata: There is missing data in the branch matrix. FUBM formulation')
 else

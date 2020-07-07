@@ -47,7 +47,7 @@ function [V, branch, converged, i] = newtonpf_fubm(branch, Sbus, getYbus, V0, re
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<FUBM-extra fields for FUBM- Original: idx_brch
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<FUBM-extra fields for FUBM- Original: idx_brch
 
 %% default arguments
 if nargin < 7
@@ -68,7 +68,7 @@ else
     conv_graph = 0; %FUBM- Do not Plot convergence graph option
 end
 %% Identify FUBM formulation
-if (size(branch,2) < ALPH3) 
+if (size(branch,2) < KDP) 
     fubm = 0; %Its not a fubm formulation
     error('newtonpf_fubm: There is missing data in the branch matrix to run Power Flows using FUBM formulation. Add the data or try "newtonpf"')
 else
@@ -79,12 +79,13 @@ end
 %% Identify elements
 %%FUBM----------------------------------------------------------------------
 %%Identify power control elements (Converters and transformers included)
-iBeqz = find( (branch(:,CONV)==1) & (branch(:,BR_STATUS)~=0) ); %FUBM- Location of the branch elements with Qf control by Beq to meet the zero constraint. (Converters type I for zero constraint control) Qf = 0
-iPfsh = find( (branch(:,PF  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, SH_MIN )~=-360 | branch(:, SH_MAX )~=360)); %FUBM- Location of the branch elements with Pf control by theta_shift to meet the setting. (Converters and Phase Shifter Transformers)
-iPtsh = find( (branch(:,PT  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, SH_MIN )~=-360 | branch(:, SH_MAX )~=360)); %FUBM- Location of the branch elements with Pt control by theta_shift to meet the setting. (Converters and Phase Shifter Transformers)
-iQfma = find( (branch(:,QF  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VF_SET)==0 );           %FUBM- Location of the branch elements with Qf control by ma to meet the setting. (Transformers)
-iQtma = find( (branch(:,QT  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 );           %FUBM- Location of the branch elements with Qt control by ma to meet the setting. (Converters and Transformers)
+iBeqz = find( (branch(:,CONV)==1 | branch(:,CONV)==3 ) & (branch(:,BR_STATUS)~=0) ); %FUBM- Location of the branch elements with Qf control by Beq to meet the zero constraint. (Converters type I for zero constraint control) Qf = 0
+iPfsh = find( (branch(:,PF  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, SH_MIN )~=-360 | branch(:, SH_MAX )~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4) ); %FUBM- Location of the branch elements with Pf control by theta_shift to meet the setting. (Converters and Phase Shifter Transformers, but no VSCIII)
+iPtsh = find( (branch(:,PT  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, SH_MIN )~=-360 | branch(:, SH_MAX )~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4) ); %FUBM- Location of the branch elements with Pt control by theta_shift to meet the setting. (Converters and Phase Shifter Transformers, but no VSCIII)
+iQfma = find( (branch(:,QF  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VF_SET)==0 & branch(:,CONV)==0 ); %FUBM- Location of the branch elements with Qf control by ma to meet the setting. (Transformers) avoid all VSC
+iQtma = find( (branch(:,QT  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 & branch(:,QF  )==0 ); %FUBM- Location of the branch elements with Qt control by ma to meet the setting. (Converters and Transformers)           %FUBM- Location of the branch elements with Qt control by ma to meet the setting. (Converters and Transformers)
 iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %FUBM- Find VSC with active PWM Losses Calculation [nVscL,1]
+iPfdp = find( (branch(:,VF_SET)~=0) & (branch(:,KDP)~=0) & (branch(:, BR_STATUS)~=0) & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)==3 | branch(:, CONV)==4) ); %FUBM- Find branch locations of the branch elements with Pf-Vdc Droop Control [nPfdp,1] (VSCIII)
 
 %Identify voltage control elements and their buses (Converters and transformers included)
 iBeqv = find( (branch(:,CONV)==2) & (branch(:,BR_STATUS)~=0) & (branch(:,VF_SET)~=0) ); %FUBM- Location of the branch elements with Vf control by Beq to meet the setting. (Converters type II for Vdc control) Vf = Vfset
@@ -96,6 +97,10 @@ Vtmabus  = branch(iVtma , T_BUS); %FUBM- Saves the "to"   bus identifier for Vt 
 Pfset = branch(:,PF)/baseMVA; %Power constraint for the branch element in p.u.
 Qfset = branch(:,QF)/baseMVA; %Power constraint for the branch element in p.u.
 Qtset = branch(:,QT)/baseMVA; %Power constraint for the branch element in p.u.
+
+%%Save the Voltage-Droop control settings though the branch (   Pf - Pfset = Kdp*(Vmf - Vmfset)  )
+Kdp   = branch(:,KDP   ); %Voltage Droop Slope   setting for the branch element in p.u.
+Vmfset = branch(:,VF_SET); %Voltage Droop Voltage Setting for the branch element in p.u.
 %%-------------------------------------------------------------------------
 
 %% initialize V
@@ -118,6 +123,7 @@ nVtma = length(iVtma); %FUBM- number of Vt controlled elements by ma
 nBeqz = length(iBeqz); %FUBM- number of Qf controlled elements by Beq
 nBeqv = length(iBeqv); %FUBM- number of Vf controlled elements by Beq
 nVscL = length(iVscL); %FUBM- Number of VSC with active PWM Losses Calculation  
+nPfdp = length(iPfdp); %FUBM- Number of VSC with Voltage Droop Control by theta_shift
 
 nVfBeqbus = length(VfBeqbus); %FUBM- number of buses for Vf controlled by Beq 
 nVtmabus  = length(Vtmabus ); %FUBM- number of buses for Vt controlled by ma  
@@ -125,15 +131,16 @@ nVtmabus  = length(Vtmabus ); %FUBM- number of buses for Vt controlled by ma
 
 %% variables dimensions in Jacobian
 %%FUBM----------------------------------------------------------------------
-j1  = 1;          j2   = npv;              %% j1 :j2 - V angle of pv buses (bus)
-j3  = j2  + 1;    j4   = j2  + npq;        %% j3 :j4 - V angle of pq buses (bus)
-j5  = j4  + 1;    j6   = j4  + npq;        %% j5 :j6 - V mag   of pq buses (bus)
-j7  = j6  + 1;    j8   = j6  + nPfsh;      %% j7 :j8 - ShiftAngle of VSC and PST (branch)
+j1  = 1;          j2   = npv;              %% j1 :j2  - V angle of pv buses (bus)
+j3  = j2  + 1;    j4   = j2  + npq;        %% j3 :j4  - V angle of pq buses (bus)
+j5  = j4  + 1;    j6   = j4  + npq;        %% j5 :j6  - V mag   of pq buses (bus)
+j7  = j6  + 1;    j8   = j6  + nPfsh;      %% j7 :j8  - ShiftAngle of VSC and PST (branch)
 j9  = j8  + 1;    j10  = j8  + nQfma;      %% j9 :j10 - ma of Qf Controlled Transformers (branch)
 jA1 = j10 + 1;    jA2  = j10 + nBeqz;      %% j11:j12 - Beq of VSC for Zero Constraint (branch)
 jA3 = jA2 + 1;    jA4  = jA2 + nVfBeqbus;  %% j13:j14 - Beq of VSC for Vdc  Constraint (bus)
 jA5 = jA4 + 1;    jA6  = jA4 + nVtmabus;   %% j15:j16 - ma of VSC and Transformers for Vt Control (bus)
 jA7 = jA6 + 1;    jA8  = jA6 + nQtma;      %% j17:j18 - ma of VSC and Transformers for Qt Control (branch)
+jA9 = jA8 + 1;    jB0  = jA8 + nPfdp;      %% j19:j20 - ShiftAngle of VSC for Qt Control (branch)
 %%-------------------------------------------------------------------------
 
 %% Create addmitance matrix to initialise
@@ -162,6 +169,7 @@ misBeqz = imag(Sf(iBeqz)) - 0;            %FUBM- F5(x0) Qf control mismatch
 misBeqv = imag(mis(VfBeqbus));            %FUBM- F6(x0) Vf control mismatch 
 misVtma = imag(mis(Vtmabus ));            %FUBM- F7(x0) Vt control mismatch 
 misQtma = imag(St(iQtma)) - Qtset(iQtma); %FUBM- F8(x0) Qt control mismatch 
+misPfdp = -real(Sf(iPfdp)) + Pfset(iPfdp) + Kdp(iPfdp).* (  Vm(brf(iPfdp)) - Vmfset(iPfdp) );%FUBM- F9(x0) Pf control mismatch, Droop Pf - Pfset = Kdp*(Vmf - Vmfset)
 %%-------------------------------------------------------------------------
 
 %% Create F vector
@@ -174,6 +182,7 @@ F = [   real(mis([pv; pq])); %FUBM- F1(x0) Power balance mismatch - Va
         misBeqv;             %FUBM- F6(x0) Vf control    mismatch - Beq
         misVtma;             %FUBM- F7(x0) Vt control    mismatch - ma
         misQtma;             %FUBM- F8(x0) Qt control    mismatch - ma
+        misPfdp;             %FUBM- F9(x0) Pf control    mismatch - Theta_shift Droop        
         ];
 %%-------------------------------------------------------------------------    
 
@@ -223,14 +232,18 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     %FUBM-------------------------------------------------------------------
     %F1(x), F2(x), F6(x) and F7(x) Partial derivatives Power Balance w.r.t. x
     [dSbus_dVa, dSbus_dVm, dSbus_dPfsh, dSbus_dQfma,dSbus_dBeqz,...
-        dSbus_dBeqv, dSbus_dVtma, dSbus_dQtma] = dSbus_dx(Ybus, branch, V, 0);
+        dSbus_dBeqv, dSbus_dVtma, dSbus_dQtma, dSbus_dPfdp] = dSbus_dx(Ybus, branch, V, 0);
     [dummy, neg_dSd_dVm] = Sbus(Vm);
     dSbus_dVm = dSbus_dVm - neg_dSd_dVm;
     %F3(x), F4(x), F5(x) and F8(x) Partial derivatives Sf and St w.r.t. x
     [dSf_dVa, dSf_dVm, dSf_dPfsh, dSf_dQfma, dSf_dBeqz,...
-        dSf_dBeqv, dSf_dVtma, dSf_dQtma,...
+        dSf_dBeqv, dSf_dVtma, dSf_dQtma, dSf_dPfdp,...
         dSt_dVa, dSt_dVm, dSt_dPfsh, dSt_dQfma, dSt_dBeqz,...
-        dSt_dBeqv, dSt_dVtma, dSt_dQtma] = dSbr_dx(branch, Yf, Yt, V, 0);
+        dSt_dBeqv, dSt_dVtma, dSt_dQtma, dSt_dPfdp] = dSbr_dx(branch, Yf, Yt, V, 0);
+    %F9(x) Partial derivatives Droop Control w.r.t. x
+    [dPfdp_dVa, dPfdp_dVm, dPfdp_dPfsh, dPfdp_dQfma, dPfdp_dBeqz,...
+        dPfdp_dBeqv, dPfdp_dVtma, dPfdp_dQtma, dPfdp_dPfdp] = dPfdp_dx(branch, Yf, Yt, V, 0);
+       
     %----------------------------------------------------------------------
     
     %% fill Jacobian
@@ -243,6 +256,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     j16 = real(dSbus_dBeqv([pv; pq],:));            %avoid Slack
     j17 = real(dSbus_dVtma([pv; pq],:));            %avoid Slack
     j18 = real(dSbus_dQtma([pv; pq],:));            %avoid Slack
+    j19 = real(dSbus_dPfdp([pv; pq],:));            %avoid Slack
     
     j21 = imag(dSbus_dVa([pq], [pv; pq]));          %avoid Slack and pv
     j22 = imag(dSbus_dVm([pq], pq));                %avoid Slack and pv
@@ -252,6 +266,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     j26 = imag(dSbus_dBeqv([pq],:));                %avoid Slack and pv
     j27 = imag(dSbus_dVtma([pq],:));                %avoid Slack and pv
     j28 = imag(dSbus_dQtma([pq],:));                %avoid Slack and pv
+    j29 = imag(dSbus_dPfdp([pq],:));                %avoid Slack and pv
     
     j31 = real(dSf_dVa(iPfsh,[pv; pq]));            %Only Pf control elements iPfsh
     j32 = real(dSf_dVm(iPfsh,pq));                  %Only Pf control elements iPfsh
@@ -261,6 +276,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     j36 = real(dSf_dBeqv(iPfsh,:));                 %Only Pf control elements iPfsh
     j37 = real(dSf_dVtma(iPfsh,:));                 %Only Pf control elements iPfsh
     j38 = real(dSf_dQtma(iPfsh,:));                 %Only Pf control elements iPfsh
+    j39 = real(dSf_dPfdp(iPfsh,:));                 %Only Pf control elements iPfsh
        
     j41 = imag(dSf_dVa(iQfma,[pv; pq]));            %Only Qf control elements iQfma
     j42 = imag(dSf_dVm(iQfma,pq));                  %Only Qf control elements iQfma
@@ -270,6 +286,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     j46 = imag(dSf_dBeqv(iQfma,:));                 %Only Qf control elements iQfma
     j47 = imag(dSf_dVtma(iQfma,:));                 %Only Qf control elements iQfma
     j48 = imag(dSf_dQtma(iQfma,:));                 %Only Qf control elements iQfma
+    j49 = imag(dSf_dPfdp(iQfma,:));                 %Only Qf control elements iQfma
         
     j51 = imag(dSf_dVa(iBeqz,[pv; pq]));            %Only Qf control elements iQfbeq
     j52 = imag(dSf_dVm(iBeqz,pq));                  %Only Qf control elements iQfbeq
@@ -279,6 +296,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     j56 = imag(dSf_dBeqv(iBeqz,:));                 %Only Qf control elements iQfbeq
     j57 = imag(dSf_dVtma(iBeqz,:));                 %Only Qf control elements iQfbeq
     j58 = imag(dSf_dQtma(iBeqz,:));                 %Only Qf control elements iQfbeq
+    j59 = imag(dSf_dPfdp(iBeqz,:));                 %Only Qf control elements iQfbeq
     
     j61 = imag(dSbus_dVa([VfBeqbus],[pv; pq]));  %Only Vf control elements iVfbeq
     j62 = imag(dSbus_dVm([VfBeqbus],pq));        %Only Vf control elements iVfbeq
@@ -288,6 +306,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     j66 = imag(dSbus_dBeqv([VfBeqbus],:));       %Only Vf control elements iVfbeq 
     j67 = imag(dSbus_dVtma([VfBeqbus],:));       %Only Vf control elements iVfbeq
     j68 = imag(dSbus_dQtma([VfBeqbus],:));       %Only Vf control elements iVfbeq
+    j69 = imag(dSbus_dPfdp([VfBeqbus],:));       %Only Vf control elements iVfbeq
     
     j71 = imag(dSbus_dVa([Vtmabus],[pv; pq]));   %Only Vt control elements iVtma
     j72 = imag(dSbus_dVm([Vtmabus],pq));         %Only Vt control elements iVtma
@@ -297,6 +316,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     j76 = imag(dSbus_dBeqv([Vtmabus],:));        %Only Vt control elements iVtma  
     j77 = imag(dSbus_dVtma([Vtmabus],:));        %Only Vt control elements iVtma
     j78 = imag(dSbus_dQtma([Vtmabus],:));        %Only Vt control elements iVtma
+    j79 = imag(dSbus_dPfdp([Vtmabus],:));        %Only Vt control elements iVtma
     
     j81 = imag(dSt_dVa(iQtma,[pv; pq]));           %Only Qt control elements iQtma
     j82 = imag(dSt_dVm(iQtma,pq));                 %Only Qt control elements iQtma
@@ -306,16 +326,28 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     j86 = imag(dSt_dBeqv(iQtma,:));                %Only Qt control elements iQtma
     j87 = imag(dSt_dVtma(iQtma,:));                %Only Qt control elements iQtma
     j88 = imag(dSt_dQtma(iQtma,:));                %Only Qt control elements iQtma
+    j89 = imag(dSt_dPfdp(iQtma,:));                %Only Qt control elements iQtma
 
+    j91 =      dPfdp_dVa(iPfdp,[pv; pq]);         %Only Droop control elements iPfdp
+    j92 =      dPfdp_dVm(iPfdp,pq);               %Only Droop control elements iPfdp
+    j93 =      dPfdp_dPfsh(iPfdp,:);              %Only Droop control elements iPfdp
+    j94 =      dPfdp_dQfma(iPfdp,:);              %Only Droop control elements iPfdp
+    j95 =      dPfdp_dBeqz(iPfdp,:);              %Only Droop control elements iPfdp
+    j96 =      dPfdp_dBeqv(iPfdp,:);              %Only Droop control elements iPfdp
+    j97 =      dPfdp_dVtma(iPfdp,:);              %Only Droop control elements iPfdp
+    j98 =      dPfdp_dQtma(iPfdp,:);              %Only Droop control elements iPfdp
+    j99 =      dPfdp_dPfdp(iPfdp,:);              %Only Droop control elements iPfdp
+    
     %Jacobian
-    J = [   j11 j12 j13 j14 j15 j16 j17 j18;
-            j21 j22 j23 j24 j25 j26 j27 j28;   
-            j31 j32 j33 j34 j35 j36 j37 j38;
-            j41 j42 j43 j44 j45 j46 j47 j48;
-            j51 j52 j53 j54 j55 j56 j57 j58;
-            j61 j62 j63 j64 j65 j66 j67 j68;
-            j71 j72 j73 j74 j75 j76 j77 j78;
-            j81 j82 j83 j84 j85 j86 j87 j88
+    J = [   j11 j12 j13 j14 j15 j16 j17 j18 j19;
+            j21 j22 j23 j24 j25 j26 j27 j28 j29;   
+            j31 j32 j33 j34 j35 j36 j37 j38 j39;
+            j41 j42 j43 j44 j45 j46 j47 j48 j49;
+            j51 j52 j53 j54 j55 j56 j57 j58 j59;
+            j61 j62 j63 j64 j65 j66 j67 j68 j69;
+            j71 j72 j73 j74 j75 j76 j77 j78 j79;
+            j81 j82 j83 j84 j85 j86 j87 j88 j89;
+            j91 j92 j93 j94 j95 j96 j97 j98 j99;
             ]; %FUBM-Jacobian Matrix
     %%---------------------------------------------------------------------
     %% compute update step
@@ -334,7 +366,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
     V = Vm .* exp(1j * Va); %%FUBM- Reconstruct V
     Vm = abs(V);            %% update Vm and Va again in case
     Va = angle(V);          %% we wrapped around with a negative Vm
-    %Theta_shifter
+    %Theta_shift  PST, VSCI, VSCII
     if nPfsh 
         branch(iPfsh,SHIFT) = branch(iPfsh,SHIFT) + (dx(j7:j8).*(180/pi));
     end
@@ -379,6 +411,10 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
             end
         end
     end
+    %Theta_shift VSCIII Droop Control
+    if nPfdp 
+        branch(iPfdp,SHIFT) = branch(iPfdp,SHIFT) + (dx(jA9:jB0).*(180/pi));
+    end
     %%---------------------------------------------------------------------
     %% recalculate Ybus with updated variables
     %%FUBM------------------------------------------------------------------
@@ -406,6 +442,7 @@ misBeqz = imag(Sf(iBeqz)) - 0;            %FUBM- F5(x0) Qf control mismatch
 misBeqv = imag(mis(VfBeqbus));            %FUBM- F6(x0) Vf control mismatch 
 misVtma = imag(mis(Vtmabus ));            %FUBM- F7(x0) Vt control mismatch 
 misQtma = imag(St(iQtma)) - Qtset(iQtma); %FUBM- F8(x0) Qt control mismatch 
+misPfdp = -real(Sf(iPfdp)) + Pfset(iPfdp) + Kdp(iPfdp).* (  Vm(brf(iPfdp)) - Vmfset(iPfdp) );%FUBM- F9(x0) Pf control mismatch, Droop Pf - Pfset = Kdp*(Vmf - Vmfset)
 %%-------------------------------------------------------------------------
 
 %% Create F vector
@@ -418,6 +455,7 @@ F = [   real(mis([pv; pq])); %FUBM- F1(x0) Power balance mismatch - Va
         misBeqv;             %FUBM- F6(x0) Vf control    mismatch - Beq
         misVtma;             %FUBM- F7(x0) Vt control    mismatch - ma
         misQtma;             %FUBM- F8(x0) Qt control    mismatch - ma
+        misPfdp;             %FUBM- F9(x0) Pf control    mismatch - Theta_shift Droop
         ];
 %%------------------------------------------------------------------------- 
     %% check for convergence
