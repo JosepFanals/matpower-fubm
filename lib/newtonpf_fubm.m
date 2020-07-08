@@ -99,7 +99,7 @@ Qfset = branch(:,QF)/baseMVA; %Power constraint for the branch element in p.u.
 Qtset = branch(:,QT)/baseMVA; %Power constraint for the branch element in p.u.
 
 %%Save the Voltage-Droop control settings though the branch (   Pf - Pfset = Kdp*(Vmf - Vmfset)  )
-Kdp   = branch(:,KDP   ); %Voltage Droop Slope   setting for the branch element in p.u.
+Kdp    = branch(:,KDP   ); %Voltage Droop Slope   setting for the branch element in p.u.
 Vmfset = branch(:,VF_SET); %Voltage Droop Voltage Setting for the branch element in p.u.
 %%-------------------------------------------------------------------------
 
@@ -242,7 +242,7 @@ while (~converged && i < max_it) %Repeat until convergence or the maximum iterat
         dSt_dBeqv, dSt_dVtma, dSt_dQtma, dSt_dPfdp] = dSbr_dx(branch, Yf, Yt, V, 0);
     %F9(x) Partial derivatives Droop Control w.r.t. x
     [dPfdp_dVa, dPfdp_dVm, dPfdp_dPfsh, dPfdp_dQfma, dPfdp_dBeqz,...
-        dPfdp_dBeqv, dPfdp_dVtma, dPfdp_dQtma, dPfdp_dPfdp] = dPfdp_dx(branch, Yf, Yt, V, 0);
+        dPfdp_dBeqv, dPfdp_dVtma, dPfdp_dQtma, dPfdp_dPfdp] = dPfdp_dx(branch, Yf, Yt, V, 1, 0); %The 1 indicates that is for Power Flows and not for OPF
        
     %----------------------------------------------------------------------
     

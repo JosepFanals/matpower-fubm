@@ -1,15 +1,21 @@
 function [dPfdp_dVa, dPfdp_dVm, dPfdp_dPfsh, dPfdp_dQfma, dPfdp_dBeqz,...
-    dPfdp_dBeqv, dPfdp_dVtma, dPfdp_dQtma, dPfdp_dPfdp] = dPfdp_dx(branch, Yf, Yt, V, vcart)
+    dPfdp_dBeqv, dPfdp_dVtma, dPfdp_dQtma, dPfdp_dPfdp] = dPfdp_dx(branch, Yf, Yt, V, flow, vcart)
 %%DPFDP_DX  Calls all functions that compute the partial derivatives of Pf-Vf Droop Control w.r.t. x, eq. Pf - Pfset = Kdp*(Vmf - Vmfset).
 %
 %  [DPFDP_DVA, DPFDP_DVM, DPFDP_DPFSH, DPFDP_DQFMA, DPFDP_DBEQZ,...
-%              DPFDP_DBEQV, DPFDP_DVTMA, DPFDP_DQTMA, DPFDP_DPFDP] = DPFDP_DX(BRANCH, YF, YT, V, VCART)
+%              DPFDP_DBEQV, DPFDP_DVTMA, DPFDP_DQTMA, DPFDP_DPFDP] = DPFDP_DX(BRANCH, YF, YT, V, FLOW, VCART)
 %
 %   Returns sparse matrices containing the partial derivatives w.r.t. x.
 %
 %   where:
 %
 %      x = [Va, Vm, Theta_Shifter, ma, Beq]
+%
+%   FLOW indicates if the derivatives of Beqz will be considered for Power
+%   Flow or for Optimal Power Flow, due to solvability.
+%   
+%       FLOW = 1; Power Flow
+%       FLOW = 3; Optimal Power Flow
 %
 %   The following explains the expressions used to form the matrices:
 %   The Voltage Droop Control equation is given by:
@@ -104,7 +110,7 @@ dVmf_dVm(iPfdp,:)=Cfdp;                                   % Fill derivatives [nl
 [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch, V, 2);
 [dSf_dVtma, dSt_dVtma] = dSbr_dma(branch, V, 4);
 %%Beq Partials
-[dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1);
+[dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, flow);
 [dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch, V, 2);
 %%Shift Angle Partials for Voltage Droop Control
 [dSf_dPfdp, dSt_dPfdp] = dSbr_dsh(branch, V, 3);
