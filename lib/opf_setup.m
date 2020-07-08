@@ -148,7 +148,7 @@ else    %% AC or AC/DC
   if fubm 
     %% Identify if grid is AC/DC
     %%FUBM--------------------------------------------------------------------
-    iBeqz = find ( (mpc.branch(:,CONV)==1 | mpc.branch(:,CONV)==3 | mpc.branch(:,CONV)==4) & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1] (VSCI and VSCIIIz)
+    iBeqz = find ( (mpc.branch(:,CONV)==1 | mpc.branch(:,CONV)==3 | mpc.branch(:,CONV)==4) & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1] (VSCI, VSCIIIz, VSCIII)
     nBeqz = length(iBeqz); %FUBM- Number of VSC with active Zero Constraint control
     iBeqv = find (mpc.branch(:,CONV)==2 & mpc.branch(:, BR_STATUS)==1 & mpc.branch(:,VF_SET)~=0); %FUBM- Find branch locations of VSC for Vf Constraint control size[nBeqv,1]
     nBeqv = length(iBeqv); %FUBM- Number of VSC with active Vf control

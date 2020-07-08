@@ -55,7 +55,6 @@ function [g, dg] = opf_branch_pfsh_fcn_fubm(x, mpc, iPfsh, mpopt)
 %%AAB---------------------------------------------------------------------- 
 iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSCI, VSCIIIz and VSCIII, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-%%identifier of elements with Vf controlled by Beq
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 
@@ -101,7 +100,7 @@ if nVtma
     branch(iVtma,TAP) = maVt;  %AAB- Update the data from ma/tap to the branch matrix.
 end
 if nPfdp
-    branch(iPfdp,SHIFT) = ShAng*180/pi;  %AAB- Update the data from Theta_shift Droop to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
+    branch(iPfdp,SHIFT) = ShAngDp*180/pi;  %AAB- Update the data from Theta_shift Droop to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
 end
 %% Calculation of admittance matrices
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus

@@ -97,7 +97,7 @@ if nVtma
     branch(iVtma,TAP) = maVt;  %AAB- Update the data from ma/tap to the branch matrix.
 end
 if nPfdp
-    branch(iPfdp,SHIFT) = ShAng*180/pi;  %AAB- Update the data from Theta_shift Droop to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
+    branch(iPfdp,SHIFT) = ShAngDp*180/pi;  %AAB- Update the data from Theta_shift Droop to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
 end
 %% Calculation of admittance matrices
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
