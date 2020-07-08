@@ -50,28 +50,36 @@ function [h, dh] = opf_branch_flow_fcn_fubm(x, mpc, il, mpopt)
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 %% unpack data
 lim_type = upper(mpopt.opf.flow_lim(1)); %AAB- Branch flow limit S,P or I
 [baseMVA, bus, branch] = deal(mpc.baseMVA, mpc.bus, mpc.branch);
 
+%% Identify FUBM formulation
+%the FUBM for DC power flows has not been coded yet
+if (size(branch,2) < KDP || dc ) 
+    fubm = 0; %Its not a fubm formulation
+else
+    fubm = 1; %Its a fubm formulation
+end
 %% identifier of AC/DC grids
 %%AAB---------------------------------------------------------------------- 
-iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ( (branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSCI, VSCIIIz and VSCIII for Zero Constraint
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-%%identifier of elements with Vf controlled by Beq
-iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSCII
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
 nVscL = length(iVscL); %AAB- Number of VSC with power losses
 
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
-nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
-iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (mpc.branch(:, CONV)~=3) & (mpc.branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1] (Converters and Phase Shifter Transformers, but no VSCIII)
+nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift (Converters and Phase Shifter Transformers, but no VSCIII)
+iQtma = find (branch(:,QT)~=0 & branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+iPfdp = find( (branch(:,VF_SET)~=0) & (branch(:,KDP)~=0) & (branch(:, BR_STATUS)~=0) & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)==3 | branch(:, CONV)==4) ); %FUBM- Find branch locations of the branch elements with Pf-Vdc Droop Control [nPfdp,1] (VSCIII)
+nPfdp = length(iPfdp); %FUBM- Number of VSC with Voltage Droop Control by theta_shift
 %%------------------------------------------------------------------------- 
 
 %% Reconstruction of V
@@ -81,7 +89,7 @@ if mpopt.opf.v_cartesian
     %V = Vr + 1j * Vi;           %% reconstruct V
 else %AAB- Polar variables
     %%AAB------------------------------------------------------------------
-    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, 2); %AAB- Deals optimisation variables
+    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt, ShAngDp] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, nPfdp, 2); %AAB- Deals optimisation variables
     V = Vm .* exp(1j * Va);     %% reconstruct V
     %%---------------------------------------------------------------------
 end
@@ -103,7 +111,9 @@ end
 if nVtma
     branch(iVtma,TAP) = maVt;  %AAB- Update the data from ma/tap to the branch matrix.
 end
-
+if nPfdp
+    branch(iPfdp,SHIFT) = ShAngDp*180/pi;  %AAB- Update the data from Theta_shift Droop to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
+end
 %% Calculation of admittance matrices
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
 %% Standard IEC 62751-2 Ploss Correction for VSC losses
@@ -175,7 +185,7 @@ if nargout > 1
             %--------------------------------------------------------------
         else                                    %% power
             %AAB-----------------------------------------------------------
-            if (nBeqz || nBeqv || nPfsh || nQtma) %FUBM formulation
+            if fubm %FUBM formulation
                 [dFf_dV1, dFf_dV2, dFt_dV1, dFt_dV2, Ff, Ft] = dSbr_dV(branch(il,:), Yf, Yt, V, mpopt.opf.v_cartesian); %AAB-Obtains the derivatives of the Sf and St w.r.t V   - Yf and Yt are constant here.
                 %%AAB------------------------------------------------------
                 [dFf_dBeqz, dFt_dBeqz] = dSbr_dBeq(branch(il,:), V, 1, mpopt.opf.v_cartesian); %% w.r.t. Beqz       %AAB-Obtains the derivatives of the Sf and St w.r.t Beq      - V remains constant here because Beq      is the only variable
@@ -183,6 +193,7 @@ if nargout > 1
                 [dFf_dPfsh, dFt_dPfsh] = dSbr_dsh (branch(il,:), V, 1, mpopt.opf.v_cartesian); %% w.r.t. Theta_sh   %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_sh - V remains constant here because Theta_sh is the only variable                
                 [dFf_dQtma, dFt_dQtma] = dSbr_dma (branch(il,:), V, 2, mpopt.opf.v_cartesian); %% w.r.t. ma         %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma       is the only variable                
                 [dFf_dVtma, dFt_dVtma] = dSbr_dma (branch(il,:), V, 4, mpopt.opf.v_cartesian); %% w.r.t. ma         %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma       is the only variable             
+                [dFf_dPfdp, dFt_dPfdp] = dSbr_dsh (branch(il,:), V, 3, mpopt.opf.v_cartesian); %% w.r.t. Theta_sh   %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_dp - V remains constant here because Theta_dp is the only variable               
                 %%---------------------------------------------------------
             else     %AC formulation
                 [dFf_dV1, dFf_dV2, dFt_dV1, dFt_dV2, Ff, Ft] = dSbr_dV(branch(il,:), Yf, Yt, V, mpopt.opf.v_cartesian);
@@ -201,12 +212,14 @@ if nargout > 1
                 dFf_dPfsh = real(dFf_dPfsh);
                 dFf_dQtma = real(dFf_dQtma);
                 dFf_dVtma = real(dFf_dVtma);
+                dFf_dPfdp = real(dFf_dPfdp);
                 
                 dFt_dBeqz = real(dFt_dBeqz);
                 dFt_dBeqv = real(dFt_dBeqv);
                 dFt_dPfsh = real(dFt_dPfsh);
                 dFt_dQtma = real(dFt_dQtma);
                 dFt_dVtma = real(dFt_dVtma);
+                dFt_dPfdp = real(dFt_dPfdp);
                 %----------------------------------------------------------
                 Ff = real(Ff);
                 Ft = real(Ft);
@@ -223,16 +236,16 @@ if nargout > 1
         %% Derivatives for "Limit^2 - Flow^2" (For "I" or "S") or "Limit - Flow" (For "P")
         if lim_type == 'P'  %AAB- "Limit - Flow"
             %% active power
-            if (nBeqz || nBeqv || nPfsh || nQtma|| nVtma) %FUBM formulation
+            if fubm %FUBM formulation
                 [df_dV1, df_dV2, dt_dV1, dt_dV2] = deal(dFf_dV1, dFf_dV2, dFt_dV1, dFt_dV2);
-                [df_dBeqz, df_dBeqv, df_dPfsh, df_dQtma, df_dVtma] = deal(dFf_dBeqz, dFf_dBeqv, dFf_dPfsh, dFf_dQtma, dFf_dVtma);
-                [dt_dBeqz, dt_dBeqv, dt_dPfsh, dt_dQtma, dt_dVtma] = deal(dFt_dBeqz, dFt_dBeqv, dFt_dPfsh, dFt_dQtma, dFt_dVtma);
+                [df_dBeqz, df_dBeqv, df_dPfsh, df_dQtma, df_dVtma, df_dPfdp] = deal(dFf_dBeqz, dFf_dBeqv, dFf_dPfsh, dFf_dQtma, dFf_dVtma, dFf_dPfdp);
+                [dt_dBeqz, dt_dBeqv, dt_dPfsh, dt_dQtma, dt_dVtma, dt_dPfdp] = deal(dFt_dBeqz, dFt_dBeqv, dFt_dPfsh, dFt_dQtma, dFt_dVtma, dFt_dPfdp);
             else %AC Formulation 
                 [df_dV1, df_dV2, dt_dV1, dt_dV2] = deal(dFf_dV1, dFf_dV2, dFt_dV1, dFt_dV2); 
             end
         else %<-----AAB- "Limit^2 - Flow^2"- OFSBSR
             %AAB-----------------------------------------------------------
-            if (nBeqz || nBeqv || nPfsh || nQtma|| nVtma)  %%<-----AAB- FUBM formulation -OFSBSR
+            if fubm  %%<-----AAB- FUBM formulation -OFSBSR
                 %%squared magnitude of flow (of complex power or current, or real power)
                 [df_dV1, df_dV2, dt_dV1, dt_dV2] = ...
                     dAbr_dV(dFf_dV1, dFf_dV2, dFt_dV1, dFt_dV2, Ff, Ft);
@@ -246,6 +259,8 @@ if nargout > 1
                         dAbr_dma(dFf_dQtma, dFt_dQtma, Ff, Ft);  
                 [df_dVtma, dt_dVtma] = ...
                         dAbr_dma(dFf_dVtma, dFt_dVtma, Ff, Ft);
+                [df_dPfdp, dt_dPfdp] = ...
+                        dAbr_dsh(dFf_dPfdp, dFt_dPfdp, Ff, Ft); 
             else     %AC formulation
                 %%squared magnitude of flow (of complex power or current, or real power)
                 [df_dV1, df_dV2, dt_dV1, dt_dV2] = ...
@@ -256,15 +271,15 @@ if nargout > 1
 
         %% construct Jacobian of "from" and "to" branch flow inequality constraints
         %AAB---------------------------------------------------------------
-        if (nBeqz || nBeqv || nPfsh || nQtma|| nVtma) %FUBM formulation
-            dh = [ df_dV1 df_dV2 df_dBeqz df_dBeqv df_dPfsh df_dQtma df_dVtma;      %% "from" flow limit
-                   dt_dV1 dt_dV2 dt_dBeqz dt_dBeqv dt_dPfsh dt_dQtma dt_dVtma];     %%  "to"  flow limit
+        if fubm %FUBM formulation
+            dh = [ df_dV1 df_dV2 df_dBeqz df_dBeqv df_dPfsh df_dQtma df_dVtma df_dPfdp;      %% "from" flow limit
+                   dt_dV1 dt_dV2 dt_dBeqz dt_dBeqv dt_dPfsh dt_dQtma dt_dVtma dt_dPfdp];     %%  "to"  flow limit
         else     %AC formulation
             dh = [ df_dV1 df_dV2;                   %% "from" flow limit
                    dt_dV1 dt_dV2 ];                 %%  "to"  flow limit
         end
         %------------------------------------------------------------------
     else
-        dh = sparse(0, 2*nb+nBeqz+nBeqv+nPfsh+nQtma+nVtma);%<<AAB- No Constrained lines Including FUBM- Original: dh = sparse(0, 2*nb);
+        dh = sparse(0, 2*nb+nBeqz+nBeqv+nPfsh+nQtma+nVtma+nPfdp);%<<AAB- No Constrained lines Including FUBM- Original: dh = sparse(0, 2*nb);
     end
 end
