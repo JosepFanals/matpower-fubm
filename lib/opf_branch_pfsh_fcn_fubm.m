@@ -47,13 +47,13 @@ function [g, dg] = opf_branch_pfsh_fcn_fubm(x, mpc, iPfsh, mpopt)
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 %% unpack data
 [baseMVA, bus, branch] = deal(mpc.baseMVA, mpc.bus, mpc.branch);
 
 %% identifier of AC/DC grids
 %%AAB---------------------------------------------------------------------- 
-iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSCI, VSCIIIz and VSCIII, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 %%identifier of elements with Vf controlled by Beq
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
@@ -65,6 +65,10 @@ iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= b
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
+nVscL = length(iVscL); %AAB- Number of VSC with power losses
+iPfdp = find( (branch(:,VF_SET)~=0) & (branch(:,KDP)~=0) & (branch(:, BR_STATUS)~=0) & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)==3 | branch(:, CONV)==4) ); %FUBM- Find branch locations of the branch elements with Pf-Vdc Droop Control [nPfdp,1] (VSCIII)
+nPfdp = length(iPfdp); %FUBM- Number of VSC with Voltage Droop Control by theta_shift
 %%------------------------------------------------------------------------- 
 
 %% Reconstruction of V
@@ -74,7 +78,7 @@ if mpopt.opf.v_cartesian
     %V = Vr + 1j * Vi;           %% reconstruct V
 else %AAB- Polar variables
     %%AAB------------------------------------------------------------------
-    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, 2); %AAB- Deals optimisation variables
+    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt, ShAng] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, nPfdp, 2); %AAB- Deals optimisation variables
     V = Vm .* exp(1j * Va);     %% reconstruct V
     %%---------------------------------------------------------------------
 end
@@ -96,11 +100,8 @@ end
 if nVtma
     branch(iVtma,TAP) = maVt;  %AAB- Update the data from ma/tap to the branch matrix.
 end
-iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-if nBeqz
-    nVscL = length(iVscL); %AAB- Number of VSC with power losses
-else
-    nVscL = 0; %AAB- Number of VSC with power losses
+if nPfdp
+    branch(iPfdp,SHIFT) = ShAng*180/pi;  %AAB- Update the data from Theta_shift Droop to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
 end
 %% Calculation of admittance matrices
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
@@ -140,6 +141,7 @@ if nargout > 1
         [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch(iPfsh,:), V, 1, mpopt.opf.v_cartesian); %% w.r.t. Theta_sh  %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_sh - V remains constant here because Theta_sh is the only variable 
         [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch, V, 2, mpopt.opf.v_cartesian); %% w.r.t. ma                 %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma/tap   is the only variable
         [dSf_dVtma, dSt_dVtma] = dSbr_dma(branch, V, 4, mpopt.opf.v_cartesian); %% w.r.t. ma                 %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma/tap   is the only variable
+        %[dSf_dPfdp, dSt_dPfdp] = dSbr_dsh(branch, V, 3, mpopt.opf.v_cartesian); %% w.r.t. Theta_sh Droop     %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_dp - V remains constant here because Theta_dp is the only variable 
 
         %% Selecting real part, Pf = real(Sf)
         dPf_dV1  = real(dSf_dV1);
@@ -148,7 +150,9 @@ if nargout > 1
         dPf_dBeqv = real(dSf_dBeqv(iPfsh,:));
         dPf_dPfsh = real(dSf_dPfsh);
         dPf_dQtma = real(dSf_dQtma(iPfsh,:));
-        dPf_dVtma = real(dSf_dVtma(iPfsh,:));        
+        dPf_dVtma = real(dSf_dVtma(iPfsh,:)); 
+        %dPf_dPfdp = real(dSf_dPfdp(iPfsh,:));
+        
         %% construct Jacobian of "from" branch flow inequality constraints
         dg = [ dPf_dV1 dPf_dV2 dPf_dBeqz dPf_dBeqv dPf_dPfsh dPf_dQtma dPf_dVtma];   %% "from" flow limit
 
