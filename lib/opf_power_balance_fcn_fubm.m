@@ -52,6 +52,7 @@ function [g, dg] = opf_power_balance_fcn_fubm(x, mpc, mpopt)
 
 %% Identifier of AC/DC grids
 %%AAB--------------------------------------------------------------------- 
+%%identifier of Zero Constraint VSCs
 iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 %%identifier of elements with Vf controlled by Beq
