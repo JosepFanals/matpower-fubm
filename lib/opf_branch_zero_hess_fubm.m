@@ -42,7 +42,7 @@ function d2G = opf_branch_zero_hess_fubm(x, lambda, mpc, iBeqz, mpopt)
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 %% unpack data
 [baseMVA, bus, gen, branch] = deal(mpc.baseMVA, mpc.bus, mpc.gen, mpc.branch);
 
@@ -50,14 +50,18 @@ function d2G = opf_branch_zero_hess_fubm(x, lambda, mpc, iBeqz, mpopt)
 %%AAB----------------------------------------------------------------------
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
+iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
+nVscL = length(iVscL); %AAB- Number of VSC with power losses
 
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)& (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift 
 iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+iPfdp = find( (branch(:,VF_SET)~=0) & (branch(:,KDP)~=0) & (branch(:, BR_STATUS)~=0) & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)==3 | branch(:, CONV)==4) ); %FUBM- Find branch locations of the branch elements with Pf-Vdc Droop Control [nPfdp,1] (VSCIII)
+nPfdp = length(iPfdp); %FUBM- Number of VSC with Voltage Droop Control by theta_shift
 %%------------------------------------------------------------------------- 
 
 %% Reconstruction of V
@@ -67,7 +71,7 @@ if mpopt.opf.v_cartesian
     %V = Vr + 1j * Vi;           %% reconstruct V
 else %AAB- Polar variables
     %%AAB------------------------------------------------------------------
-    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, 3); %AAB- Deals optimisation variables
+    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt, ShAngDp] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, nPfdp, 3); %AAB- Deals optimisation variables
     V = Vm .* exp(1j * Va);     %% reconstruct V
     %%---------------------------------------------------------------------
 end
@@ -85,8 +89,9 @@ end
 if nVtma
     branch(iVtma,TAP) = maVt;  %AAB- Update the data from ma/tap to the branch matrix.
 end
-iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-nVscL = length(iVscL); %AAB- Number of VSC with power losses
+if nPfdp
+    branch(iPfdp,SHIFT) = ShAngDp*180/pi;  %AAB- Update the data from Theta_shift to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
+end
 
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
 %% Standard IEC 62751-2 Ploss Correction for VSC losses
@@ -115,7 +120,7 @@ if nmu
 else    %% keep dimensions of empty matrices/vectors compatible
     muF = zeros(0,1);   %% required to avoid problems when using Knitro
 end
-muFaux=sparse(zeros(nl,1)); %% This aux is to select all only the branches that have the Pfsh constraint.
+muFaux=sparse(zeros(nl,1)); %% This aux is to select all only the branches that have the zero constraint.
 muFaux(iBeqz)=muF; %% Fill in the location of the constraint the values of mu
 
     f = branch(iBeqz, F_BUS);    %% list of "from" buses
@@ -126,6 +131,8 @@ muFaux(iBeqz)=muF; %% Fill in the location of the constraint the values of mu
     d2Sf_dsh2 = @(V, mu)d2Sf_dxsh2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_sh of Sf 
     d2Sf_dqtma2 = @(V, mu)d2Sf_dxqtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. ma       of Sf 
     d2Sf_dvtma2 = @(V, mu)d2Sf_dxvtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. ma       of Sf 
+    d2Sf_dshdp2 = @(V, mu)d2Sf_dxshdp2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_dp of Sf 
+
     
     [Gf11, Gf12, Gf21, Gf22] = d2Sf_dV2(V, muF);
     [Gf11, Gf12, Gf21, Gf22] = deal(imag(Gf11), imag(Gf12), imag(Gf21), imag(Gf22));
@@ -137,15 +144,18 @@ muFaux(iBeqz)=muF; %% Fill in the location of the constraint the values of mu
     [Gf16, Gf26, Gf36, Gf46, Gf56, Gf61, Gf62, Gf63, Gf64, Gf65, Gf66] = deal(imag(Gf16), imag(Gf26), imag(Gf36), imag(Gf46), imag(Gf56), imag(Gf61), imag(Gf62), imag(Gf63), imag(Gf64), imag(Gf65), imag(Gf66));
     [Gf17, Gf27, Gf37, Gf47, Gf57, Gf67, Gf71, Gf72, Gf73, Gf74, Gf75, Gf76, Gf77] = d2Sf_dvtma2(V,muFaux);
     [Gf17, Gf27, Gf37, Gf47, Gf57, Gf67, Gf71, Gf72, Gf73, Gf74, Gf75, Gf76, Gf77] = deal(imag(Gf17), imag(Gf27), imag(Gf37), imag(Gf47), imag(Gf57), imag(Gf67), imag(Gf71), imag(Gf72), imag(Gf73), imag(Gf74), imag(Gf75), imag(Gf76), imag(Gf77));
+    [Gf18, Gf28, Gf38, Gf48, Gf58, Gf68, Gf78, Gf81, Gf82, Gf83, Gf84, Gf85, Gf86, Gf87, Gf88] = d2Sf_dshdp2(V,muFaux);
+    [Gf18, Gf28, Gf38, Gf48, Gf58, Gf68, Gf78, Gf81, Gf82, Gf83, Gf84, Gf85, Gf86, Gf87, Gf88] = deal(imag(Gf18), imag(Gf28), imag(Gf38), imag(Gf48), imag(Gf58), imag(Gf68), imag(Gf78), imag(Gf81), imag(Gf82), imag(Gf83), imag(Gf84), imag(Gf85), imag(Gf86), imag(Gf87), imag(Gf88));
     
     %% construct Hessian
-      %Va    Vm    Beqz  ShAng Qtma  Vtma
-d2G = [Gf11  Gf12  Gf13  Gf15  Gf16  Gf17;  
-       Gf21  Gf22  Gf23  Gf25  Gf26  Gf27;
-       Gf31  Gf32  Gf33  Gf35  Gf36  Gf37;
-       Gf51  Gf52  Gf53  Gf55  Gf56  Gf57;
-       Gf61  Gf62  Gf63  Gf65  Gf66  Gf67;
-       Gf71  Gf72  Gf73  Gf75  Gf76  Gf77];%AAB Reactive Flow zero constraint Hessian including FUBM
+      %Va    Vm    Beqz  ShAng Qtma  Vtma  ShAngDp
+d2G = [Gf11  Gf12  Gf13  Gf15  Gf16  Gf17  Gf18;  
+       Gf21  Gf22  Gf23  Gf25  Gf26  Gf27  Gf28;
+       Gf31  Gf32  Gf33  Gf35  Gf36  Gf37  Gf38;
+       Gf51  Gf52  Gf53  Gf55  Gf56  Gf57  Gf58;
+       Gf61  Gf62  Gf63  Gf65  Gf66  Gf67  Gf68;
+       Gf71  Gf72  Gf73  Gf75  Gf76  Gf77  Gf78;
+       Gf81  Gf82  Gf83  Gf85  Gf86  Gf87  Gf88];%AAB Reactive Flow zero constraint Hessian including FUBM
 
 
 
