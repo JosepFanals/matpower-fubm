@@ -56,7 +56,7 @@ iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0
 nVscL = length(iVscL); %AAB- Number of VSC with power losses
 
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)& (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
@@ -142,18 +142,18 @@ muTaux(iQtma)=muT; %% Fill in the location of the constraint the values of mu
     [Gt16, Gt26, Gt36, Gt46, Gt56, Gt61, Gt62, Gt63, Gt64, Gt65, Gt66] = deal(imag(Gt16), imag(Gt26), imag(Gt36), imag(Gt46), imag(Gt56), imag(Gt61), imag(Gt62), imag(Gt63), imag(Gt64), imag(Gt65), imag(Gt66));
     %[Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = d2St_dvtma2(V,muTaux);
     %[Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = deal(imag(Gt17), imag(Gt27), imag(Gt37), imag(Gt47), imag(Gt57), imag(Gt67), imag(Gt71), imag(Gt72), imag(Gt73), imag(Gt74), imag(Gt75), imag(Gt76), imag(Gt77));
-    [Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = d2St_dshvp2(V,muTaux);
-    [Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = deal(imag(Gt17), imag(Gt27), imag(Gt37), imag(Gt47), imag(Gt57), imag(Gt67), imag(Gt71), imag(Gt72), imag(Gt73), imag(Gt74), imag(Gt75), imag(Gt76), imag(Gt77));
-        
+    [Gt18, Gt28, Gt38, Gt48, Gt58, Gt68, Gt78, Gt81, Gt82, Gt83, Gt84, Gt85, Gt86, Gt87, Gt88] = d2St_dshdp2(V,muTaux);
+    [Gt18, Gt28, Gt38, Gt48, Gt58, Gt68, Gt78, Gt81, Gt82, Gt83, Gt84, Gt85, Gt86, Gt87, Gt88] = deal(real(Gt18), real(Gt28), real(Gt38), real(Gt48), real(Gt58), real(Gt68), real(Gt78), real(Gt81), real(Gt82), real(Gt83), real(Gt84), real(Gt85), real(Gt86), real(Gt87), real(Gt88));
+            
     %% construct Hessian
       %Va    Vm    Beqz  Beqv  ShAng Qtma  ShAngDp 
-d2G = [Gt11  Gt12  Gt13  Gt14  Gt15  Gt16  Gt17;  
-       Gt21  Gt22  Gt23  Gt24  Gt25  Gt26  Gt27;
-       Gt31  Gt32  Gt33  Gt34  Gt35  Gt36  Gt37;
-       Gt41  Gt42  Gt43  Gt44  Gt45  Gt46  Gt47;
-       Gt51  Gt52  Gt53  Gt54  Gt55  Gt56  Gt57;
-       Gt61  Gt62  Gt63  Gt64  Gt65  Gt66  Gt67;
-       Gt71  Gt72  Gt73  Gt74  Gt75  Gt76  Gt77];%AAB Reactive Flow Qt Constraint Hessian including FUBM
+d2G = [Gt11  Gt12  Gt13  Gt14  Gt15  Gt16  Gt18;  
+       Gt21  Gt22  Gt23  Gt24  Gt25  Gt26  Gt28;
+       Gt31  Gt32  Gt33  Gt34  Gt35  Gt36  Gt38;
+       Gt41  Gt42  Gt43  Gt44  Gt45  Gt46  Gt48;
+       Gt51  Gt52  Gt53  Gt54  Gt55  Gt56  Gt58;
+       Gt61  Gt62  Gt63  Gt64  Gt65  Gt66  Gt68;
+       Gt81  Gt82  Gt83  Gt84  Gt85  Gt86  Gt88];%AAB Reactive Flow Qt Constraint Hessian including FUBM
 
 
 
