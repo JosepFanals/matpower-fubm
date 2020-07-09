@@ -133,7 +133,7 @@ muFaux(iPfsh)=muF; %% Fill in the location of the constraint the values of mu
     d2Sf_dsh2 = @(V, mu)d2Sf_dxsh2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_sh of Sf 
     d2Sf_dqtma2 = @(V, mu)d2Sf_dxqtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. qtma of Sf 
     d2Sf_dvtma2 = @(V, mu)d2Sf_dxvtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. vtma of Sf 
-    d2Sf_dshdp2 = @(V, mu)d2Sf_dxshdp2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_dp of Sf 
+    %d2Sf_dshdp2 = @(V, mu)d2Sf_dxshdp2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_dp of Sf 
 
     [Gf11, Gf12, Gf21, Gf22] = d2Sf_dV2(V, muF);
     [Gf11, Gf12, Gf21, Gf22] = deal(real(Gf11), real(Gf12), real(Gf21), real(Gf22));
@@ -147,19 +147,18 @@ muFaux(iPfsh)=muF; %% Fill in the location of the constraint the values of mu
     [Gf16, Gf26, Gf36, Gf46, Gf56, Gf61, Gf62, Gf63, Gf64, Gf65, Gf66] = deal(real(Gf16), real(Gf26), real(Gf36), real(Gf46), real(Gf56), real(Gf61), real(Gf62), real(Gf63), real(Gf64), real(Gf65), real(Gf66));
     [Gf17, Gf27, Gf37, Gf47, Gf57, Gf67, Gf71, Gf72, Gf73, Gf74, Gf75, Gf76, Gf77] = d2Sf_dvtma2(V,muFaux);
     [Gf17, Gf27, Gf37, Gf47, Gf57, Gf67, Gf71, Gf72, Gf73, Gf74, Gf75, Gf76, Gf77] = deal(real(Gf17), real(Gf27), real(Gf37), real(Gf47), real(Gf57), real(Gf67), real(Gf71), real(Gf72), real(Gf73), real(Gf74), real(Gf75), real(Gf76), real(Gf77));
-    [Gf18, Gf28, Gf38, Gf48, Gf58, Gf68, Gf78, Gf81, Gf82, Gf83, Gf84, Gf85, Gf86, Gf87, Gf88] = d2Sf_dshdp2(V,muFaux);
-    [Gf18, Gf28, Gf38, Gf48, Gf58, Gf68, Gf78, Gf81, Gf82, Gf83, Gf84, Gf85, Gf86, Gf87, Gf88] = deal(real(Gf18), real(Gf28), real(Gf38), real(Gf48), real(Gf58), real(Gf68), real(Gf78), real(Gf81), real(Gf82), real(Gf83), real(Gf84), real(Gf85), real(Gf86), real(Gf87), real(Gf88));
+    %[Gf18, Gf28, Gf38, Gf48, Gf58, Gf68, Gf78, Gf81, Gf82, Gf83, Gf84, Gf85, Gf86, Gf87, Gf88] = d2Sf_dshdp2(V,muFaux);
+    %[Gf18, Gf28, Gf38, Gf48, Gf58, Gf68, Gf78, Gf81, Gf82, Gf83, Gf84, Gf85, Gf86, Gf87, Gf88] = deal(real(Gf18), real(Gf28), real(Gf38), real(Gf48), real(Gf58), real(Gf68), real(Gf78), real(Gf81), real(Gf82), real(Gf83), real(Gf84), real(Gf85), real(Gf86), real(Gf87), real(Gf88));
     
     %% construct Hessian
-      %Va    Vm    Beqz  Beqv  ShAng Qtma  Vtma  ShAng
-d2G = [Gf11  Gf12  Gf13  Gf14  Gf15  Gf16  Gf17  Gf18;  
-       Gf21  Gf22  Gf23  Gf24  Gf25  Gf26  Gf27  Gf28;
-       Gf31  Gf32  Gf33  Gf34  Gf35  Gf36  Gf37  Gf38;
-       Gf41  Gf42  Gf43  Gf44  Gf45  Gf46  Gf47  Gf48;
-       Gf51  Gf52  Gf53  Gf54  Gf55  Gf56  Gf57  Gf58;
-       Gf61  Gf62  Gf63  Gf64  Gf65  Gf66  Gf67  Gf68;
-       Gf71  Gf72  Gf73  Gf74  Gf75  Gf76  Gf77  Gf78;
-       Gf81  Gf82  Gf83  Gf84  Gf85  Gf86  Gf87  Gf88];%AAB Active Flow Pf constraint Hessian including FUBM
+      %Va    Vm    Beqz  Beqv  ShAng Qtma  Vtma  ShAngDp
+d2G = [Gf11  Gf12  Gf13  Gf14  Gf15  Gf16  Gf17;  
+       Gf21  Gf22  Gf23  Gf24  Gf25  Gf26  Gf27;
+       Gf31  Gf32  Gf33  Gf34  Gf35  Gf36  Gf37;
+       Gf41  Gf42  Gf43  Gf44  Gf45  Gf46  Gf47;
+       Gf51  Gf52  Gf53  Gf54  Gf55  Gf56  Gf57;
+       Gf61  Gf62  Gf63  Gf64  Gf65  Gf66  Gf67;
+       Gf71  Gf72  Gf73  Gf74  Gf75  Gf76  Gf77];%AAB Active Flow Pf constraint Hessian including FUBM
 
 
 

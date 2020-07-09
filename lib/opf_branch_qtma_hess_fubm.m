@@ -42,16 +42,18 @@ function d2G = opf_branch_qtma_hess_fubm(x, lambda, mpc, iQtma, mpopt)
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 %% unpack data
 [baseMVA, bus, gen, branch] = deal(mpc.baseMVA, mpc.bus, mpc.gen, mpc.branch);
 
 %% identifier of AC/DC grids
 %%AAB---------------------------------------------------------------------- 
-iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
+iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
+nVscL = length(iVscL); %AAB- Number of VSC with power losses
 
 %% Identify if grid has controls
 iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
@@ -68,7 +70,7 @@ if mpopt.opf.v_cartesian
     %V = Vr + 1j * Vi;           %% reconstruct V
 else %AAB- Polar variables
     %%AAB------------------------------------------------------------------
-    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, 4); %AAB- Deals optimisation variables
+    [Va, Vm, Pg, Qg, Beqz, Beqv, ShAng, maQt, maVt, ShAngDp] = deal_vars(x, nBeqz, nBeqv, nPfsh, nQtma, nVtma, nPfdp, 4); %AAB- Deals optimisation variables
     V = Vm .* exp(1j * Va);     %% reconstruct V
     %%---------------------------------------------------------------------
 end
@@ -76,9 +78,9 @@ end
 %%update mpc.branch with FUBM from x
 if nBeqz % AC/DC Formulation
     branch(iBeqz,BEQ)=Beqz; %AAB- Update the data from Beqz to the branch matrix
-    if nBeqv
-        branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqv to the branch matrix  
-    end
+end
+if nBeqv
+    branch(iBeqv,BEQ)=Beqv; %AAB- Update the data from Beqv to the branch matrix  
 end
 if nPfsh
     branch(iPfsh,SHIFT) = ShAng*180/pi;  %AAB- Update the data from Theta_shift to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
@@ -86,11 +88,8 @@ end
 if nQtma
     branch(iQtma,TAP) = maQt;  %AAB- Update the data from ma/tap to the branch matrix.
 end
-iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-if nBeqz
-    nVscL = length(iVscL); %AAB- Number of VSC with power losses
-else
-    nVscL = 0; %AAB- Number of VSC with power losses
+if nPfdp
+    branch(iPfdp,SHIFT) = ShAngDp*180/pi;  %AAB- Update the data from Theta_shift to the branch matrix (It is returnded to degrees since inside makeYbus_aab it is converted to radians).
 end
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
 %% Standard IEC 62751-2 Ploss Correction for VSC losses
@@ -129,6 +128,7 @@ muTaux(iQtma)=muT; %% Fill in the location of the constraint the values of mu
     d2St_dsh2 = @(V, mu)d2St_dxsh2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_sh of St 
     d2St_dqtma2 = @(V, mu)d2St_dxqtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. ma       of St 
     %d2St_dvtma2 = @(V, mu)d2St_dxvtma2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. ma       of St 
+    d2St_dshdp2 = @(V, mu)d2St_dxshdp2(branch, V, mu, mpopt.opf.v_cartesian); %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_sh of St 
 
     [Gt11, Gt12, Gt21, Gt22] = d2St_dV2(V, muT);
     [Gt11, Gt12, Gt21, Gt22] = deal(imag(Gt11), imag(Gt12), imag(Gt21), imag(Gt22));
@@ -142,15 +142,18 @@ muTaux(iQtma)=muT; %% Fill in the location of the constraint the values of mu
     [Gt16, Gt26, Gt36, Gt46, Gt56, Gt61, Gt62, Gt63, Gt64, Gt65, Gt66] = deal(imag(Gt16), imag(Gt26), imag(Gt36), imag(Gt46), imag(Gt56), imag(Gt61), imag(Gt62), imag(Gt63), imag(Gt64), imag(Gt65), imag(Gt66));
     %[Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = d2St_dvtma2(V,muTaux);
     %[Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = deal(imag(Gt17), imag(Gt27), imag(Gt37), imag(Gt47), imag(Gt57), imag(Gt67), imag(Gt71), imag(Gt72), imag(Gt73), imag(Gt74), imag(Gt75), imag(Gt76), imag(Gt77));
-    
+    [Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = d2St_dshvp2(V,muTaux);
+    [Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = deal(imag(Gt17), imag(Gt27), imag(Gt37), imag(Gt47), imag(Gt57), imag(Gt67), imag(Gt71), imag(Gt72), imag(Gt73), imag(Gt74), imag(Gt75), imag(Gt76), imag(Gt77));
+        
     %% construct Hessian
-      %Va    Vm    Beqz  Beqv  ShAng Qtma
-d2G = [Gt11  Gt12  Gt13  Gt14  Gt15  Gt16;  
-       Gt21  Gt22  Gt23  Gt24  Gt25  Gt26;
-       Gt31  Gt32  Gt33  Gt34  Gt35  Gt36;
-       Gt41  Gt42  Gt43  Gt44  Gt45  Gt46;
-       Gt51  Gt52  Gt53  Gt54  Gt55  Gt56;
-       Gt61  Gt62  Gt63  Gt64  Gt65  Gt66];%AAB Reactive Flow Qt Constraint Hessian including FUBM
+      %Va    Vm    Beqz  Beqv  ShAng Qtma  ShAngDp 
+d2G = [Gt11  Gt12  Gt13  Gt14  Gt15  Gt16  Gt17;  
+       Gt21  Gt22  Gt23  Gt24  Gt25  Gt26  Gt27;
+       Gt31  Gt32  Gt33  Gt34  Gt35  Gt36  Gt37;
+       Gt41  Gt42  Gt43  Gt44  Gt45  Gt46  Gt47;
+       Gt51  Gt52  Gt53  Gt54  Gt55  Gt56  Gt57;
+       Gt61  Gt62  Gt63  Gt64  Gt65  Gt66  Gt67;
+       Gt71  Gt72  Gt73  Gt74  Gt75  Gt76  Gt77];%AAB Reactive Flow Qt Constraint Hessian including FUBM
 
 
 
