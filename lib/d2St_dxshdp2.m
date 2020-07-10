@@ -1,17 +1,17 @@
-function [H18, H28, H38, H48, H58, H68, H78, H81, H82, H83, H84, H85, H86, H87, H88] = d2Sf_dxshdp2(branch, V, mu, vcart)
-%D2SF_DXSHDP2  Computes 2nd derivatives of complex brch power flow "from" w.r.t. ShdpVa, ShdpVm, ShdpBeqz, ShdpBeqv, ShdpSh, Shdpqtma, Shdpvtma, VaShdp, VmShdp, BeqzShdp, BeqvShdp, ShShdp, qtmaShdp, vtmaShdp, ShdpShdp.
+function [H18, H28, H38, H48, H58, H68, H78, H81, H82, H83, H84, H85, H86, H87, H88] = d2St_dxshdp2(branch, V, mu, vcart)
+%D2ST_DXSHDP2  Computes 2nd derivatives of complex branch power flow "to" w.r.t. ShdpVa, ShdpVm, ShdpBeqz, ShdpBeqv, ShdpSh, Shdpqtma, Shdpvtma, VaShdp, VmShdp, BeqzShdp, BeqvShdp, ShShdp, qtmaShdp, vtmaShdp, ShdpShdp.
 %
 %   The derivatives will be taken with respect to polar or cartesian coordinates
 %   depending on the 4th argument. So far only Polar has been coded
 %   
-%   [HShdpVa, HShdpVm, HShdpBz, HShdpBv, HShdpSh, HShdpqtma, HShdpvtma, HVaShdp, HVmShdp, HBzShdp, HBvShdp, HShShdp, HqtmaShdp, HvtmaShdp, HShdpShdp] = D2SF_DXSHDP2(BRANCH, V, MU)
-%   [HShdpVa, HShdpVm, HShdpBz, HShdpBv, HShdpSh, HShdpqtma, HShdpvtma, HVaShdp, HVmShdp, HBzShdp, HBvShdp, HShShdp, HqtmaShdp, HvtmaShdp, HShdpShdp] = D2SF_DXSHDP2(BRANCH, V, MU, 0)
+%   [HShdpVa, HShdpVm, HShdpBz, HShdpBv, HShdpSh, HShdpqtma, HShdpvtma, HVaShdp, HVmShdp, HBzShdp, HBvShdp, HShShdp, HqtmaShdp, HvtmaShdp, HShdpShdp] = D2ST_DXSHDP2(BRANCH, V, MU)
+%   [HShdpVa, HShdpVm, HShdpBz, HShdpBv, HShdpSh, HShdpqtma, HShdpvtma, HVaShdp, HVmShdp, HBzShdp, HBvShdp, HShShdp, HqtmaShdp, HvtmaShdp, HShdpShdp] = D2ST_DXSHDP2(BRANCH, V, MU, 0)
 %
 %   Returns 15 matrices containing the partial derivatives w.r.t. Va, Vm,
 %   Beq, Sh and ma of the product of a vector MU with the 1st partial 
 %   derivatives of the complex branch power flows.
 %
-%   [HShdpVa, HShdpVm, HShdpBz, HShdpBv, HShdpSh, HShdpqtma, HShdpvtma, HVaShdp, HVmShdp, HBzShdp, HBvShdp, HShShdp, HqtmaShdp, HvtmaShdp, HShdpShdp] = D2SF_DXSHDP2(BRANCH, V, MU, 1)
+%   [HShdpVa, HShdpVm, HShdpBz, HShdpBv, HShdpSh, HShdpqtma, HShdpvtma, HVaShdp, HVmShdp, HBzShdp, HBvShdp, HShShdp, HqtmaShdp, HvtmaShdp, HShdpShdp] = D2ST_DXSHDP2(BRANCH, V, MU, 1)
 %
 %   Not Coded Yet
 %
@@ -19,24 +19,24 @@ function [H18, H28, H38, H48, H58, H68, H78, H81, H82, H83, H84, H85, H86, H87, 
 %       il = find(branch(:, RATE_A) ~= 0 & branch(:, RATE_A) < 1e10);
 %       [HShdpVa, HShdpVm, HShdpBz, HShdpBv, HShdpSh, HShdpqtma, HShdpvtma, ...
 %                 HVaShdp, HVmShdp, HBzShdp, HBvShdp, HShShdp, HqtmaShdp, HvtmaShdp, HShdpShdp] = ...
-%                                                                    d2Sf_dxshdp2(branch(il,:), V, mu, 0);
+%                                                                    d2St_dxshdp2(branch(il,:), V, mu, 0);
 %
 %       Here the output matrices correspond to:
-%           HShdpVa   = d/dShdp (dSf_dVa.'   * mu)
-%           HShdpVm   = d/dShdp (dSf_dVm.'   * mu)
-%           HShdpBz   = d/dShdp (dSf_dBeqz.' * mu)
-%           HShdpBv   = d/dShdp (dSf_dBeqv.' * mu)
-%           HShdpSh   = d/dShdp (dSf_dSh.'   * mu)
-%           HShdpqtma = d/dShdp (dSf_dqtma.' * mu)
-%           HShdpvtma = d/dShdp (dSf_dvtma.' * mu)
-%           HVaShdp   = d/dVa   (dSf_dShdp.' * mu)
-%           HVmShdp   = d/dVm   (dSf_dShdp.' * mu)
-%           HBzShdp   = d/dBeqz (dSf_dShdp.' * mu)
-%           HBvShdp   = d/dBeqv (dSf_dShdp.' * mu)
-%           HShShdp   = d/dSh   (dSf_dShdp.' * mu)
-%           HqtmaShdp = d/dqtma (dSf_dShdp.' * mu)
-%           HvtmaShdp = d/dvtma (dSf_dShdp.' * mu)
-%           HShdpShdp = d/dShdp (dSf_dShdp.' * mu)
+%           HShdpVa   = d/dShdp (dSt_dVa.'   * mu)
+%           HShdpVm   = d/dShdp (dSt_dVm.'   * mu)
+%           HShdpBz   = d/dShdp (dSt_dBeqz.' * mu)
+%           HShdpBv   = d/dShdp (dSt_dBeqv.' * mu)
+%           HShdpSh   = d/dShdp (dSt_dSh.'   * mu)
+%           HShdpqtma = d/dShdp (dSt_dqtma.' * mu)
+%           HShdpvtma = d/dShdp (dSt_dvtma.' * mu)
+%           HVaShdp   = d/dVa   (dSt_dShdp.' * mu)
+%           HVmShdp   = d/dVm   (dSt_dShdp.' * mu)
+%           HBzShdp   = d/dBeqz (dSt_dShdp.' * mu)
+%           HBvShdp   = d/dBeqv (dSt_dShdp.' * mu)
+%           HShShdp   = d/dSh   (dSt_dShdp.' * mu)
+%           HqtmaShdp = d/dqtma (dSt_dShdp.' * mu)
+%           HvtmaShdp = d/dvtma (dSt_dShdp.' * mu)
+%           HShdpShdp = d/dShdp (dSt_dShdp.' * mu)
 %
 %   For more details on the derivations behind the derivative code used
 %   in MATPOWER information, see:
@@ -106,7 +106,7 @@ YttB = Ys + 1j*Bc/2 + 1j*Beq;
 
 %% Calculation of derivatives
 if vcart
-    error('d2Sf_dxshdp2: Derivatives of Flow Limit equations w.r.t Theta_dp in cartasian have not been coded yet')    
+    error('d2St_dxshdp2: Derivatives of Flow Limit equations w.r.t Theta_dp in cartasian have not been coded yet')    
 
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
@@ -143,17 +143,17 @@ else %AAB- Polar Version
     %Dimensionalize (Allocate for computational speed)
     dYff_dshdp = sparse( zeros(nl,nVtma) );
     dYft_dshdp = sparse( zeros(nl,nVtma) );
-    %dYtf_dshdp = sparse( zeros(nl,nVtma) ); 
-    %dYtt_dshdp = sparse( zeros(nl,nVtma) );
+    dYtf_dshdp = sparse( zeros(nl,nVtma) ); 
+    dYtt_dshdp = sparse( zeros(nl,nVtma) );
     
-    d2Sf_dshdpVa   = sparse( zeros(nb,   nPfdp) ); 
-    d2Sf_dshdpVm   = sparse( zeros(nb,   nPfdp) );
-    d2Sf_dshdpBeqz = sparse( zeros(nBeqz,nPfdp) );
-    d2Sf_dshdpBeqv = sparse( zeros(nBeqv,nPfdp) );
-    d2Sf_dshdpsh   = sparse( zeros(nPfsh,nPfdp) );   
-    d2Sf_dshdpqtma = sparse( zeros(nQtma,nPfdp) );  
-    d2Sf_dshdpvtma = sparse( zeros(nVtma,nPfdp) ); 
-    d2Sf_dshdp2    = sparse( zeros(nPfdp,nPfdp) );
+    d2St_dshdpVa   = sparse( zeros(nb,   nPfdp) ); 
+    d2St_dshdpVm   = sparse( zeros(nb,   nPfdp) );
+    d2St_dshdpBeqz = sparse( zeros(nBeqz,nPfdp) );
+    d2St_dshdpBeqv = sparse( zeros(nBeqv,nPfdp) );
+    d2St_dshdpsh   = sparse( zeros(nPfsh,nPfdp) );   
+    d2St_dshdpqtma = sparse( zeros(nQtma,nPfdp) );  
+    d2St_dshdpvtma = sparse( zeros(nVtma,nPfdp) ); 
+    d2St_dshdp2    = sparse( zeros(nPfdp,nPfdp) );
     
     for k=1:nPfdp 
         for kk=1:nb %dshdpVx
@@ -167,103 +167,103 @@ else %AAB- Polar Version
             dYtt_dshdp(:, k) = sparse( zeros(nl,1) );
         
             %Partials of Yf, Yt, w.r.t. Theta_shift Droop
-            dYf_dshdp = dYff_dshdp(:, k).* Cf + dYft_dshdp(:, k).* Ct; %AAB- size [nl,nb] per active Theta_Shift
-            %dYt_dshdp = dYtf_dsh(:, k).* Cf + dYtt_dsh(:, k).* Ct; %AAB- size [nl,nb] per active Theta_Shift
+            %dYf_dshdp = dYff_dshdp(:, k).* Cf + dYft_dshdp(:, k).* Ct; %AAB- size [nl,nb] per active Theta_Shift
+            dYt_dshdp = dYtf_dshdp(:, k).* Cf + dYtt_dshdp(:, k).* Ct; %AAB- size [nl,nb] per active Theta_Shift
 
             %2nd Derivatives of Sf w.r.t. ShVx
-            d2Sf_dshdpVa(kk, k) = ((diag(Cf*V)*conj(dYf_dshdp*dVa(:,kk))   +   (Cf*dVa(:,kk)).*conj(dYf_dshdp*V)).')*mu; %AAB- Final dSf_dShVa has a size of [nl, nPfsh] 
-            d2Sf_dshdpVm(kk, k) = ((diag(Cf*V)*conj(dYf_dshdp*dVm(:,kk))   +   (Cf*dVm(:,kk)).*conj(dYf_dshdp*V)).')*mu; %AAB- Final dSf_dShVm has a size of [nl, nPfsh] 
+            d2St_dshdpVa(kk, k) = ((diag(Ct*V)*conj(dYt_dshdp*dVa(:,kk))   +   (Ct*dVa(:,kk)).*conj(dYt_dshdp*V)).')*mu; %AAB- Final dSt_dShVa has a size of [nl, nPfdp] 
+            d2St_dshdpVm(kk, k) = ((diag(Ct*V)*conj(dYt_dshdp*dVm(:,kk))   +   (Ct*dVm(:,kk)).*conj(dYt_dshdp*V)).')*mu; %AAB- Final dSt_dShVm has a size of [nl, nPfdp] 
         end
         for kk=1:nBeqz
             %% Second Derivatives %The shBeqz derivative is zero because Yff, Yft, Ytf and Ytt do not share Theta_shift and Beqz for any case.
-            d2Yff_dshdpBeqz = zeros(nl,1);                                   %AAB- must be zero
-            d2Yft_dshdpBeqz = zeros(nl,1);                                   %AAB- must be zero
-            %d2Ytf_dshdpBeqz = zeros(nl,1);                                  %AAB- must be zero
-            %d2Ytt_dshdpBeqz = zeros(nl,1);                                  %AAB- must be zero
+            %d2Yff_dshdpBeqz = zeros(nl,1);                                   %AAB- must be zero
+            %d2Yft_dshdpBeqz = zeros(nl,1);                                   %AAB- must be zero
+            d2Ytf_dshdpBeqz = zeros(nl,1);                                    %AAB- must be zero
+            d2Ytt_dshdpBeqz = zeros(nl,1);                                    %AAB- must be zero
             
-            d2Yf_dshdpBeqz = d2Yff_dshdpBeqz.*Cf + d2Yft_dshdpBeqz.*Ct;          %AAB- must be zero
-            %d2Yt_dshdpBeqz = d2Ytf_dshdpBeqz.*Cf + d2Ytt_dshdpBeqz.*Ct;         %AAB- must be zero
+            %d2Yf_dshdpBeqz = d2Yff_dshdpBeqz.*Cf + d2Yft_dshdpBeqz.*Ct;      %AAB- must be zero
+            d2Yt_dshdpBeqz = d2Ytf_dshdpBeqz.*Cf + d2Ytt_dshdpBeqz.*Ct;       %AAB- must be zero
             
-            d2Sf_dshdpBeqz(kk,k) = (diag(Cf*V)*conj(d2Yf_dshdpBeqz*V)).'*mu;   %AAB- must be zero
+            d2St_dshdpBeqz(kk,k) = (diag(Ct*V)*conj(d2Yt_dshdpBeqz*V)).'*mu;  %AAB- must be zero  
         end
         for kk=1:nBeqv
             %% Second Derivatives %The shBeqv derivative is zero because Yff, Yft, Ytf and Ytt do not share Theta_shift and Beqv for any case.
-            d2Yff_dshdpBeqv = zeros(nl,1);                                   %AAB- must be zero
-            d2Yft_dshdpBeqv = zeros(nl,1);                                   %AAB- must be zero
-            %d2Ytf_dshdpBeqv = zeros(nl,1);                                  %AAB- must be zero
-            %d2Ytt_dshdpBeqv = zeros(nl,1);                                  %AAB- must be zero
+            %d2Yff_dshdpBeqv = zeros(nl,1);                                   %AAB- must be zero
+            %d2Yft_dshdpBeqv = zeros(nl,1);                                   %AAB- must be zero
+            d2Ytf_dshdpBeqv = zeros(nl,1);                                    %AAB- must be zero
+            d2Ytt_dshdpBeqv = zeros(nl,1);                                    %AAB- must be zero
             
-            d2Yf_dshdpBeqv = d2Yff_dshdpBeqv.*Cf + d2Yft_dshdpBeqv.*Ct;      %AAB- must be zero
-            %d2Yt_dshdpBeqv = d2Ytf_dshdpBeqv.*Cf + d2Ytt_dshdpBeqv.*Ct;     %AAB- must be zero
+            %d2Yf_dshdpBeqv = d2Yff_dshdpBeqv.*Cf + d2Yft_dshdpBeqv.*Ct;      %AAB- must be zero
+            d2Yt_dshdpBeqv = d2Ytf_dshdpBeqv.*Cf + d2Ytt_dshdpBeqv.*Ct;       %AAB- must be zero
             
-            d2Sf_dshdpBeqv(kk,k) = (diag(Cf*V)*conj(d2Yf_dshdpBeqv*V)).'*mu; %AAB- must be zero
+            d2St_dshdpBeqv(kk,k) = (diag(Ct*V)*conj(d2Yt_dshdpBeqv*V)).'*mu;  %AAB- must be zero  
         end
         for kk=1:nPfsh           
             %% Second Derivatives 
-            d2Yff_dshdpsh = zeros(nl,1);                                       %AAB- must be zero
-            d2Yft_dshdpsh = zeros(nl,1);                                       %AAB- must be zero
-            %d2Ytf_dshdpsh = zeros(nl,1);                                      %AAB- must be zero
-            %d2Ytt_dshdpsh = zeros(nl,1);                                      %AAB- must be zero
+            %d2Yff_dshdpsh = zeros(nl,1);                                       %AAB- must be zero
+            %d2Yft_dshdpsh = zeros(nl,1);                                       %AAB- must be zero
+            d2Ytf_dshdpsh = zeros(nl,1);                                      %AAB- must be zero
+            d2Ytt_dshdpsh = zeros(nl,1);                                      %AAB- must be zero
             
-            d2Yf_dshdpsh = d2Yff_dshdpsh.*Cf + d2Yft_dshdpsh.*Ct;                
-            %d2Yt_dshdpsh = d2Ytf_dshdpsh.*Cf + d2Ytt_dshdpsh.*Ct;               
+            %d2Yf_dshdpsh = d2Yff_dshdpsh.*Cf + d2Yft_dshdpsh.*Ct;                
+            d2Yt_dshdpsh = d2Ytf_dshdpsh.*Cf + d2Ytt_dshdpsh.*Ct;               
             
-            d2Sf_dshdpsh(kk,k) = (diag(Cf*V)*conj(d2Yf_dshdpsh*V)).'*mu;                  
+            d2St_dshdpsh(kk,k) = (diag(Ct*V)*conj(d2Yt_dshdpsh*V)).'*mu;                  
         end
         for kk=1:nQtma
             QtmaPfdpSel=diagQtmaSel(:,iQtma(kk)).*diagPfdpSel(:,iPfdp(k)); %AAB- Selects only the active element controlling Droop and Qt with sh and ma
             YsmashdpSel=Ys.*QtmaPfdpSel;
             %% Second Derivatives 
-            d2Yff_dshdpqtma = zeros(nl,1);                                       %AAB- must be zero
-            d2Yft_dshdpqtma = ( 1j.*YsmashdpSel)./( k2.*abs(tap).*conj(tap) );   %AAB- Only active for elements with both Droop and Qt control
-            %d2Ytf_dshdpqtma = (-1j.*YsmashdpSel)./( k2.*abs(tap).*     tap  );  %AAB- Only active for elements with both Droop and Qt control
-            %d2Ytt_dshdpqtma = zeros(nl,1);                                      %AAB- must be zero
+            %d2Yff_dshdpqtma = zeros(nl,1);                                       %AAB- must be zero
+            %d2Yft_dshdpqtma = ( 1j.*YsmashdpSel)./( k2.*abs(tap).*conj(tap) );   %AAB- Only active for elements with both Droop and Qt control
+            d2Ytf_dshdpqtma = (-1j.*YsmashdpSel)./( k2.*abs(tap).*     tap  );  %AAB- Only active for elements with both Droop and Qt control
+            d2Ytt_dshdpqtma = zeros(nl,1);                                      %AAB- must be zero
             
-            d2Yf_dshdpqtma = d2Yff_dshdpqtma.*Cf + d2Yft_dshdpqtma.*Ct;                
-            %d2Yt_dshdpqtma = d2Ytf_dshdpqtma.*Cf + d2Ytt_dshdpqtma.*Ct;               
+            %d2Yf_dshdpqtma = d2Yff_dshdpqtma.*Cf + d2Yft_dshdpqtma.*Ct;                
+            d2Yt_dshdpqtma = d2Ytf_dshdpqtma.*Cf + d2Ytt_dshdpqtma.*Ct;               
             
-            d2Sf_dshdpqtma(kk,k) = (diag(Cf*V)*conj(d2Yf_dshdpqtma*V)).'*mu;                  
+            d2St_dshdpqtma(kk,k) = (diag(Ct*V)*conj(d2Yt_dshdpqtma*V)).'*mu;                  
         end
         for kk=1:nVtma
             VtmaPfdpSel=diagVtmaSel(:,iVtma(kk)).*diagPfdpSel(:,iPfdp(k)); %AAB- Selects only the active element controlling Droop and Vt with sh and ma
             YsmashdpSel=Ys.*VtmaPfdpSel;
             %% Second Derivatives 
-            d2Yff_dshdpvtma = zeros(nl,1);                                       %AAB- must be zero
-            d2Yft_dshdpvtma = ( 1j.*YsmashdpSel)./( k2.*abs(tap).*conj(tap) );   %AAB- Only active for elements with both Droop and Qt control
-            %d2Ytf_dshdpvtma = (-1j.*YsmashdpSel)./( k2.*abs(tap).*     tap  );  %AAB- Only active for elements with both Droop and Qt control
-            %d2Ytt_dshdpvtma = zeros(nl,1);                                      %AAB- must be zero
+            %d2Yff_dshdpvtma = zeros(nl,1);                                       %AAB- must be zero
+            %d2Yft_dshdpvtma = ( 1j.*YsmashdpSel)./( k2.*abs(tap).*conj(tap) );   %AAB- Only active for elements with both Droop and Qt control
+            d2Ytf_dshdpvtma = (-1j.*YsmashdpSel)./( k2.*abs(tap).*     tap  );  %AAB- Only active for elements with both Droop and Qt control
+            d2Ytt_dshdpvtma = zeros(nl,1);                                      %AAB- must be zero
             
-            d2Yf_dshdpvtma = d2Yff_dshdpvtma.*Cf + d2Yft_dshdpvtma.*Ct;                
-            %d2Yt_dshdpvtma = d2Ytf_dshdpvtma.*Cf + d2Ytt_dshdpvtma.*Ct;               
+            %d2Yf_dshdpvtma = d2Yff_dshdpvtma.*Cf + d2Yft_dshdpvtma.*Ct;                
+            d2Yt_dshdpvtma = d2Ytf_dshdpvtma.*Cf + d2Ytt_dshdpvtma.*Ct;               
             
-            d2Sf_dshdpvtma(kk,k) = (diag(Cf*V)*conj(d2Yf_dshdpvtma*V)).'*mu;                  
+            d2St_dshdpvtma(kk,k) = (diag(Ct*V)*conj(d2Yt_dshdpvtma*V)).'*mu;                  
         end        
         for kk=1:nPfdp
             ShdpSel2=diagPfdpSel(:,iPfdp(kk)); %AAB- Selects the column of diagShSel representing only the active Sh
             
             %% Second Derivatives         
-            d2Yff_dshdp2 = sparse( zeros(nl,1) );
-            d2Yft_dshdp2 = sparse( (Ysshdp.*ShdpSel2)./(k2.*conj(tap)) );        %AAB- Only when Shifter selector 1 and Shifter selector 2 match there will be a derivative (When k = kk). Otherwise zero 
-            %d2Ytf_dshdp2 = sparse( (Ysshdp.*ShdpSel2)./(k2.*tap      ) );        %AAB- Only when Shifter selector 1 and Shifter selector 2 match there will be a derivative (When k = kk). Otherwise zero
-            %d2Ytt_dshdp2 = sparse( zeros(nl,1) );
+            %d2Yff_dshdp2 = sparse( zeros(nl,1) );
+            %d2Yft_dshdp2 = sparse( (Ysshdp.*ShdpSel2)./(k2.*conj(tap)) );        %AAB- Only when Shifter selector 1 and Shifter selector 2 match there will be a derivative (When k = kk). Otherwise zero 
+            d2Ytf_dshdp2 = sparse( (Ysshdp.*ShdpSel2)./(k2.*tap      ) );        %AAB- Only when Shifter selector 1 and Shifter selector 2 match there will be a derivative (When k = kk). Otherwise zero
+            d2Ytt_dshdp2 = sparse( zeros(nl,1) );
             
-            d2Yf_dshdp2 = d2Yff_dshdp2.*Cf + d2Yft_dshdp2.*Ct;          
-            %d2Yt_dshdp2 = d2Ytf_dshdp2.*Cf + d2Ytt_dshdp2.*Ct;          
+            %d2Yf_dshdp2 = d2Yff_dshdp2.*Cf + d2Yft_dshdp2.*Ct;          
+            d2Yt_dshdp2 = d2Ytf_dshdp2.*Cf + d2Ytt_dshdp2.*Ct;          
             
-            d2Sf_dshdp2(kk,k) = (diag(Cf*V)*conj(d2Yf_dshdp2*V)).'*mu;         %AAB- must be zero           
+            d2St_dshdp2(kk,k) = (diag(Ct*V)*conj(d2Yt_dshdp2*V)).'*mu;         %AAB- must be zero           
             
         end
     end
 end
 
 %Assigning the partial derivatives with their respective outputs. 
-H18 = sparse(d2Sf_dshdpVa);
-H28 = sparse(d2Sf_dshdpVm);
-H38 = sparse(d2Sf_dshdpBeqz);
-H48 = sparse(d2Sf_dshdpBeqv);
-H58 = sparse(d2Sf_dshdpsh);
-H68 = sparse(d2Sf_dshdpqtma);
-H78 = sparse(d2Sf_dshdpvtma);
+H18 = sparse(d2St_dshdpVa);
+H28 = sparse(d2St_dshdpVm);
+H38 = sparse(d2St_dshdpBeqz);
+H48 = sparse(d2St_dshdpBeqv);
+H58 = sparse(d2St_dshdpsh);
+H68 = sparse(d2St_dshdpqtma);
+H78 = sparse(d2St_dshdpvtma);
 H81 = H18.';
 H82 = H28.';
 H83 = H38.';
@@ -271,4 +271,4 @@ H84 = H48.';
 H85 = H58.';
 H86 = H68.';
 H87 = H78.';
-H88 = sparse(d2Sf_dshdp2);
+H88 = sparse(d2St_dshdp2);
