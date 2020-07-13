@@ -141,10 +141,10 @@ else %AAB- Polar Version
     diagYttBVtma = sparse( diag(VtmaSel.*YttB) );      %AAB- ma selector multilied by the series addmitance Ytt, size [nl,nl]
 
     %Dimensionalize (Allocate for computational speed)
-    dYff_dshdp = sparse( zeros(nl,nVtma) );
-    dYft_dshdp = sparse( zeros(nl,nVtma) );
-    %dYtf_dshdp = sparse( zeros(nl,nVtma) ); 
-    %dYtt_dshdp = sparse( zeros(nl,nVtma) );
+    dYff_dshdp = sparse( zeros(nl,nPfdp) );
+    dYft_dshdp = sparse( zeros(nl,nPfdp) );
+    dYtf_dshdp = sparse( zeros(nl,nPfdp) ); 
+    dYtt_dshdp = sparse( zeros(nl,nPfdp) );
     
     d2Sf_dshdpVa   = sparse( zeros(nb,   nPfdp) ); 
     d2Sf_dshdpVm   = sparse( zeros(nb,   nPfdp) );
