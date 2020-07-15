@@ -57,7 +57,7 @@ lim_type = upper(mpopt.opf.flow_lim(1)); %AAB- Branch flow limit S,P or I
 
 %% Identify FUBM formulation
 %the FUBM for DC power flows has not been coded yet
-if (size(branch,2) < KDP || dc ) 
+if (size(branch,2) < KDP) 
     fubm = 0; %Its not a fubm formulation
 else
     fubm = 1; %Its a fubm formulation
