@@ -234,6 +234,7 @@ else %AAB- Polar Version
         for kk=1:nVtma
             VtmaPfdpSel=diagVtmaSel(:,iVtma(kk)).*diagPfdpSel(:,iPfdp(k)); %AAB- Selects only the active element controlling Droop and Vt with sh and ma
             YsmashdpSel=Ys.*VtmaPfdpSel;
+            
             %% Second Derivatives 
             d2Yff_dshdpvtma = zeros(nl,1);                                       %AAB- must be zero
             d2Yft_dshdpvtma = ( 1j.*YsmashdpSel)./( k2.*abs(tap).*conj(tap) );   %AAB- Only active for elements with both Droop and Qt control
@@ -248,6 +249,7 @@ else %AAB- Polar Version
         end
         for kk=1:nPfdp
             ShdpSel2=diagPfdpSel(:,iPfdp(kk)); %AAB- Selects the column of diagShSel representing only the active Sh
+            Ysshdp=diagYsshdp(:,iPfdp(k)); %AAB- Selects the column of diagShsel representing only the active Sh
             
             %% Second Derivatives         
             d2Yff_dshdp2 = sparse( zeros(nl,1) );

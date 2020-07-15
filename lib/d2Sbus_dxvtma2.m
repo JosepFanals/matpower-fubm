@@ -230,7 +230,8 @@ else %AAB- Polar Version
         end
         for kk=1:nVtma
             vtmaSel2=diagVtmaSel(:,iVtma(kk)); %AAB- Selects the column of diagmaSel representing only the active ma
-            
+            Ysvtma=diagYsVtma(:,iVtma(k)); %AAB- Selects the column of diagmasel representing only the active ma
+
             %% Second Derivatives         
             d2Yff_dvtma2 = sparse( ( 6.*YttBvtma.*vtmaSel2 )./( (k2.^2).*((abs(tap)).^4) ) );      %AAB- Only when ma selector 1 and ma selector 2 match there will be a derivative (When k = kk). Otherwise zero
             d2Yft_dvtma2 = sparse( ( -2.*Ysvtma.*vtmaSel2 )./( k2.*((abs(tap)).^2).*conj(tap) ) ); %AAB- Only when ma selector 1 and ma selector 2 match there will be a derivative (When k = kk). Otherwise zero 

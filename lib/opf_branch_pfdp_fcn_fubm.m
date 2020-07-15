@@ -166,10 +166,10 @@ if nargout > 1
         dPfdp_dBeqz = dPfdp_dBeqz_all(iPfdp,:);              %Only Droop control elements iPfdp
         dPfdp_dBeqv = dPfdp_dBeqv_all(iPfdp,:);              %Only Droop control elements iPfdp
         dPfdp_dQtma = dPfdp_dQtma_all(iPfdp,:);              %Only Droop control elements iPfdp
-        dPfdp_dVtma =  dPfdp_dVtma_all(iPfdp,:);             %Only Droop control elements iPfdp
+        dPfdp_dVtma = dPfdp_dVtma_all(iPfdp,:);              %Only Droop control elements iPfdp
         dPfdp_dPfdp = dPfdp_dPfdp_all(iPfdp,:);              %Only Droop control elements iPfdp
         
-        %% construct Jacobian of "from" branch flow constraints
+        %% construct Jacobian of "from" branch flow Droop constraints
         dg = [ dPfdp_dV1 dPfdp_dV2 dPfdp_dBeqz dPfdp_dBeqv dPfdp_dQtma dPfdp_dVtma dPfdp_dPfdp];   %% "from" flow limit
 
     else

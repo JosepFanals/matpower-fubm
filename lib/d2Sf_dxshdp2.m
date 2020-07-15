@@ -240,6 +240,7 @@ else %AAB- Polar Version
         end        
         for kk=1:nPfdp
             ShdpSel2=diagPfdpSel(:,iPfdp(kk)); %AAB- Selects the column of diagShSel representing only the active Sh
+            Ysshdp=diagYsshdp(:,iPfdp(k)); %AAB- Selects the column of diagShsel representing only the active Sh
             
             %% Second Derivatives         
             d2Yff_dshdp2 = sparse( zeros(nl,1) );
