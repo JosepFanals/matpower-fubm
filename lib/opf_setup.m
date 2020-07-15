@@ -451,11 +451,17 @@ else                %% AC model
           nodal_balance_vars{end+1} = 'Beqz'; %FUBM- Adds the Beq variable at the end because Ybus depends on Beq and Ybus is used in the power balance equations
           flow_lim_vars{end+1} = 'Beqz'; %FUBM- Adds the Beq variable at the end because Beq will be changing to control the reactive power in the branch, therefore affecting the branch flow
           zero_lim_vars = flow_lim_vars; %FUBM- Zero lim vars is a copy of flow lim vars, but since the zero constraint is controlled by Beq this constraint does not contain Beqv, only Beqz, therefore Beqv is skipped.
+          if nPfdp
+              pfdp_lim_vars{end+1} = 'Beqz'; %FUBM- Adds the Beq variable at the end
+          end
       end
       if nBeqv
           user_vars{end+1} = 'Beqv'; %FUBM- Adds the Beq variable at the end
           nodal_balance_vars{end+1} = 'Beqv'; %FUBM- Adds the Beq variable at the end because Ybus depends on Beq and Ybus is ussed in the power balance equations
           flow_lim_vars{end+1} = 'Beqv'; %FUBM- Adds the Beq variable at the end. Beq will be changing to control the reactive power in the branch, therefore affecting the branch flow
+          if nPfdp
+              pfdp_lim_vars{end+1} = 'Beqv'; %FUBM- Adds the Bev variable at the end
+          end      
       end
       if nPfsh
           user_vars{end+1} = 'ShAng'; %FUBM- Adds the Theta_shift variable at the end
@@ -470,23 +476,28 @@ else                %% AC model
           flow_lim_vars{end+1} = 'maQt'; %FUBM- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
           zero_lim_vars{end+1} = 'maQt'; %FUBM- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
           pfsh_lim_vars{end+1} = 'maQt';  %FUBM- ShAng it's included
-          qtma_lim_vars = flow_lim_vars;  %FUBM- ma/tap it's included    
+          qtma_lim_vars = flow_lim_vars;  %FUBM- ma/tap it's included 
+          if nPfdp
+              pfdp_lim_vars{end+1} = 'maQt'; %FUBM- Adds the ma/tap variable at the end
+          end
       end
       if nVtma
           user_vars{end+1} = 'maVt'; %FUBM- Adds the ma/tap variable at the end
           nodal_balance_vars{end+1} = 'maVt'; %FUBM- Adds the ma/tap variable at the end because Ybus depends on ma/tap and Ybus is used in the power balance equations
           flow_lim_vars{end+1} = 'maVt'; %FUBM- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
           zero_lim_vars{end+1} = 'maVt'; %FUBM- Adds the ma/tap variable at the end. ma/tap will be changing to control the reactive power in the branch, therefore affecting the branch flow
-          pfsh_lim_vars{end+1} = 'maVt';  %FUBM- ShAng it's included  
+          pfsh_lim_vars{end+1} = 'maVt';  %FUBM- ShAng it's included 
+          if nPfdp
+              pfdp_lim_vars{end+1} = 'maVt'; %FUBM- Adds the ma/tap variable at the end
+          end
       end
       if nPfdp
           user_vars{end+1} = 'ShAngDp'; %FUBM- Adds the Theta_shift Droop variable at the end
           nodal_balance_vars{end+1} = 'ShAngDp'; %FUBM- Adds the Theta_shift Droop variable at the end because Ybus depends on Theta_shift and Ybus is used in the power balance equations
           flow_lim_vars{end+1} = 'ShAngDp'; %FUBM- Adds the Theta_shift Droop variable at the end. Theta_shift will be changing to control the active power in the branch, therefore affecting the branch flow
           zero_lim_vars{end+1} = 'ShAngDp'; %FUBM- Adds the Theta_shift Droop variable at the end. Theta_shift will be changing to control the active power in the branch, therefore affecting the branch flow
-          pfsh_lim_vars{end+1} = 'ShAngDp'; %FUBM- ShAng it's included
           qtma_lim_vars{end+1} = 'ShAngDp'; %FUBM- ma/tap it's included
-          pfdp_lim_vars = flow_lim_vars;  %FUBM- ShAngDp it's included Droop Control 
+          pfdp_lim_vars{end+1} = 'ShAngDp';  %FUBM- ShAngDp it's included Droop Control 
       end
       %%-------------------------------------------------------------------
   end
