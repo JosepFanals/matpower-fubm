@@ -72,6 +72,7 @@ nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 %% Identify if grid has controls
 iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
+iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
@@ -131,7 +132,7 @@ end
 nb = length(V);         %% number of buses
 
 %% ----- evaluate constraints -----
-if nPfdp1 > 0 %AAB- If there are Pf control elements
+if nPfdp > 0 %AAB- If there are Pf control elements
     %% compute branch power flows for the controlled elements
     %br = find(branch(:, BR_STATUS));  %%FUBM- in-service branches
     brf=branch(:, F_BUS);              %%FUBM- from bus index of all the branches, brf=branch(br, F_BUS); %For in-service branches 
@@ -142,7 +143,7 @@ if nPfdp1 > 0 %AAB- If there are Pf control elements
     St = V(brt) .* conj(It);           %%FUBM- complex power injected at "to"   bus
     
     %%Save the Voltage-Droop control settings though the branch (   Pf - Pfset = Kdp*(Vmf - Vmfset)  )
-    Pfset = branch(iPfdp, PF)./ mpc.baseMVA; %Setting for active power control in [pu]
+    Pfset = branch(:, PF)./ mpc.baseMVA; %Setting for active power control in [pu]
     Kdp   = branch(:,KDP   ); %Voltage Droop Slope   setting for the branch element in p.u.
     Vmfset = branch(:,VF_SET); %Voltage Droop Voltage Setting for the branch element in p.u.
 
@@ -156,7 +157,7 @@ if nargout > 1
     if nPfdp > 0
         %% compute partials of Flows w.r.t. V, Beq, Theta Shift and ma
         [dPfdp_dV1_all, dPfdp_dV2_all, dPfdp_dPfsh_all, dPfdp_dQfma_all, dPfdp_dBeqz_all,...
-            dPfdp_dBeqv_all, dPfdp_dVtma_all, dPfdp_dQtma_all, dPfdp_dPfdp_all] = dPfdp_dx(branch, Yf, Yt, V, 3, vcart);
+            dPfdp_dBeqv_all, dPfdp_dVtma_all, dPfdp_dQtma_all, dPfdp_dPfdp_all] = dPfdp_dx(branch, Yf, Yt, V, 3, mpopt.opf.v_cartesian);
         %% Selecting only the branches that have droop control
         dPfdp_dV1   = dPfdp_dV1_all(iPfdp,:);                %Only Droop control elements iPfdp
         dPfdp_dV2   = dPfdp_dV2_all(iPfdp,:);                %Only Droop control elements iPfdp

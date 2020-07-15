@@ -203,10 +203,7 @@ else %AAB- Polar Version
             d2Ybus_dshdpBeqv = Cf'*(d2Yf_dshdpBeqv) + Ct'*(d2Yt_dshdpBeqv);  %AAB- must be zero
             d2Sbus_dshdpBeqv(kk,k) = (V.*conj(d2Ybus_dshdpBeqv*V)).'*lam;    %AAB- must be zero           
         end
-        for kk=1:nPfsh
-            vtmaPfshSel=diagVtmaSel(:,iVtma(k)).*diagPfshSel(:,iPfsh(kk)); %AAB- Selects only the active element controlling Pf and Vt with sh and ma
-            YsmashSel2=Ys.*vtmaPfshSel;                                    %AAB- Selector multiplied by Ys
-                        
+        for kk=1:nPfsh                        
             %% Second Derivatives 
             d2Yff_dshdpsh = zeros(nl,1);                                       %AAB- must be zero
             d2Yft_dshdpsh = zeros(nl,1);                                       %AAB- must be zero

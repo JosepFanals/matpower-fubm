@@ -72,7 +72,7 @@ iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0
 nVscL = length(iVscL); %AAB- Number of VSC with power losses
 
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (mpc.branch(:, CONV)~=3) & (mpc.branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1] (Converters and Phase Shifter Transformers, but no VSCIII)
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1] (Converters and Phase Shifter Transformers, but no VSCIII)
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift (Converters and Phase Shifter Transformers, but no VSCIII)
 iQtma = find (branch(:,QT)~=0 & branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
@@ -188,7 +188,7 @@ if nargout > 1
             if fubm %FUBM formulation
                 [dFf_dV1, dFf_dV2, dFt_dV1, dFt_dV2, Ff, Ft] = dSbr_dV(branch(il,:), Yf, Yt, V, mpopt.opf.v_cartesian); %AAB-Obtains the derivatives of the Sf and St w.r.t V   - Yf and Yt are constant here.
                 %%AAB------------------------------------------------------
-                [dFf_dBeqz, dFt_dBeqz] = dSbr_dBeq(branch(il,:), V, 1, mpopt.opf.v_cartesian); %% w.r.t. Beqz       %AAB-Obtains the derivatives of the Sf and St w.r.t Beq      - V remains constant here because Beq      is the only variable
+                [dFf_dBeqz, dFt_dBeqz] = dSbr_dBeq(branch(il,:), V, 3, mpopt.opf.v_cartesian); %% w.r.t. Beqz       %AAB-Obtains the derivatives of the Sf and St w.r.t Beq      - V remains constant here because Beq      is the only variable
                 [dFf_dBeqv, dFt_dBeqv] = dSbr_dBeq(branch(il,:), V, 2, mpopt.opf.v_cartesian); %% w.r.t. Beqv       %AAB-Obtains the derivatives of the Sf and St w.r.t Beq      - V remains constant here because Beq      is the only variable                
                 [dFf_dPfsh, dFt_dPfsh] = dSbr_dsh (branch(il,:), V, 1, mpopt.opf.v_cartesian); %% w.r.t. Theta_sh   %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_sh - V remains constant here because Theta_sh is the only variable                
                 [dFf_dQtma, dFt_dQtma] = dSbr_dma (branch(il,:), V, 2, mpopt.opf.v_cartesian); %% w.r.t. ma         %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma       is the only variable                
