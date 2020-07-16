@@ -1,5 +1,5 @@
 function [num_dAf_dPxsh, num_dAt_dPxsh] = ...
-                        dAbr_dshPert(baseMVA, bus, branch, V, side, pert, vcart)
+                        dAbr_dshPert(baseMVA, bus, branch, V, ctrl, pert, vcart)
 %DABR_DSHPERT  Partial derivatives of squared flow magnitudes w.r.t Theta_sh (Finite Differences Method).
 %   [NUM_DAF_DPXSH, NUM_DAT_DPXSH] = ...
 %        DABR_DSHPERT(BASEMVA, BUS, BRANCH, V, SIDE, PERT, VCART)
@@ -8,15 +8,17 @@ function [num_dAf_dPxsh, num_dAt_dPxsh] = ...
 %   the branch flow magnitudes at "from" & "to" ends of each branch w.r.t
 %   Theta_sh using the Finite Differences Method.
 %
-%   Theta_shift can be used either to control the Pf or Pt to a certain set 
-%   value Pfset or Ptset respectively for active power control. Thus, the 
+%   Theta_shift can be used either, to control the Pf or Pt to a certain set 
+%   value Pfset or Ptset respectively for active power control, or to control
+%   the Pf depending on the Voltage Droop Control for VSCIII. Thus, the 
 %   derivatives are separated for each function. The derivatives w.r.t. 
-%   Theta_shift will be chosen for either Pf or Pt control, depending on 
-%   the 5th argument "side".
+%   Theta_shift will be chosen for either Pf, Pt or Droop control, depending 
+%   on the 3rd argument "ctrl".
 %   So that:
 %
-%   side = 1 : Pf = Pfset, "from side", Phase Shifter Transformers and VSC
-%   side = 2 : Pt = Ptset, "to side", 
+%   ctrl = 1 : Pf = Pfset, "from side", Phase Shifter Transformers, VSCI and VSCII
+%   ctrl = 2 : Pt = Ptset, "to side", 
+%   ctrl = 3 : Pf - Pfset = Kdp*(Vf - Vfset), VSCIII Voltage Droop Control
 %
 %   The derivatives will be taken with respect to polar or cartesian coordinates
 %   of voltage, depending on the 7th argument. So far only polar
@@ -80,21 +82,24 @@ function [num_dAf_dPxsh, num_dAt_dPxsh] = ...
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 
 %% default input args
 if nargin < 7
     vcart = 0;      %% default to polar coordinates
 end
 
-%% selection of Side
-if side == 1    %from side
-    iPxsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations of Pf control size[nPfsh,1]
-elseif side ==2 %to side
-    iPxsh = find (branch(:,PT)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations of Pf control size[nPtsh,1]
+%% selection of Control
+if ctrl == 1    %from side
+    iPxsh = find( (branch(:,PF  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, SH_MIN )~=-360 | branch(:, SH_MAX )~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4) ); %AAB- Location of the branch elements with Pf control by theta_shift to meet the setting. (Converters and Phase Shifter Transformers, but no VSCIII)
+elseif ctrl ==2 %to side
+    iPxsh = find( (branch(:,PT  )~=0) & (branch(:,BR_STATUS)~=0) & (branch(:, SH_MIN )~=-360 | branch(:, SH_MAX )~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4) ); %AAB- Location of the branch elements with Pt control by theta_shift to meet the setting. (Converters and Phase Shifter Transformers, but no VSCIII)
+elseif ctrl ==3 %Droop Control
+    iPxsh = find( (branch(:,VF_SET)~=0) & (branch(:,KDP)~=0) & (branch(:, BR_STATUS)~=0) & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)==3 | branch(:, CONV)==4) ); %AAB- Find branch locations of the branch elements with Pf-Vdc Droop Control [nPfdp,1] (VSCIII)
 else
-    error('dSbus_dsh: Side for element active power control can only be type 1 (from side) or 2 (to side)')    
-end  
+    error('dSbr_dsh: Side for element active power control can only be type 1 (from side), 2 (to side) or 3 (Pf-Vdc Voltage Droop Control)')    
+end 
+
 %% constants
 nb = length(V);             %% number of buses
 nl = size(branch, 1);       %% number of lines

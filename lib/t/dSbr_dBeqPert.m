@@ -1,5 +1,5 @@
-function [num_dSf_dBeqx, num_dSt_dBeqx] = dSbr_dBeqPert(baseMVA, bus, branch, V, vsc, pert, vcart)
-%DSBBR_DBEQPERT   Computes partial derivatives of branch power flows w.r.t. Beq (Finite differences method)..
+function [num_dSf_dBeqx, num_dSt_dBeqx] = dSbr_dBeqPert(baseMVA, bus, branch, V, ctrl, pert, vcart)
+%DSBBR_DBEQPERT   Computes partial derivatives of branch power flows w.r.t. Beq (Finite differences method).
 %
 %   Beq can be used either to control the Vdc to a certain set value Vfset 
 %   or the Qf to match zero (zero constraint). So the derivatives are
@@ -96,7 +96,7 @@ function [num_dSf_dBeqx, num_dSt_dBeqx] = dSbr_dBeqPert(baseMVA, bus, branch, V,
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 
 %% default input args
 if nargin < 7
@@ -104,19 +104,16 @@ if nargin < 7
 end
 
 %% selection of VSC
-if vsc == 1 %VSC I
-    iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
-elseif vsc ==2 %VSC II
-    %iBeqz = find (branch(:,CONV) == 1   & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
-    %nBeqz = length(iBeqz); %AAB- Identifier if there case is an AC/DC grid
-    %if nBeqz
-        iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1 &  branch(:, VF_SET)~=0) ; %AAB- Find branch locations of VSC size[nBeqv,1]
-    %else
-    %    error('dSbr_dBeq: There must be an AC/DC grid in order to use VSC Vf control')
-    %end
+if ctrl == 1 %VSC I and VSCIIIz
+    iBeqx = find ( ( branch(:,CONV) == 1 | branch(:,CONV) == 3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
+elseif ctrl ==2 %VSC II
+    iBeqx = find (branch(:,CONV) == ctrl & branch(:, BR_STATUS)==1 &  branch(:, VF_SET)~=0) ; %AAB- Find branch locations of VSC size[nBeqv,1]
+elseif ctrl == 3 %VSC I, VSCIIIz and VSCIII
+    iBeqx = find ( ( branch(:,CONV) == 1 | branch(:,CONV) == 3  | branch(:,CONV) == 4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
 else
-    error('dSbr_dBeqPert: VSC can only be type 1 or 2')    
+    error('dSbr_dBeq: VSC can only be control 1 (VSCI and VSCIIIz), 2 (VSCII), OR 3 (VSCI, VSCIIIz and VSCIII)')    
 end  
+
 %% constants
 nb = length(V);             %% number of buses
 nl = size(branch, 1);       %% number of lines

@@ -4,9 +4,9 @@ clear all;
 clc; 
 %Options
 % mpopt = mpoption('opf.ac.solver', 'KNITRO','knitro.tol_x',1e-10,'knitro.tol_f',1e-4,'opf.violation',1e-6,'opf.start',0);
- mpopt = mpoption('opf.ac.solver', 'MIPS', 'mips.max_it',5000,'opf.violation',1e-6,'opf.start',0);
+% mpopt = mpoption('opf.ac.solver', 'MIPS', 'mips.max_it',5000,'opf.violation',1e-6,'opf.start',0);
 % mpopt = mpoption('opf.ac.solver', 'FMINCON','opf.violation',1e-6,'opf.start',0);
-% mpopt = mpoption('opf.ac.solver', 'IPOPT','opf.violation',1e-6,'opf.start',0);
+ mpopt = mpoption('opf.ac.solver', 'IPOPT','opf.violation',1e-6,'opf.start',0);
 mpopt = mpoption(mpopt, 'verbose', 2);
 
 %Run OPF
@@ -26,9 +26,9 @@ mpopt = mpoption(mpopt, 'verbose', 2);
     ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<FUBM-extra fields for FUBM
 
 %Locating controls and AC/DC grids
-iBeqz = find (results.branch(:,CONV)==1 & results.branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+iBeqz = find ((results.branch(:,CONV)==1 | results.branch(:,CONV)==3 | results.branch(:,CONV)==4) & results.branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
 iBeqv = find (results.branch(:,CONV)==2 & results.branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
-iPfsh = find (results.branch(:,PF)  ~=0 & results.branch(:, BR_STATUS)==1 & (results.branch(:, SH_MIN)~=-360 | results.branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+iPfsh = find (results.branch(:,PF)  ~=0 & results.branch(:, BR_STATUS)==1 & (results.branch(:, SH_MIN)~=-360 | results.branch(:, SH_MAX)~=360)& (results.branch(:, CONV)~=3) & (results.branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 iQtma = find (results.branch(:,QT)  ~=0 & results.branch(:, BR_STATUS)==1 & results.branch(:, VT_SET)==0 & (results.branch(:, TAP_MIN)~= results.branch(:, TAP_MAX)) ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 iVtma = find (results.branch(:, BR_STATUS)==1 & results.branch(:, VT_SET)~=0 & (results.branch(:, TAP_MIN)~= results.branch(:, TAP_MAX)) ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 iVscL = find (results.branch(:,CONV)~=0 & results.branch(:, BR_STATUS)==1 & (results.branch(:, ALPH1)~=0 | results.branch(:, ALPH2)~=0 | results.branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]

@@ -1,14 +1,16 @@
-function [num_dSbus_dBeqx] = dSbus_dBeqPert(baseMVA, bus, branch, V, vsc, pert, vcart)
+function [num_dSbus_dBeqx] = dSbus_dBeqPert(baseMVA, bus, branch, V, ctrl, pert, vcart)
 %DSBUS_DBEQPERT   Computes partial derivatives of power injection w.r.t. Beq.   (Finite differences method)
 %
 %   Beq can be used either to control the Vdc to a certain set value Vfset 
 %   or the Qf to match zero (zero constraint). So the derivatives are
 %   separated for each function. The derivatives w.r.t. Beq will be 
-%   chosen for either VSC type 1 or type 2, depending on the 3rd argument.
+%   chosen for either VSC type I and IIIz, or type II, or VSC type I and IIIz 
+%   and III depending on the 3rd argument.
 %   So that:
 %
-%   VSC = 1 : Qf = 0,    Zero constraint
-%   VSC = 2 : Vf = Vset, Vdc control 
+%   ctrl = 1 : Qf = 0,    Zero constraint  VSCI and VSCIIIz only for Power flow
+%   ctrl = 2 : Vf = Vset, Vdc control      VSCII
+%   ctrl = 3 : Qf = 0,    Zero constraint  VSCI, VSCIIIz, VSCIII only for OPF
 %
 %   The derivatives will be taken with respect to polar or cartesian coordinates
 %   of voltage, depending on the 4th argument. So far only polar
@@ -93,7 +95,7 @@ function [num_dSbus_dBeqx] = dSbus_dBeqPert(baseMVA, bus, branch, V, vsc, pert, 
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 
 %% default input args
 if nargin < 7
@@ -101,12 +103,14 @@ if nargin < 7
 end
 
 %% selection of VSC
-if vsc == 1 %VSC I
-    iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
-elseif vsc ==2 %VSC II
-    iBeqx = find (branch(:,CONV) == vsc & branch(:, BR_STATUS)==1 &  branch(:, VF_SET)~=0) ; %AAB- Find branch locations of VSC size[nBeqv,1]
+if ctrl == 1 %VSC I and VSCIIIz POWER FLOW
+    iBeqx = find ( ( branch(:,CONV) == 1 | branch(:,CONV) == 3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
+elseif ctrl ==2 %VSC II
+    iBeqx = find (branch(:,CONV) == ctrl & branch(:, BR_STATUS)==1 &  branch(:, VF_SET)~=0) ; %AAB- Find branch locations of VSC size[nBeqv,1]
+elseif ctrl == 3 %VSC I, VSCIIIz, VSCIII, OPTIMAL POWER FLOW
+    iBeqx = find ( ( branch(:,CONV) == 1 | branch(:,CONV) == 3 | branch(:,CONV) == 4 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC size[nBeqz,1]
 else
-    error('dSbus_dBeqPert: VSC can only be type 1 or 2')    
+    error('dSbus_dBeq: VSC can only be control 1 (VSCI and VSCIIIz), 2 (VSCII), OR 3 (VSCI, VSCIIIz and VSCIII)')    
 end  
 %% constants
 nb = length(V);             %% number of buses

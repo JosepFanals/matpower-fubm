@@ -1,9 +1,9 @@
 function [num_dSbus_dPfsh, num_dSbus_dQfma, num_dSbus_dBeqz,...
-    num_dSbus_dBeqv, num_dSbus_dVtma, num_dSbus_dQtma] = dSbus_dxPert(baseMVA, bus, branch, V, pert, vcart)
+    num_dSbus_dBeqv, num_dSbus_dVtma, num_dSbus_dQtma, num_dSbus_dPfdp] = dSbus_dxPert(baseMVA, bus, branch, V, pert, vcart)
 %%DSBUS_DXPERT  Calls all functions that compute the Finite differences partial derivatives of power injection w.r.t. xfubm.
 %
 %   [NUM_DSBUS_DPFSH, NUM_DSBUS_DQFMA, NUM_DSBUS_DBEQZ,...
-%        NUM_DSBUS_DBEQV, NUM_DSBUS_DVTMA, NUM_DSBUS_DQTMA] = DSBUS_DXPERT(BASEMVA, BUS, BRANCH, V, PERT, VCART)
+%        NUM_DSBUS_DBEQV, NUM_DSBUS_DVTMA, NUM_DSBUS_DQTMA, NUM_DSBUS_DPFDP] = DSBUS_DXPERT(BASEMVA, BUS, BRANCH, V, PERT, VCART)
 
 %   Returns sparse matrices containing the partial derivatives w.r.t. xfubm
 %   using the Finite differences method.
@@ -47,6 +47,7 @@ function [num_dSbus_dPfsh, num_dSbus_dQfma, num_dSbus_dBeqz,...
 %DONE OUTSIDE THIS FUNCTION %[dSbus_dVa, dSbus_dVm] = dSbus_dV(Ybus, V, vcart);
 %% Shift Angle Partials
 [num_dSbus_dPfsh] = dSbus_dshPert(baseMVA, bus, branch, V, 1, pert, vcart);
+[num_dSbus_dPfdp] = dSbus_dshPert(baseMVA, bus, branch, V, 3, pert, vcart);
 %% ma Partials
 [num_dSbus_dQfma] = dSbus_dmaPert(baseMVA, bus, branch, V, 1, pert, vcart);
 [num_dSbus_dQtma] = dSbus_dmaPert(baseMVA, bus, branch, V, 2, pert, vcart);

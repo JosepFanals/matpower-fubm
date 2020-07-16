@@ -27,7 +27,7 @@ if nargin < 1
     quiet = 0;
 end
 
-t_begin(54, quiet); %AAB-initializes the global test counters (Number of Total Tests)
+t_begin(40, quiet); %AAB-initializes the global test counters (Number of Total Tests)
 
 %casefile = 'fubm_caseHVDC_qt';
 %casefile = 'fubm_caseHVDC_vt';
@@ -317,6 +317,8 @@ Vmfset = branch(:,VF_SET); %Voltage Droop Voltage Setting for the branch element
     %Voltages "from" and "to" Perturbed
     V1pf = V1p(f,:);
     V2pf = V2p(f,:);
+    V1pt = V1p(t,:);
+    V2pt = V2p(t,:);
     
     %Obtain Sf(x) and Sf(x+h) for Voltages
     Sf2 = (V(f)*ones(1,nb)) .* conj(Yf * VV); %Sf(x)
@@ -355,5 +357,15 @@ Vmfset = branch(:,VF_SET); %Voltage Droop Voltage Setting for the branch element
     t_is(dPfdp_dVtma_sp, num_dPfdp_dVtma_sp, 5, sprintf('%s - dPfdp_dVtma (sparse)', coord));
     t_is(dPfdp_dQtma_sp, num_dPfdp_dQtma_sp, 5, sprintf('%s - dPfdp_dQtma (sparse)', coord));       
     t_is(dPfdp_dPfdp_sp, num_dPfdp_dPfdp_sp, 5, sprintf('%s - dPfdp_dPfdp (sparse)', coord));
+    
+    t_is(dSt_dV1_sp, num_dSt_dV1, 5, sprintf('%s - dSt_dV%s (sparse)', coord, vv{1}));
+    t_is(dSt_dV2_sp, num_dSt_dV2, 5, sprintf('%s - dSt_dV%s (sparse)', coord, vv{2}));
+    t_is(dSt_dPfsh_sp, num_dSt_dPfsh_sp, 5, sprintf('%s - dSt_dPfsh (sparse)', coord));
+    t_is(dSt_dQfma_sp, num_dSt_dQfma_sp, 5, sprintf('%s - dSt_dQfma (sparse)', coord));
+    t_is(dSt_dBeqz_sp, num_dSt_dBeqz_sp, 5, sprintf('%s - dSt_dBeqz (sparse)', coord));
+    t_is(dSt_dBeqv_sp, num_dSt_dBeqv_sp, 5, sprintf('%s - dSt_dBeqv (sparse)', coord));
+    t_is(dSt_dVtma_sp, num_dSt_dVtma_sp, 5, sprintf('%s - dSt_dVtma (sparse)', coord));
+    t_is(dSt_dQtma_sp, num_dSt_dQtma_sp, 5, sprintf('%s - dSt_dQtma (sparse)', coord)); 
+    t_is(dSt_dPfdp_sp, num_dSt_dPfdp_sp, 5, sprintf('%s - dSt_dPfdp (sparse)', coord));
 
 t_end;

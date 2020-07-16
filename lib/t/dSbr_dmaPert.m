@@ -117,7 +117,7 @@ function [num_dSf_dmax, num_dSt_dmax] = dSbr_dmaPert(baseMVA, bus, branch, V, ct
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 
 %% default input args
 if nargin < 7
@@ -134,8 +134,9 @@ elseif ctrl == 3 %Vf
 elseif ctrl == 4 %Vt
     iXxma = find (branch(:,VT_SET)~=0 & branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) ); %AAB- Find branch locations of Qt control size[nQtsh,1] %Transformers and VSC
 else
-    error('dSbr_dmaPert: Control type can only be type 1 (Qf), 2 (Qt), 3(Vf), or 4(Vt)')    
+    error('dPfdp_dmaPert: Control type can only be type 1 (Qf), 2 (Qt), 3(Vf), or 4(Vt)')    
 end  
+
 %% constants
 nb = length(V);             %% number of buses
 nl = size(branch, 1);       %% number of lines
