@@ -33,7 +33,7 @@ t_begin(54, quiet); %AAB-initializes the global test counters (Number of Total T
 %casefile = 'fubm_caseHVDC_vt';
 %casefile = 'fubm_case_57_14_2MTDC_ctrls';
 %casefile = 'fubm_case_30_2MTDC_ctrls_vt1_pf';
-casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf';
+casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf_dp';
 
 %% define named indices into bus, gen, branch matrices
 [PQ, PV, REF, NONE, BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, ...

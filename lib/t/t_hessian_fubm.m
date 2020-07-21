@@ -43,7 +43,7 @@ casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf';
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM- Original: idx_brch
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM- Original: idx_brch
 vcart=0;
 %% run powerflow to get solved case
 mpopt = mpoption('verbose', 0, 'out.all', 0);
@@ -67,28 +67,26 @@ Ct = sparse(1:nl, t, ones(nl, 1), nl, nb);      %% connection matrix for line & 
 pert = 1e-8;                                    %% perturbation factor (h) for the Finite Differences Method
 
 %% identifier of AC/DC grids
-iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC for zero constraint
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-%%identifier of elements with Vf controlled by Beq
-iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
-if nBeqz
-    nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
-else
-    nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
-end
+iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSCII
+nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 iVscL = find (branch(:,CONV)~=0 & branch(:, BR_STATUS)==1 & (branch(:, ALPH1)~=0 | branch(:, ALPH2)~=0 | branch(:, ALPH3)~=0) ); %AAB- Find VSC with active PWM Losses Calculation [nVscL,1]
-if nBeqz
-    nVscL = length(iVscL); %AAB- Number of VSC with power losses
-else
-    nVscL = 0; %AAB- Number of VSC with power losses
-end
+nVscL = length(iVscL); %AAB- Number of VSC with power losses
+
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift except VSCIII [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
 iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
+iPfdp = find( (branch(:,VF_SET)~=0) & (branch(:,KDP)~=0) & (branch(:, BR_STATUS)~=0) & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)==3 | branch(:, CONV)==4) ); %AAB- find VSCIII Voltage Droop Control elements
+nPfdp = length(iPfdp); %number of VSCIII Voltage Droop Control elements
+
+%%Save the Voltage-Droop control settings though the branch (   Pf - Pfset = Kdp*(Vmf - Vmfset)  )
+Kdp    = branch(:,KDP   ); %Voltage Droop Slope   setting for the branch element in p.u.
+Vmfset = branch(:,VF_SET); %Voltage Droop Voltage Setting for the branch element in p.u.
 
 %% -----  run tests for polar coordinate  -----
     %%-----  create perturbed voltages  -----
@@ -251,6 +249,34 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     
     t_is(full(G99), num_G99, 4, sprintf('%s - HVtma2 %s'  , coord, t));
 
+    
+    %% -----  check d2Sbus_dshdp2 code  -----
+    t = ' - d2Sbus_dxshdp2 (Pf-Vf Droop Control)';
+    lam = 10 * rand(nb   , 1    );
+    %%sparse matrices partial derivatives
+    [G110, G210, G510, G610, G710, G810, G910, G101, G102, G105, G106, G107, G108, G109, G1010] = d2Sbus_dxshdp2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_G110, num_G210, num_G510, num_G610, num_G710, num_G810, num_G910, num_G101, num_G102, num_G105, num_G106, num_G107, num_G108, num_G109, num_G1010] = d2Sbus_dxshdp2Pert(baseMVA, bus, branch, V, lam, pert, vcart);  
+
+    t_is(full(G110), num_G110, 4, sprintf('%s - HVaPfdp%s'  , coord, t));
+    t_is(full(G210), num_G210, 4, sprintf('%s - HVmPfdp%s'  , coord, t));
+    t_is(full(G510), num_G510, 4, sprintf('%s - HBeqzPfdp%s', coord, t));
+    t_is(full(G610), num_G610, 4, sprintf('%s - HBeqvPfdp%s', coord, t));
+    t_is(full(G710), num_G710, 4, sprintf('%s - HPfshPfdp%s', coord, t));
+    t_is(full(G810), num_G810, 4, sprintf('%s - HQtmaPfdp%s', coord, t));
+    t_is(full(G910), num_G910, 4, sprintf('%s - HVtmaPfdp%s', coord, t));
+    
+    t_is(full(G101), num_G101, 4, sprintf('%s - HPfdpVa%s'  , coord, t));
+    t_is(full(G102), num_G102, 4, sprintf('%s - HPfdpVm%s'  , coord, t));
+    t_is(full(G105), num_G105, 4, sprintf('%s - HPfdpBeqz%s', coord, t));
+    t_is(full(G106), num_G106, 4, sprintf('%s - HPfdpBeqv%s', coord, t));
+    t_is(full(G107), num_G107, 4, sprintf('%s - HPfdpPfsh%s', coord, t));
+    t_is(full(G108), num_G108, 4, sprintf('%s - HPfdpQtma%s', coord, t));
+    t_is(full(G109), num_G109, 4, sprintf('%s - HPfdpVtma%s', coord, t));
+    
+    t_is(full(G1010), num_G1010, 4, sprintf('%s - HPfdp2 %s'  , coord, t));
+    
     %% -----  check d2Sbr_dV2 code  -----
     t = ' - d2Sbr_dV2 (complex power flows)';
     lam = 10 * rand(nl, 1);
@@ -481,6 +507,55 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
    
     t_is(full(Ht77), num_Ht77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
     
+    %% -----  check d2Sbr_dxshdp2 code  -----
+    t = ' - d2Sbr_dxshdp2 (Vtma complex power flows)';
+    lam = 10 * rand(nl, 1);
+    %%sparse matrices partial derivatives
+    [Hf18, Hf28, Hf38, Hf48, Hf58, Hf68, Hf78, Hf81, Hf82, Hf83, Hf84, Hf85, Hf86, Hf87, Hf88] = d2Sf_dxshdp2(branch, V, lam, vcart);
+    [Ht18, Ht28, Ht38, Ht48, Ht58, Ht68, Ht78, Ht81, Ht82, Ht83, Ht84, Ht85, Ht86, Ht87, Ht88] = d2St_dxshdp2(branch, V, lam, vcart);
+    
+    %%compute numerically to compare (Finite Differences Method)
+    [num_Hf18, num_Hf28, num_Hf38, num_Hf48, num_Hf58, num_Hf68, num_Hf78, num_Hf81, num_Hf82, num_Hf83, num_Hf84, num_Hf85, num_Hf86, num_Hf87, num_Hf88,...
+     num_Ht18, num_Ht28, num_Ht38, num_Ht48, num_Ht58, num_Ht68, num_Ht78, num_Ht81, num_Ht82, num_Ht83, num_Ht84, num_Ht85, num_Ht86, num_Ht87, num_Ht88] = d2Sbr_dxshdp2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+    
+    br = ' - "from" side';
+    t_is(full(Hf18), num_Hf18, 4, sprintf('%s - HVaPfdp%s%s'  , coord, t, br));
+    t_is(full(Hf28), num_Hf28, 4, sprintf('%s - HVmPfdp%s%s'  , coord, t, br));
+    t_is(full(Hf38), num_Hf38, 4, sprintf('%s - HBeqzPfdp%s%s', coord, t, br));
+    t_is(full(Hf48), num_Hf48, 4, sprintf('%s - HBeqvPfdp%s%s', coord, t, br));
+    t_is(full(Hf58), num_Hf58, 4, sprintf('%s - HPfshPfdp%s%s', coord, t, br));
+    t_is(full(Hf68), num_Hf68, 4, sprintf('%s - HQtmaPfdp%s%s', coord, t, br));
+    t_is(full(Hf78), num_Hf78, 4, sprintf('%s - HVtmaPfdp%s%s', coord, t, br));
+    
+    t_is(full(Hf81), num_Hf81, 4, sprintf('%s - HPfdpVa%s%s'  , coord, t, br));
+    t_is(full(Hf82), num_Hf82, 4, sprintf('%s - HPfdpVm%s%s'  , coord, t, br));
+    t_is(full(Hf83), num_Hf83, 4, sprintf('%s - HPfdpBeqz%s%s', coord, t, br));
+    t_is(full(Hf84), num_Hf84, 4, sprintf('%s - HPfdpBeqv%s%s', coord, t, br));
+    t_is(full(Hf85), num_Hf85, 4, sprintf('%s - HPfdpPfsh%s%s', coord, t, br));
+    t_is(full(Hf86), num_Hf86, 4, sprintf('%s - HPfdpQtma%s%s', coord, t, br));
+    t_is(full(Hf87), num_Hf87, 4, sprintf('%s - HPfdpVtma%s%s', coord, t, br));
+    
+    t_is(full(Hf88), num_Hf88, 4, sprintf('%s - HPfdp2 %s%s'  , coord, t, br));
+    
+    br = ' - " to " side';
+    t_is(full(Ht18), num_Ht18, 4, sprintf('%s - HVaPfdp%s%s'  , coord, t, br));
+    t_is(full(Ht28), num_Ht28, 4, sprintf('%s - HVmPfdp%s%s'  , coord, t, br));
+    t_is(full(Ht38), num_Ht38, 4, sprintf('%s - HBeqzPfdp%s%s', coord, t, br));
+    t_is(full(Ht48), num_Ht48, 4, sprintf('%s - HBeqvPfdp%s%s', coord, t, br));
+    t_is(full(Ht58), num_Ht58, 4, sprintf('%s - HPfshPfdp%s%s', coord, t, br));
+    t_is(full(Ht68), num_Ht68, 4, sprintf('%s - HQtmaPfdp%s%s', coord, t, br));
+    t_is(full(Ht78), num_Ht78, 4, sprintf('%s - HVtmaPfdp%s%s', coord, t, br));
+    
+    t_is(full(Ht81), num_Ht81, 4, sprintf('%s - HPfdpVa%s%s'  , coord, t, br));
+    t_is(full(Ht82), num_Ht82, 4, sprintf('%s - HPfdpVm%s%s'  , coord, t, br));
+    t_is(full(Ht83), num_Ht83, 4, sprintf('%s - HPfdpBeqz%s%s', coord, t, br));
+    t_is(full(Ht84), num_Ht84, 4, sprintf('%s - HPfdpBeqv%s%s', coord, t, br));
+    t_is(full(Ht85), num_Ht85, 4, sprintf('%s - HPfdpPfsh%s%s', coord, t, br));
+    t_is(full(Ht86), num_Ht86, 4, sprintf('%s - HPfdpQtma%s%s', coord, t, br));
+    t_is(full(Ht87), num_Ht87, 4, sprintf('%s - HPfdpVtma%s%s', coord, t, br));
+    
+    t_is(full(Ht88), num_Ht88, 4, sprintf('%s - HPfdp2 %s%s'  , coord, t, br));
+    
     %% -----  check d2Abr_dV2 code  -----
     t = ' - d2Abr_dV2 (squared apparent power flows)';
     lam = 10 * rand(nl, 1);
@@ -548,14 +623,17 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     d2St_dQtma2 = @(V, mu)d2St_dxqtma2(branch, V, mu, vcart);   %AAB-Anonymus function for the 2nd derivatives w.r.t. qtma     of St
     d2Sf_dVtma2 = @(V, mu)d2Sf_dxvtma2(branch, V, mu, vcart);   %AAB-Anonymus function for the 2nd derivatives w.r.t. vtma     of Sf
     d2St_dVtma2 = @(V, mu)d2St_dxvtma2(branch, V, mu, vcart);   %AAB-Anonymus function for the 2nd derivatives w.r.t. vtma     of St
+    d2Sf_dPfdp2 = @(V, mu)d2Sf_dxshdp2(branch, V, mu, vcart);   %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_dp of Sf
+    d2St_dPfdp2 = @(V, mu)d2St_dxshdp2(branch, V, mu, vcart);   %AAB-Anonymus function for the 2nd derivatives w.r.t. Theta_dp of St
     
     %%First Derivatives Sbr
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, vcart);
-    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, vcart);
+    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 3, vcart);
     [dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch, V, 2, vcart);
     [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch, V, 1, vcart);
     [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch, V, 2, vcart);
-    [dSf_dVtma, dSt_dVtma] = dSbr_dma(branch, V, 4, vcart); 
+    [dSf_dVtma, dSt_dVtma] = dSbr_dma(branch, V, 4, vcart);
+    [dSf_dPfdp, dSt_dPfdp] = dSbr_dsh(branch, V, 3, vcart);    
     
     %%sparse matrices partial derivatives
     [Hf13, Hf23, Hf31, Hf32, Hf33] = d2Abr_dxBeqz2(d2Sf_dBeqz2, dSf_dV1, dSf_dV2, dSf_dBeqz, Sf, V, lam);
@@ -568,6 +646,9 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     [Ht16, Ht26, Ht36, Ht46, Ht56, Ht61, Ht62, Ht63, Ht64, Ht65, Ht66] = d2Abr_dxqtma2(d2St_dQtma2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, dSt_dQtma, St, V, lam); 
     [Hf17, Hf27, Hf37, Hf47, Hf57, Hf67, Hf71, Hf72, Hf73, Hf74, Hf75, Hf76, Hf77] = d2Abr_dxvtma2(d2Sf_dVtma2, dSf_dV1, dSf_dV2, dSf_dBeqz, dSf_dBeqv, dSf_dPfsh, dSf_dQtma, dSf_dVtma, Sf, V, lam); 
     [Ht17, Ht27, Ht37, Ht47, Ht57, Ht67, Ht71, Ht72, Ht73, Ht74, Ht75, Ht76, Ht77] = d2Abr_dxvtma2(d2St_dVtma2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, dSt_dQtma, dSt_dVtma, St, V, lam);   
+    [Hf18, Hf28, Hf38, Hf48, Hf58, Hf68, Hf78, Hf81, Hf82, Hf83, Hf84, Hf85, Hf86, Hf87, Hf88] = d2Abr_dxshdp2(d2Sf_dPfdp2, dSf_dV1, dSf_dV2, dSf_dBeqz, dSf_dBeqv, dSf_dPfsh, dSf_dQtma, dSf_dVtma, dSf_dPfdp, Sf, V, lam); 
+    [Ht18, Ht28, Ht38, Ht48, Ht58, Ht68, Ht78, Ht81, Ht82, Ht83, Ht84, Ht85, Ht86, Ht87, Ht88] = d2Abr_dxshdp2(d2St_dPfdp2, dSt_dV1, dSt_dV2, dSt_dBeqz, dSt_dBeqv, dSt_dPfsh, dSt_dQtma, dSt_dVtma, dSt_dPfdp, St, V, lam);   
+    
     
     %%compute numerically to compare (Finite Differences Method)
     [num_Hf13, num_Hf23, num_Hf31, num_Hf32, num_Hf33,...
@@ -580,6 +661,8 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
      num_Ht16, num_Ht26, num_Ht36, num_Ht46, num_Ht56, num_Ht61, num_Ht62, num_Ht63, num_Ht64, num_Ht65, num_Ht66] = d2Abr_dxqtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart); 
     [num_Hf17, num_Hf27, num_Hf37, num_Hf47, num_Hf57, num_Hf67, num_Hf71, num_Hf72, num_Hf73, num_Hf74, num_Hf75, num_Hf76, num_Hf77,...
      num_Ht17, num_Ht27, num_Ht37, num_Ht47, num_Ht57, num_Ht67, num_Ht71, num_Ht72, num_Ht73, num_Ht74, num_Ht75, num_Ht76, num_Ht77] = d2Abr_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);   
+    [num_Hf18, num_Hf28, num_Hf38, num_Hf48, num_Hf58, num_Hf68, num_Hf78, num_Hf81, num_Hf82, num_Hf83, num_Hf84, num_Hf85, num_Hf86, num_Hf87, num_Hf88,...
+     num_Ht18, num_Ht28, num_Ht38, num_Ht48, num_Ht58, num_Ht68, num_Ht78, num_Ht81, num_Ht82, num_Ht83, num_Ht84, num_Ht85, num_Ht86, num_Ht87, num_Ht88] = d2Abr_dxshdp2Pert(baseMVA, bus, branch, V, lam, pert, vcart);   
     
     t = ' - d2Abr_dxBeqz2 (Beqz complex power flows)';
     br = ' - "from" side';
@@ -691,4 +774,144 @@ nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/
     t_is(full(Ht76), num_Ht76, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
     t_is(full(Ht77), num_Ht77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
 
+    t = ' - d2Abr_dxPfdp2 (Pfdp complex power flows)';  
+    br = ' - "from" side';
+    t_is(full(Hf18), num_Hf18, 4, sprintf('%s - HVaPfdp%s%s'  , coord, t, br));
+    t_is(full(Hf28), num_Hf28, 4, sprintf('%s - HVmPfdp%s%s'  , coord, t, br));
+    t_is(full(Hf38), num_Hf38, 4, sprintf('%s - HBeqzPfdp%s%s', coord, t, br));
+    t_is(full(Hf48), num_Hf48, 4, sprintf('%s - HBeqvPfdp%s%s', coord, t, br));
+    t_is(full(Hf58), num_Hf58, 4, sprintf('%s - HPfshPfdp%s%s', coord, t, br));
+    t_is(full(Hf68), num_Hf68, 4, sprintf('%s - HQtmaPfdp%s%s', coord, t, br));
+    t_is(full(Hf78), num_Hf78, 4, sprintf('%s - HVtmaPfdp%s%s', coord, t, br));    
+    t_is(full(Hf81), num_Hf81, 4, sprintf('%s - HPfdpVa%s%s'  , coord, t, br));
+    t_is(full(Hf82), num_Hf82, 4, sprintf('%s - HPfdpVm%s%s'  , coord, t, br));
+    t_is(full(Hf83), num_Hf83, 4, sprintf('%s - HPfdpBeqz%s%s', coord, t, br));
+    t_is(full(Hf84), num_Hf84, 4, sprintf('%s - HPfdpBeqv%s%s', coord, t, br));
+    t_is(full(Hf85), num_Hf85, 4, sprintf('%s - HPfdpPfsh%s%s', coord, t, br));
+    t_is(full(Hf86), num_Hf86, 4, sprintf('%s - HPfdpQtma%s%s', coord, t, br));
+    t_is(full(Hf87), num_Hf87, 4, sprintf('%s - HPfdpVtma%s%s', coord, t, br));
+    t_is(full(Hf88), num_Hf88, 4, sprintf('%s - HPfdp2 %s%s'  , coord, t, br));
+    br = ' - " to " side';
+    t_is(full(Ht18), num_Ht18, 4, sprintf('%s - HVaPfdp%s%s'  , coord, t, br));
+    t_is(full(Ht28), num_Ht28, 4, sprintf('%s - HVmPfdp%s%s'  , coord, t, br));
+    t_is(full(Ht38), num_Ht38, 4, sprintf('%s - HBeqzPfdp%s%s', coord, t, br));
+    t_is(full(Ht48), num_Ht48, 4, sprintf('%s - HBeqvPfdp%s%s', coord, t, br));
+    t_is(full(Ht58), num_Ht58, 4, sprintf('%s - HPfshPfdp%s%s', coord, t, br));
+    t_is(full(Ht68), num_Ht68, 4, sprintf('%s - HQtmaPfdp%s%s', coord, t, br));
+    t_is(full(Ht78), num_Ht78, 4, sprintf('%s - HVtmaPfdp%s%s', coord, t, br));
+    t_is(full(Ht81), num_Ht81, 4, sprintf('%s - HPfdpVa%s%s'  , coord, t, br));
+    t_is(full(Ht82), num_Ht82, 4, sprintf('%s - HPfdpVm%s%s'  , coord, t, br));
+    t_is(full(Ht83), num_Ht83, 4, sprintf('%s - HPfdpBeqz%s%s', coord, t, br));
+    t_is(full(Ht84), num_Ht84, 4, sprintf('%s - HPfdpBeqv%s%s', coord, t, br));
+    t_is(full(Ht85), num_Ht85, 4, sprintf('%s - HPfdpPfsh%s%s', coord, t, br));
+    t_is(full(Ht86), num_Ht86, 4, sprintf('%s - HPfdpQtma%s%s', coord, t, br));
+    t_is(full(Ht87), num_Ht87, 4, sprintf('%s - HPfdpVtma%s%s', coord, t, br));
+    t_is(full(Ht88), num_Ht88, 4, sprintf('%s - HPfdp2 %s%s'  , coord, t, br));
+    
+    %% -----  check d2Pfdp_dxfubm2 code  -----
+    lam = 10 * rand(nl, 1);
+    %%Annonymus functions Declared avobe
+    
+    %%sparse matrices partial derivatives
+    [Gf11, Gf12, Gf21, Gf22] = d2Sf_dV2(V, muF);
+    [Gf11, Gf12, Gf21, Gf22] = deal(-real(Gf11), -real(Gf12), -real(Gf21), -real(Gf22));
+    [Gf13, Gf23, Gf31, Gf32, Gf33] = d2Sf_dBeqz2(V,muFaux);
+    [Gf13, Gf23, Gf31, Gf32, Gf33] = deal(-real(Gf13), -real(Gf23), -real(Gf31), -real(Gf32), -real(Gf33));
+    [Gf14, Gf24, Gf34, Gf41, Gf42, Gf43, Gf44] = d2Sf_dBeqv2(V,muFaux);
+    [Gf14, Gf24, Gf34, Gf41, Gf42, Gf43, Gf44] = deal(-real(Gf14), -real(Gf24), -real(Gf34), -real(Gf41), -real(Gf42), -real(Gf43), -real(Gf44));
+    %[Gf15, Gf25, Gf35, Gf45, Gf51, Gf52, Gf53, Gf54, Gf55] = d2Sf_dsh2(V,muFaux);
+    %[Gf15, Gf25, Gf35, Gf45, Gf51, Gf52, Gf53, Gf54, Gf55] = deal(-real(Gf15), -real(Gf25), -real(Gf35), -real(Gf45), -real(Gf51), -real(Gf52), -real(Gf53), -real(Gf54), -real(Gf55));
+    [Gf16, Gf26, Gf36, Gf46, Gf56, Gf61, Gf62, Gf63, Gf64, Gf65, Gf66] = d2Sf_dqtma2(V,muFaux);
+    [Gf16, Gf26, Gf36, Gf46, Gf56, Gf61, Gf62, Gf63, Gf64, Gf65, Gf66] = deal(-real(Gf16), -real(Gf26), -real(Gf36), -real(Gf46), -real(Gf56), -real(Gf61), -real(Gf62), -real(Gf63), -real(Gf64), -real(Gf65), -real(Gf66));
+    [Gf17, Gf27, Gf37, Gf47, Gf57, Gf67, Gf71, Gf72, Gf73, Gf74, Gf75, Gf76, Gf77] = d2Sf_dvtma2(V,muFaux);
+    [Gf17, Gf27, Gf37, Gf47, Gf57, Gf67, Gf71, Gf72, Gf73, Gf74, Gf75, Gf76, Gf77] = deal(-real(Gf17), -real(Gf27), -real(Gf37), -real(Gf47), -real(Gf57), -real(Gf67), -real(Gf71), -real(Gf72), -real(Gf73), -real(Gf74), -real(Gf75), -real(Gf76), -real(Gf77));
+    [Gf18, Gf28, Gf38, Gf48, Gf58, Gf68, Gf78, Gf81, Gf82, Gf83, Gf84, Gf85, Gf86, Gf87, Gf88] = d2Sf_dshdp2(V,muFaux);
+    [Gf18, Gf28, Gf38, Gf48, Gf58, Gf68, Gf78, Gf81, Gf82, Gf83, Gf84, Gf85, Gf86, Gf87, Gf88] = deal(-real(Gf18), -real(Gf28), -real(Gf38), -real(Gf48), -real(Gf58), -real(Gf68), -real(Gf78), -real(Gf81), -real(Gf82), -real(Gf83), -real(Gf84), -real(Gf85), -real(Gf86), -real(Gf87), -real(Gf88));
+        
+    %%compute numerically to compare (Finite Differences Method)
+    [num_Gf13, num_Gf23, num_Gf31, num_Gf32, num_Gf33] = d2Pfdp_dxBeqz2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+    [num_Gf14, num_Gf24, num_Gf34, num_Gf41, num_Gf42, num_Gf43, num_Gf44] = d2Pfdp_dxBeqv2Pert(baseMVA, bus, branch, V, lam, pert, vcart);
+    %[num_Gf15, num_Gf25, num_Gf35, num_Gf45, num_Gf51, num_Gf52, num_Gf53, num_Gf54, num_Gf55] = d2Pfdp_dxsh2Pert(baseMVA, bus, branch, V, lam, pert, vcart); 
+    [num_Gf16, num_Gf26, num_Gf36, num_Gf46, num_Gf56, num_Gf61, num_Gf62, num_Gf63, num_Gf64, num_Gf65, num_Gf66] = d2Pfdp_dxqtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart); 
+    [num_Gf17, num_Gf27, num_Gf37, num_Gf47, num_Gf57, num_Gf67, num_Gf71, num_Gf72, num_Gf73, num_Gf74, num_Gf75, num_Gf76, num_Gf77] = d2Pfdp_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart);   
+    [num_Gf18, num_Gf28, num_Gf38, num_Gf48, num_Gf58, num_Gf68, num_Gf78, num_Gf81, num_Gf82, num_Gf83, num_Gf84, num_Gf85, num_Gf86, num_Gf87, num_Gf88] = d2Pfdp_dxshdp2Pert(baseMVA, bus, branch, V, lam, pert, vcart);   
+    
+    t = ' - d2Pfdp_dxBeqz2 (Beqz Voltage Droop Control)';
+    br = ' - "from" side';
+    t_is(full(Gf13), num_Gf13, 4, sprintf('%s - HVaBeqz%s%s', coord, t, br));
+    t_is(full(Gf23), num_Gf23, 4, sprintf('%s - HVmBeqz%s%s', coord, t, br));
+    t_is(full(Gf31), num_Gf31, 4, sprintf('%s - HBeqzVa%s%s', coord, t, br));
+    t_is(full(Gf32), num_Gf32, 4, sprintf('%s - HBeqzVm%s%s', coord, t, br));
+    t_is(full(Gf33), num_Gf33, 4, sprintf('%s - HBeqz2 %s%s', coord, t, br));
+    
+    t = ' - d2Pfdp_dxBeqv2 (Beqv Voltage Droop Control)';   
+    br = ' - "from" side';
+    t_is(full(Gf14), num_Gf14, 4, sprintf('%s - HVaBeqv%s%s', coord, t, br));
+    t_is(full(Gf24), num_Gf24, 4, sprintf('%s - HVmBeqv%s%s', coord, t, br));
+    t_is(full(Gf34), num_Gf34, 4, sprintf('%s - HBeqzBeqv%s%s', coord, t, br));
+    t_is(full(Gf41), num_Gf41, 4, sprintf('%s - HBeqvVa%s%s', coord, t, br));
+    t_is(full(Gf42), num_Gf42, 4, sprintf('%s - HBeqvVm%s%s', coord, t, br));
+    t_is(full(Gf43), num_Gf43, 4, sprintf('%s - HBeqvBeqz%s%s', coord, t, br));
+    t_is(full(Gf44), num_Gf44, 4, sprintf('%s - HBeqv2 %s%s', coord, t, br));
+    
+    %t = ' - d2Pfdp_dxPfsh2 (Pfsh Voltage Droop Control)';  
+    %br = ' - "from" side';
+    %t_is(full(Gf15), num_Gf15, 4, sprintf('%s - HVaPfsh%s%s'  , coord, t, br));
+    %t_is(full(Gf25), num_Gf25, 4, sprintf('%s - HVmPfsh%s%s'  , coord, t, br));
+    %t_is(full(Gf35), num_Gf35, 4, sprintf('%s - HBeqzPfsh%s%s', coord, t, br));
+    %t_is(full(Gf45), num_Gf45, 4, sprintf('%s - HBeqvPfsh%s%s', coord, t, br));
+    %t_is(full(Gf51), num_Gf51, 4, sprintf('%s - HPfshVa%s%s'  , coord, t, br));
+    %t_is(full(Gf52), num_Gf52, 4, sprintf('%s - HPfshVm%s%s'  , coord, t, br));
+    %t_is(full(Gf53), num_Gf53, 4, sprintf('%s - HPfshBeqz%s%s', coord, t, br));
+    %t_is(full(Gf54), num_Gf54, 4, sprintf('%s - HPfshBeqv%s%s', coord, t, br));
+    %t_is(full(Gf55), num_Gf55, 4, sprintf('%s - HPfsh2 %s%s'  , coord, t, br));
+   
+    t = ' - d2Pfdp_dxQtma2 (Qtma Voltage Droop Control)';  
+    br = ' - "from" side';
+    t_is(full(Gf16), num_Gf16, 4, sprintf('%s - HVaQtma%s%s'  , coord, t, br));
+    t_is(full(Gf26), num_Gf26, 4, sprintf('%s - HVmQtma%s%s'  , coord, t, br));
+    t_is(full(Gf36), num_Gf36, 4, sprintf('%s - HBeqzQtma%s%s', coord, t, br));
+    t_is(full(Gf46), num_Gf46, 4, sprintf('%s - HBeqvQtma%s%s', coord, t, br));
+    %t_is(full(Gf56), num_Gf56, 4, sprintf('%s - HPfshQtma%s%s', coord, t, br));
+    t_is(full(Gf61), num_Gf61, 4, sprintf('%s - HQtmaVa%s%s'  , coord, t, br));
+    t_is(full(Gf62), num_Gf62, 4, sprintf('%s - HQtmaVm%s%s'  , coord, t, br));
+    t_is(full(Gf63), num_Gf63, 4, sprintf('%s - HQtmaBeqz%s%s', coord, t, br));
+    t_is(full(Gf64), num_Gf64, 4, sprintf('%s - HQtmaBeqv%s%s', coord, t, br));
+    %t_is(full(Gf65), num_Gf65, 4, sprintf('%s - HQtmaPfsh%s%s', coord, t, br));
+    t_is(full(Gf66), num_Gf66, 4, sprintf('%s - HQtma2 %s%s'  , coord, t, br));
+   
+    t = ' - d2Pfdp_dxVtma2 (Vtma Voltage Droop Control)';  
+    br = ' - "from" side';
+    t_is(full(Gf17), num_Gf17, 4, sprintf('%s - HVaVtma%s%s'  , coord, t, br));
+    t_is(full(Gf27), num_Gf27, 4, sprintf('%s - HVmVtma%s%s'  , coord, t, br));
+    t_is(full(Gf37), num_Gf37, 4, sprintf('%s - HBeqzVtma%s%s', coord, t, br));
+    t_is(full(Gf47), num_Gf47, 4, sprintf('%s - HBeqvVtma%s%s', coord, t, br));
+    %t_is(full(Gf57), num_Gf57, 4, sprintf('%s - HPfshVtma%s%s', coord, t, br));
+    t_is(full(Gf67), num_Gf67, 4, sprintf('%s - HQtmaVtma%s%s', coord, t, br));
+    t_is(full(Gf71), num_Gf71, 4, sprintf('%s - HVtmaVa%s%s'  , coord, t, br));
+    t_is(full(Gf72), num_Gf72, 4, sprintf('%s - HVtmaVm%s%s'  , coord, t, br));
+    t_is(full(Gf73), num_Gf73, 4, sprintf('%s - HVtmaBeqz%s%s', coord, t, br));
+    t_is(full(Gf74), num_Gf74, 4, sprintf('%s - HVtmaBeqv%s%s', coord, t, br));
+    %t_is(full(Gf75), num_Gf75, 4, sprintf('%s - HVtmaPfsh%s%s', coord, t, br));
+    t_is(full(Gf76), num_Gf76, 4, sprintf('%s - HVtmaQtma%s%s', coord, t, br));
+    t_is(full(Gf77), num_Gf77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
+    
+    t = ' - d2Pfdp_dxPfdp2 (Pfdp Voltage Droop Control)';  
+    br = ' - "from" side';
+    t_is(full(Gf18), num_Gf18, 4, sprintf('%s - HVaPfdp%s%s'  , coord, t, br));
+    t_is(full(Gf28), num_Gf28, 4, sprintf('%s - HVmPfdp%s%s'  , coord, t, br));
+    t_is(full(Gf38), num_Gf38, 4, sprintf('%s - HBeqzPfdp%s%s', coord, t, br));
+    t_is(full(Gf48), num_Gf48, 4, sprintf('%s - HBeqvPfdp%s%s', coord, t, br));
+    %t_is(full(Gf58), num_Gf58, 4, sprintf('%s - HPfshPfdp%s%s', coord, t, br));
+    t_is(full(Gf68), num_Gf68, 4, sprintf('%s - HQtmaPfdp%s%s', coord, t, br));
+    t_is(full(Gf78), num_Gf78, 4, sprintf('%s - HVtmaPfdp%s%s', coord, t, br));    
+    t_is(full(Gf81), num_Gf81, 4, sprintf('%s - HPfdpVa%s%s'  , coord, t, br));
+    t_is(full(Gf82), num_Gf82, 4, sprintf('%s - HPfdpVm%s%s'  , coord, t, br));
+    t_is(full(Gf83), num_Gf83, 4, sprintf('%s - HPfdpBeqz%s%s', coord, t, br));
+    t_is(full(Gf84), num_Gf84, 4, sprintf('%s - HPfdpBeqv%s%s', coord, t, br));
+    %t_is(full(Gf85), num_Gf85, 4, sprintf('%s - HPfdpPfsh%s%s', coord, t, br));
+    t_is(full(Gf86), num_Gf86, 4, sprintf('%s - HPfdpQtma%s%s', coord, t, br));
+    t_is(full(Gf87), num_Gf87, 4, sprintf('%s - HPfdpVtma%s%s', coord, t, br));
+    t_is(full(Gf88), num_Gf88, 4, sprintf('%s - HPfdp2 %s%s'  , coord, t, br));
+   
 t_end;
