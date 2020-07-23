@@ -35,6 +35,7 @@ t_begin(245, quiet); %AAB-initializes the global test counters (Number of Total 
 %casefile = 'fubm_case_57_14_2MTDC_ctrls';
 %casefile = 'fubm_case_30_2MTDC_ctrls_vt1_pf';
 casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf';
+%casefile = 'fubm_case_30_2MTDC_ctrls_vt2_pf_dp';
 
 %% define named indices into bus, gen, branch matrices
 [PQ, PV, REF, NONE, BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, ...
@@ -508,7 +509,7 @@ Vmfset = branch(:,VF_SET); %Voltage Droop Voltage Setting for the branch element
     t_is(full(Ht77), num_Ht77, 4, sprintf('%s - HVtma2 %s%s'  , coord, t, br));
     
     %% -----  check d2Sbr_dxshdp2 code  -----
-    t = ' - d2Sbr_dxshdp2 (Vtma complex power flows)';
+    t = ' - d2Sbr_dxshdp2 (Pfdp complex power flows)';
     lam = 10 * rand(nl, 1);
     %%sparse matrices partial derivatives
     [Hf18, Hf28, Hf38, Hf48, Hf58, Hf68, Hf78, Hf81, Hf82, Hf83, Hf84, Hf85, Hf86, Hf87, Hf88] = d2Sf_dxshdp2(branch, V, lam, vcart);
