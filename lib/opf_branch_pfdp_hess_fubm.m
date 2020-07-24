@@ -2,19 +2,19 @@ function d2G = opf_branch_pfdp_hess_fubm(x, lambda, mpc, iPfdp, mpopt)
 %OPF_BRANCH_PFDP_HESS_FUBM  Evaluates Hessian of branch Droop control constraints for elements with active power "from" Droop control.
 %   D2G = OPF_BRANDP_PFDP_HESS_AAB(X, LAMBDA, OM, IBEQZ, MPOPT)
 %
-%   Hessian evaluation function for elements with Pf control (Pf - Pfset = 0).
+%   Hessian evaluation function for elements with Droop control -real(Sf(iPfdp)) + Pfset(iPfdp) + Kdp(iPfdp).* (  Vm(brf(iPfdp)) - Vmfset(iPfdp) ) = 0.
 %
 %   Inputs:
 %     X      : optimization vector
 %     LAMBDA : column vector of Kuhn-Tucker multipliers on constrained
-%              branch active power Pf_set
+%              branch active droop control
 %     MPC    : MATPOWER case struct
 %     IPFDP : vector of branch indices corresponding to elements with
 %             Active Droop control "Pf - Pfset = Kdp*(Vmf - Vmfset)".
 %     MPOPT  : MATPOWER options struct
 %
 %   Outputs:
-%     D2G : Hessian of Pf control constraints.
+%     D2G : Hessian of Droop control constraints.
 %
 %   Function:
 %   br = find(branch(:, BR_STATUS));  %%FUBM- in-service branches

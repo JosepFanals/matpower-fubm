@@ -138,7 +138,7 @@ else %AAB- Polar Version
     
     %Sbr 1st Derivatives 
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, vcart);
-    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, vcart);
+    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 3, vcart);
     [dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch, V, 2, vcart);
     [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch, V, 1, vcart);
     [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch, V, 2, vcart);

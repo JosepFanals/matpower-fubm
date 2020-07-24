@@ -72,7 +72,7 @@ function [num_G18, num_G28, num_G58, num_G68, num_G78, num_G81, num_G82, num_G85
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 %% default input args
 if nargin < 7
     vcart = 0;      %% default to polar coordinates
@@ -88,17 +88,13 @@ pertDeg = (pert*180)/pi;
 %[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 %% identifier of AC/DC grids
-iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-%%identifier of elements with Vf controlled by Beq
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
-if nBeqz
-    nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
-else
-    nBeqv = 0; %AAB- Vdc control with Beq requires an AC/DC grid.
-end
+nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
+
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
 iQtma = find (branch(:,QT)~=0 &branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
@@ -121,7 +117,7 @@ else %AAB- Polar Version
     
     %Sbus 1st Derivatives 
     [dSbus_dV1, dSbus_dV2] = dSbus_dV(Ybus, V, vcart);
-    [dSbus_dBeqz] = dSbus_dBeq(branch, V, 1, vcart);
+    [dSbus_dBeqz] = dSbus_dBeq(branch, V, 3, vcart);
     [dSbus_dBeqv] = dSbus_dBeq(branch, V, 2, vcart);
     [dSbus_dPfsh] = dSbus_dsh(branch, V, 1, vcart);
     [dSbus_dQtma] = dSbus_dma(branch, V, 2, vcart); 
@@ -245,7 +241,7 @@ else %AAB- Polar Version
         %Make Ybus, Yf, Yt Perturbated
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbus_dBeqzPertQtma evaluated in x+pert
-        [dSbus_dBeqz_PertQtma] = dSbus_dBeq(branch_Pert, V, 1, vcart); %dSbus_dBeqzPertQtma
+        [dSbus_dBeqz_PertQtma] = dSbus_dBeq(branch_Pert, V, 3, vcart); %dSbus_dBeqzPertQtma
         %2nd Derivatives of Sbus w.r.t. BeqzQtma
         d2Sbus_dQtmaBeqz(:, k) = (dSbus_dBeqz_PertQtma - dSbus_dBeqz).' * lam / pert;  %BeqzQtma (dSbus_dBeqzPertQtma - dSbus_dBeqz) size of [nBeqz, nQtma] 
     end

@@ -78,7 +78,7 @@ function [num_Hf15, num_Hf25, num_Hf35, num_Hf45, num_Hf51, num_Hf52, num_Hf53, 
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 %% default input args
 if nargin < 7
     vcart = 0;      %% default to polar coordinates
@@ -94,14 +94,13 @@ pertDeg = (pert*180)/pi;
 %[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 %% identifier of AC/DC grids
-iBeqz = find (branch(:,CONV)==1 & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-%%identifier of elements with Vf controlled by Beq
-iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC size[nBeqv,1]
+iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
 
 %% Calculation of derivatives
@@ -119,7 +118,7 @@ else %AAB- Polar Version
     
     %Sbr 1st Derivatives 
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, vcart);
-    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, vcart);
+    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 3, vcart);
     [dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch, V, 2, vcart);
     [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch, V, 1, vcart);
     
@@ -258,7 +257,7 @@ else %AAB- Polar Version
         %Sbr evaluated in x+pert
         [Sf_PertPfsh, St_PertPfsh] = SbrFlows(branch_Pert, Yf_Pert, Yt_Pert, V);
         %dSbr_dBeqzPertPfsh evaluated in x+pert
-        [dSf_dBeqz_PertPfsh, dSt_dBeqz_PertPfsh] = dSbr_dBeq(branch_Pert, V, 1, vcart); %dSbr_dBeqzPertPfsh
+        [dSf_dBeqz_PertPfsh, dSt_dBeqz_PertPfsh] = dSbr_dBeq(branch_Pert, V, 3, vcart); %dSbr_dBeqzPertPfsh
         %dAbr_dBeqzPertPfsh evaluated in x+pert        
         [dAf_dBeqz_PertPfsh, dAt_dBeqz_PertPfsh] = dAbr_dBeq(dSf_dBeqz_PertPfsh, dSt_dBeqz_PertPfsh, Sf_PertPfsh, St_PertPfsh);             
         %2nd Derivatives of Sbr w.r.t. BeqzPfsh

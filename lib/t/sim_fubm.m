@@ -4,9 +4,9 @@ clear all;
 clc; 
 %Options
 % mpopt = mpoption('opf.ac.solver', 'KNITRO','knitro.tol_x',1e-10,'knitro.tol_f',1e-4,'opf.violation',1e-6,'opf.start',0);
-% mpopt = mpoption('opf.ac.solver', 'MIPS', 'mips.max_it',5000,'opf.violation',1e-6,'opf.start',0);
+ mpopt = mpoption('opf.ac.solver', 'MIPS', 'mips.max_it',5000,'opf.violation',1e-6,'opf.start',0);
 % mpopt = mpoption('opf.ac.solver', 'FMINCON','opf.violation',1e-6,'opf.start',0);
- mpopt = mpoption('opf.ac.solver', 'IPOPT','opf.violation',1e-6,'opf.start',0);
+% mpopt = mpoption('opf.ac.solver', 'IPOPT','opf.violation',1e-6,'opf.start',0);
 mpopt = mpoption(mpopt, 'verbose', 2);
 
 %Run OPF

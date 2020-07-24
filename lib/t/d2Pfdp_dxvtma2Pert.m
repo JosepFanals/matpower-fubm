@@ -1,40 +1,36 @@
-function [num_Hf17, num_Hf27, num_Hf37, num_Hf47, num_Hf57, num_Hf67, num_Hf71, num_Hf72, num_Hf73, num_Hf74, num_Hf75, num_Hf76, num_Hf77,...
-          num_Ht17, num_Ht27, num_Ht37, num_Ht47, num_Ht57, num_Ht67, num_Ht71, num_Ht72, num_Ht73, num_Ht74, num_Ht75, num_Ht76, num_Ht77] = d2Sbr_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart)
-%D2SF_DXVTMA2PERT  Computes 2nd derivatives of complex brch power flow "from" w.r.t. vtmaVa, vtmaVm, vtmaBeqz, vtmaBeqv, vtmaSh, vtmaqtma, Vavtma, Vmvtma, Beqzvtma, Beqvvtma, Shvtma, qtmavtma, vtmavtma (Finite Differences Method).
+function [num_Hf17, num_Hf27, num_Hf37, num_Hf47, num_Hf57, num_Hf67, num_Hf71, num_Hf72, num_Hf73, num_Hf74, num_Hf75, num_Hf76, num_Hf77] = d2Pfdp_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, vcart)
+%D2PFDP_DXVTMA2PERT  Computes 2nd derivatives of Droop Control "from" w.r.t. vtmaVa, vtmaVm, vtmaBeqz, vtmaBeqv, vtmaSh, vtmaqtma, Vavtma, Vmvtma, Beqzvtma, Beqvvtma, Shvtma, qtmavtma, vtmavtma (Finite Differences Method).
 %
 %   The derivatives will be taken with respect to polar or cartesian coordinates
 %   depending on the 7th argument. So far only Polar has been coded
 %   
-%   [HfvtmaVa, HfvtmaVm, HfvtmaBz, HfvtmaBv, HfvtmaSh, Hfvtmaqtma, HfVavtma, HfVmvtma, HfBzvtma, HfBvvtma, HfShvtma, Hfqtmavtma, Hfvtmavtma, ...
-%   [HtvtmaVa, HtvtmaVm, HtvtmaBz, HtvtmaBv, HtvtmaSh, Htvtmaqtma, HtVavtma, HtVmvtma, HtBzvtma, HtBvvtma, HtShvtma, Htqtmavtma, Htvtmavtma] = D2SF_DXVTMA2(BASEMVA, BUS, BRANCH, V, LAM, PERT, 0)
+%   [HfvtmaVa, HfvtmaVm, HfvtmaBz, HfvtmaBv, HfvtmaSh, Hfvtmaqtma, HfVavtma, HfVmvtma, HfBzvtma, HfBvvtma, HfShvtma, Hfqtmavtma, Hfvtmavtma] = D2PFDP_DXVTMA2(BASEMVA, BUS, BRANCH, V, LAM, PERT, 0)
 %
-%   Returns 26 matrices containing the partial derivatives w.r.t. Va, Vm,
+%   Returns 13 matrices containing the partial derivatives w.r.t. Va, Vm,
 %   Beq, Sh and ma of the product of a vector LAM with the 1st partial 
 %   derivatives of the complex branch power flows.
 %
-%   [HfvtmaVa, HfvtmaVm, HfvtmaBz, HfvtmaBv, HfvtmaSh, Hfvtmaqtma, HfVavtma, HfVmvtma, HfBzvtma, HfBvvtma, HfShvtma, Hfqtmavtma, Hfvtmavtma, ...
-%   [HtvtmaVa, HtvtmaVm, HtvtmaBz, HtvtmaBv, HtvtmaSh, Htvtmaqtma, HtVavtma, HtVmvtma, HtBzvtma, HtBvvtma, HtShvtma, Htqtmavtma, Htvtmavtma] = D2SF_DXVTMA2(BASEMVA, BUS, BRANCH, V, LAM, PERT, 1)
+%   [HfvtmaVa, HfvtmaVm, HfvtmaBz, HfvtmaBv, HfvtmaSh, Hfvtmaqtma, HfVavtma, HfVmvtma, HfBzvtma, HfBvvtma, HfShvtma, Hfqtmavtma, Hfvtmavtma] = D2PFDP_DXVTMA2(BASEMVA, BUS, BRANCH, V, LAM, PERT, 1)
 %
 %   Not Coded Yet
 %
 %   Examples:
-%   [HfvtmaVa, HfvtmaVm, HfvtmaBz, HfvtmaBv, HfvtmaSh, Hfvtmaqtma, HfVavtma, HfVmvtma, HfBzvtma, HfBvvtma, HfShvtma, Hfqtmavtma, Hfvtmavtma, ...
-%   [HtvtmaVa, HtvtmaVm, HtvtmaBz, HtvtmaBv, HtvtmaSh, Htvtmaqtma, HtVavtma, HtVmvtma, HtBzvtma, HtBvvtma, HtShvtma, Htqtmavtma, Htvtmavtma] = d2Sbr_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, 0)
+%   [HfvtmaVa, HfvtmaVm, HfvtmaBz, HfvtmaBv, HfvtmaSh, Hfvtmaqtma, HfVavtma, HfVmvtma, HfBzvtma, HfBvvtma, HfShvtma, Hfqtmavtma, Hfvtmavtma] = d2Pfdp_dxvtma2Pert(baseMVA, bus, branch, V, lam, pert, 0)
 %                                                               
 %       Here the output matrices correspond to:
-%           HvtmaVa   = d/dvtma (dSf_dVa.'   * mu)
-%           HvtmaVm   = d/dvtma (dSf_dVm.'   * mu)
-%           HvtmaBz   = d/dvtma (dSf_dBeqz.' * mu)
-%           HvtmaBv   = d/dvtma (dSf_dBeqv.' * mu)
-%           HvtmaSh   = d/dvtma (dSf_dSh.'   * mu)
-%           Hvtmaqtma = d/dvtma (dSf_dqtma.' * mu)
-%           HVavtma   = d/dVa   (dSf_dvtma.' * mu)
-%           HVmvtma   = d/dVm   (dSf_dvtma.' * mu)
-%           HBzvtma   = d/dBeqz (dSf_dvtma.' * mu)
-%           HBvvtma   = d/dBeqv (dSf_dvtma.' * mu)
-%           HShvtma   = d/dSh   (dSf_dvtma.' * mu)
-%           Hqtmavtma = d/dqtma (dSf_dvtma.' * mu)
-%           Hvtmavtma = d/dvtma (dSf_dvtma.' * mu)
+%           HvtmaVa   = d/dvtma (dPfdp_dVa.'   * mu)
+%           HvtmaVm   = d/dvtma (dPfdp_dVm.'   * mu)
+%           HvtmaBz   = d/dvtma (dPfdp_dBeqz.' * mu)
+%           HvtmaBv   = d/dvtma (dPfdp_dBeqv.' * mu)
+%           HvtmaSh   = d/dvtma (dPfdp_dSh.'   * mu)
+%           Hvtmaqtma = d/dvtma (dPfdp_dqtma.' * mu)
+%           HVavtma   = d/dVa   (dPfdp_dvtma.' * mu)
+%           HVmvtma   = d/dVm   (dPfdp_dvtma.' * mu)
+%           HBzvtma   = d/dBeqz (dPfdp_dvtma.' * mu)
+%           HBvvtma   = d/dBeqv (dPfdp_dvtma.' * mu)
+%           HShvtma   = d/dSh   (dPfdp_dvtma.' * mu)
+%           Hqtmavtma = d/dqtma (dPfdp_dvtma.' * mu)
+%           Hvtmavtma = d/dvtma (dPfdp_dvtma.' * mu)
 %
 %   For more details on the derivations behind the derivative code used
 %   in MATPOWER information, see:
@@ -91,22 +87,30 @@ pertDeg = (pert*180)/pi;
 YttB = Ys + 1j*Bc/2 + 1j*Beq;
 
 %% identifier of AC/DC grids
+%%AAB---------------------------------------------------------------------- 
 iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
-iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
+iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
 
 %% Identify if grid has controls
-iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
+iPfsh = find (branch(:,PF)~=0 & branch(:, BR_STATUS)==1 & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360)& (branch(:, CONV)~=3) & (branch(:, CONV)~=4)); %AAB- Find branch locations with Pf controlled by Theta_shift [nPfsh,1]
 nPfsh = length(iPfsh); %AAB- Number of elements with active Pf controlled by Theta_shift
 iQtma = find (branch(:,QT)~=0 & branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:,VT_SET)==0 ); %AAB- Find branch locations with Qt controlled by ma/tap [nQtma,1]
 nQtma = length(iQtma); %AAB- Number of elements with active Qt controlled by ma/tap
 iVtma = find (branch(:, BR_STATUS)==1 & (branch(:, TAP_MIN)~= branch(:, TAP_MAX)) & branch(:, VT_SET)~=0 ); %AAB- Find branch locations with Vt controlled by ma/tap [nVtma,1]
 nVtma = length(iVtma); %AAB- Number of elements with active Vt controlled by ma/tap
 
+%% Find elements with Voltage Droop Control and slope
+iPfdp = find( (branch(:,VF_SET)~=0) & (branch(:,KDP)~=0) & (branch(:, BR_STATUS)~=0) & (branch(:, SH_MIN)~=-360 | branch(:, SH_MAX)~=360) & (branch(:, CONV)==3 | branch(:, CONV)==4) ); %AAB- Find branch locations of the branch elements with Pf-Vdc Droop Control [nPfdp,1] (VSCIII)
+nPfdp = length(iPfdp); %AAB- Number of VSC with Voltage Droop Control by theta_shift
+
+Kdp = sparse(zeros(nl,1));
+Kdp(iPfdp) = branch(iPfdp,KDP); %Droop Control Slope 
+
 %% Calculation of derivatives
 if vcart
-    error('d2Sf_dxvtma2Pert: Derivatives of Flow Limit equations w.r.t ma using Finite Differences Method in cartasian have not been coded yet')    
+    error('d2Pfdp_dxvtma2Pert: Derivatives of Flow Limit equations w.r.t ma using Finite Differences Method in cartasian have not been coded yet')    
 
 else %AAB- Polar Version
     %Auxiliary 1st Derivatives
@@ -116,6 +120,12 @@ else %AAB- Polar Version
        
     %Make Ybus, Yf, Yt
     [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch);
+
+    %Derivatives of Voltage Magnitude w.r.t. Voltage magnitude
+    dVmf_dVm = sparse(zeros(nl,nb));                          % Initialize for speed [nl,nb]
+    fdp = branch(iPfdp, F_BUS);                               % List of "from" buses with Voltage Droop Control [nPfdp, 1]
+    Cfdp = sparse(1:nPfdp, fdp, ones(nPfdp, 1), nPfdp, nb);   % connection matrix for line & from buses with Voltage Droop Control [nPfdp, nb]
+    dVmf_dVm(iPfdp,:)=Cfdp;        
     
     %Sbr 1st Derivatives 
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, vcart);
@@ -125,6 +135,15 @@ else %AAB- Polar Version
     [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch, V, 2, vcart);
     [dSf_dVtma, dSt_dVtma] = dSbr_dma(branch, V, 4, vcart);    
     
+    %Pfdp 1st Derivatives
+    dPfdp_dV1 = -real(dSf_dV1);
+    dPfdp_dV2 = -real(dSf_dV2) + Kdp.*( dVmf_dVm );
+    dPfdp_dBeqz = -real(dSf_dBeqz);
+    dPfdp_dBeqv = -real(dSf_dBeqv);
+    dPfdp_dPfsh = -real(dSf_dPfsh);
+    dPfdp_dQtma = -real(dSf_dQtma); 
+    dPfdp_dVtma = -real(dSf_dVtma);     
+       
     %Selector of active Beqz 
     BeqzAux1 = sparse( zeros(nl,1) );       %AAB- Vector of zeros for the seclector
     BeqzAux1(iBeqz) = 1;                    %AAB- Fill the selector with 1 where Beq is active
@@ -156,53 +175,37 @@ else %AAB- Polar Version
     diagYsVtma = sparse( diag(VtmaSel.*Ys) ); %AAB- Vtma selector multilied by the series addmitance Ys, size [nl,nl]
      
     %Dimensionalize (Allocate for computational speed)  
-    d2Sf_dVtmaVa   = sparse( zeros(nb,   nVtma) ); 
-    d2Sf_dVtmaVm   = sparse( zeros(nb,   nVtma) );
-    d2Sf_dVtmaBeqz = sparse( zeros(nBeqz,nVtma) );
-    d2Sf_dVtmaBeqv = sparse( zeros(nBeqv,nVtma) );
-    d2Sf_dVtmaPfsh = sparse( zeros(nPfsh,nVtma) );   
-    d2Sf_dVtmaQtma = sparse( zeros(nQtma,nVtma) );  
+    d2Pfdp_dVtmaVa   = sparse( zeros(nb,   nVtma) ); 
+    d2Pfdp_dVtmaVm   = sparse( zeros(nb,   nVtma) );
+    d2Pfdp_dVtmaBeqz = sparse( zeros(nBeqz,nVtma) );
+    d2Pfdp_dVtmaBeqv = sparse( zeros(nBeqv,nVtma) );
+    d2Pfdp_dVtmaPfsh = sparse( zeros(nPfsh,nVtma) );   
+    d2Pfdp_dVtmaQtma = sparse( zeros(nQtma,nVtma) );  
     
-    d2Sf_dVaVtma   = sparse( zeros(nVtma,nb   ) ); 
-    d2Sf_dVmVtma   = sparse( zeros(nVtma,nb   ) );
-    d2Sf_dBeqzVtma = sparse( zeros(nVtma,nBeqz) );
-    d2Sf_dBeqvVtma = sparse( zeros(nVtma,nBeqv) );
-    d2Sf_dPfshVtma = sparse( zeros(nVtma,nPfsh) );   
-    d2Sf_dQtmaVtma = sparse( zeros(nVtma,nQtma) );     
+    d2Pfdp_dVaVtma   = sparse( zeros(nVtma,nb   ) ); 
+    d2Pfdp_dVmVtma   = sparse( zeros(nVtma,nb   ) );
+    d2Pfdp_dBeqzVtma = sparse( zeros(nVtma,nBeqz) );
+    d2Pfdp_dBeqvVtma = sparse( zeros(nVtma,nBeqv) );
+    d2Pfdp_dPfshVtma = sparse( zeros(nVtma,nPfsh) );   
+    d2Pfdp_dQtmaVtma = sparse( zeros(nVtma,nQtma) );     
     
-    d2Sf_dVtma2    = sparse( zeros(nVtma,nVtma) );
+    d2Pfdp_dVtma2    = sparse( zeros(nVtma,nVtma) );
 
-    d2St_dVtmaVa   = sparse( zeros(nb,   nVtma) ); 
-    d2St_dVtmaVm   = sparse( zeros(nb,   nVtma) );
-    d2St_dVtmaBeqz = sparse( zeros(nBeqz,nVtma) );
-    d2St_dVtmaBeqv = sparse( zeros(nBeqv,nVtma) );
-    d2St_dVtmaPfsh = sparse( zeros(nPfsh,nVtma) );   
-    d2St_dVtmaQtma = sparse( zeros(nQtma,nVtma) );  
-    
-    d2St_dVaVtma   = sparse( zeros(nVtma,nb   ) ); 
-    d2St_dVmVtma   = sparse( zeros(nVtma,nb   ) );
-    d2St_dBeqzVtma = sparse( zeros(nVtma,nBeqz) );
-    d2St_dBeqvVtma = sparse( zeros(nVtma,nBeqv) );
-    d2St_dPfshVtma = sparse( zeros(nVtma,nPfsh) );   
-    d2St_dQtmaVtma = sparse( zeros(nVtma,nQtma) );     
-    
-    d2St_dVtma2    = sparse( zeros(nVtma,nVtma) );
-    
     %VtmaVa num_G71
     for k = 1:nb
         V1p = V;
         V1p(k) = Vm(k) * exp(1j * (Va(k) + pert));  %% perturb Va
         [dSf_dVtma_PertVa, dSt_dVtma_PertVa] = dSbr_dma(branch, V1p, 4, vcart); %dSbr_dVtmaPertVa
-        d2Sf_dVaVtma(:, k) = (dSf_dVtma_PertVa - dSf_dVtma).' * lam / pert; %VtmaVa from, size of [nVtma, nb] 
-        d2St_dVaVtma(:, k) = (dSt_dVtma_PertVa - dSt_dVtma).' * lam / pert; %VtmaVa  to , size of [nVtma, nb] 
+        dPfdp_dVtma_PertVa = -real(dSf_dVtma_PertVa);  
+        d2Pfdp_dVaVtma(:, k) = (dPfdp_dVtma_PertVa - dPfdp_dVtma).' * lam / pert; %VtmaVa from, size of [nVtma, nb] 
     end
     %VtmaVm num_G72
     for k = 1:nb
         V2p = V;
         V2p(k) = (Vm(k) + pert) * exp(1j * Va(k));  %% perturb Vm
         [dSf_dVtma_PertVm, dSt_dVtma_PertVm] = dSbr_dma(branch, V2p, 4, vcart); %dSbr_dVtmaPertVm
-        d2Sf_dVmVtma(:, k) = (dSf_dVtma_PertVm - dSf_dVtma).' * lam / pert; %VtmaVm from, size of [nVtma, nb] 
-        d2St_dVmVtma(:, k) = (dSt_dVtma_PertVm - dSt_dVtma).' * lam / pert; %VtmaVm  to , size of [nVtma, nb] 
+        dPfdp_dVtma_PertVm = -real(dSf_dVtma_PertVm);  
+        d2Pfdp_dVmVtma(:, k) = (dPfdp_dVtma_PertVm - dPfdp_dVtma).' * lam / pert; %VtmaVm from, size of [nVtma, nb] 
     end
     %VtmaBeqz num_G73
     for k=1:nBeqz 
@@ -215,9 +218,9 @@ else %AAB- Polar Version
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dVtmaPertBeqz evaluated in x+pert
         [dSf_dVtma_PertBeqz, dSt_dVtma_PertBeqz] = dSbr_dma(branch_Pert, V, 4, vcart); %dSbr_dVtmaPertBeqz
-        %2nd Derivatives of Sbr w.r.t. VtmaBeqz
-        d2Sf_dBeqzVtma(:, k) = (dSf_dVtma_PertBeqz - dSf_dVtma).' * lam / pert;  %VtmaBeqz from, size of [nVtma, nBeqz]
-        d2St_dBeqzVtma(:, k) = (dSt_dVtma_PertBeqz - dSt_dVtma).' * lam / pert;  %VtmaBeqz  to , size of [nVtma, nBeqz]
+        dPfdp_dVtma_PertBeqz = -real(dSf_dVtma_PertBeqz);         
+        %2nd Derivatives of Pfdp w.r.t. VtmaBeqz
+        d2Pfdp_dBeqzVtma(:, k) = (dPfdp_dVtma_PertBeqz - dPfdp_dVtma).' * lam / pert;  %VtmaBeqz from, size of [nVtma, nBeqz]
     end
     %VtmaBeqv num_G74
     for k=1:nBeqv 
@@ -230,9 +233,9 @@ else %AAB- Polar Version
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dVtmaPertBeqv evaluated in x+pert
         [dSf_dVtma_PertBeqv, dSt_dVtma_PertBeqv] = dSbr_dma(branch_Pert, V, 4, vcart); %dSbr_dVtmaPertBeqv
-        %2nd Derivatives of Sbr w.r.t. VtmaBeqv
-        d2Sf_dBeqvVtma(:, k) = (dSf_dVtma_PertBeqv - dSf_dVtma).' * lam / pert;  %VtmaBeqv from, size of [nVtma, nBeqv]
-        d2St_dBeqvVtma(:, k) = (dSt_dVtma_PertBeqv - dSt_dVtma).' * lam / pert;  %VtmaBeqv  to , size of [nVtma, nBeqv]
+        dPfdp_dVtma_PertBeqv = -real(dSf_dVtma_PertBeqv);
+        %2nd Derivatives of Pfdp w.r.t. VtmaBeqv
+        d2Pfdp_dBeqvVtma(:, k) = (dPfdp_dVtma_PertBeqv - dPfdp_dVtma).' * lam / pert;  %VtmaBeqv from, size of [nVtma, nBeqv]
     end
     %VtmaPfsh num_G75
     for k=1:nPfsh 
@@ -245,9 +248,9 @@ else %AAB- Polar Version
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dVtmaPertPfsh evaluated in x+pert
         [dSf_dVtma_PertPfsh, dSt_dVtma_PertPfsh] = dSbr_dma(branch_Pert, V, 4, vcart); %dSbr_dVtmaPertPfsh
+        dPfdp_dVtma_PertPfsh = -real(dSf_dVtma_PertPfsh);
         %2nd Derivatives of Sbr w.r.t. VtmaPfsh
-        d2Sf_dPfshVtma(:, k) = (dSf_dVtma_PertPfsh - dSf_dVtma).' * lam / pert;  %VtmaPfsh from, size of [nVtma, nPfsh] 
-        d2St_dPfshVtma(:, k) = (dSt_dVtma_PertPfsh - dSt_dVtma).' * lam / pert;  %VtmaPfsh  to , size of [nVtma, nPfsh] 
+        d2Pfdp_dPfshVtma(:, k) = (dPfdp_dVtma_PertPfsh - dPfdp_dVtma).' * lam / pert;  %VtmaPfsh from, size of [nVtma, nPfsh] 
     end    
     %VtmaQtma num_G76
     for k=1:nQtma 
@@ -260,9 +263,9 @@ else %AAB- Polar Version
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dVtmaPertQtma evaluated in x+pert
         [dSf_dVtma_PertQtma, dSt_dVtma_PertQtma] = dSbr_dma(branch_Pert, V, 4, vcart); %dSbr_dVtmaPertQtma
+        dPfdp_dVtma_PertQtma = -real(dSf_dVtma_PertQtma);        
         %2nd Derivatives of Sbr w.r.t. VtmaQtma
-        d2Sf_dQtmaVtma(:, k) = (dSf_dVtma_PertQtma - dSf_dVtma).' * lam / pert;  %VtmaQtma from, size of [nVtma, nQtma] 
-        d2St_dQtmaVtma(:, k) = (dSt_dVtma_PertQtma - dSt_dVtma).' * lam / pert;  %VtmaQtma  to , size of [nVtma, nQtma] 
+        d2Pfdp_dQtmaVtma(:, k) = (dPfdp_dVtma_PertQtma - dPfdp_dVtma).' * lam / pert;  %VtmaQtma from, size of [nVtma, nQtma] 
     end 
     
     %VxVtma num_G17 num_G27
@@ -276,11 +279,14 @@ else %AAB- Polar Version
         [Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dVxPertQtma evaluated in x+pert
         [dSf_dV1_PertVtma, dSf_dV2_PertVtma, dSt_dV1_PertVtma, dSt_dV2_PertVtma, Sf, St] = dSbr_dV(branch_Pert, Yf_Pert, Yt_Pert, V, vcart);
-        %2nd Derivatives of Sbr w.r.t. VtmaVx
-        d2Sf_dVtmaVa(:, k) = (dSf_dV1_PertVtma - dSf_dV1).' * lam / pert;  %VaVtma from, size of [nb, nVtma] 
-        d2Sf_dVtmaVm(:, k) = (dSf_dV2_PertVtma - dSf_dV2).' * lam / pert;  %VmVtma  to , size of [nb, nVtma] 
-        d2St_dVtmaVa(:, k) = (dSt_dV1_PertVtma - dSt_dV1).' * lam / pert;  %VaVtma from, size of [nb, nVtma] 
-        d2St_dVtmaVm(:, k) = (dSt_dV2_PertVtma - dSt_dV2).' * lam / pert;  %VmVtma  to , size of [nb, nVtma] 
+        
+        %dPfdp_dVxPertVtma evaluated in x+pert
+        dPfdp_dV1_PertVtma = -real(dSf_dV1_PertVtma);
+        dPfdp_dV2_PertVtma = -real(dSf_dV2_PertVtma) + Kdp.*( dVmf_dVm );
+        
+        %2nd Derivatives of Pfdp w.r.t. VtmaVx
+        d2Pfdp_dVtmaVa(:, k) = (dPfdp_dV1_PertVtma - dPfdp_dV1).' * lam / pert;  %VaVtma from, size of [nb, nVtma] 
+        d2Pfdp_dVtmaVm(:, k) = (dPfdp_dV2_PertVtma - dPfdp_dV2).' * lam / pert;  %VmVtma  to , size of [nb, nVtma] 
     end
     %BeqzVtma num_G37
     for k=1:nVtma 
@@ -293,9 +299,9 @@ else %AAB- Polar Version
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dBeqzPertVtma evaluated in x+pert
         [dSf_dBeqz_PertVtma, dSt_dBeqz_PertVtma] = dSbr_dBeq(branch_Pert, V, 3, vcart); %dSbr_dBeqzPertVtma
-        %2nd Derivatives of Sbr w.r.t. BeqzVtma
-        d2Sf_dVtmaBeqz(:, k) = (dSf_dBeqz_PertVtma - dSf_dBeqz).' * lam / pert;  %BeqzVtma from, size of [nBeqz, nVtma] 
-        d2St_dVtmaBeqz(:, k) = (dSt_dBeqz_PertVtma - dSt_dBeqz).' * lam / pert;  %BeqzVtma  to , size of [nBeqz, nVtma] 
+        dPfdp_dBeqz_PertVtma = -real(dSf_dBeqz_PertVtma);         
+        %2nd Derivatives of Pfdp w.r.t. BeqzVtma
+        d2Pfdp_dVtmaBeqz(:, k) = (dPfdp_dBeqz_PertVtma - dPfdp_dBeqz).' * lam / pert;  %BeqzVtma from, size of [nBeqz, nVtma] 
     end
     %BeqvVtma num_G47
     for k=1:nVtma 
@@ -308,9 +314,9 @@ else %AAB- Polar Version
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dBeqvPertVtma evaluated in x+pert
         [dSf_dBeqv_PertVtma, dSt_dBeqv_PertVtma] = dSbr_dBeq(branch_Pert, V, 2, vcart); %dSbr_dBeqvPertVtma
+        dPfdp_dBeqv_PertVtma = -real(dSf_dBeqv_PertVtma);        
         %2nd Derivatives of Sbr w.r.t. BeqvVtma
-        d2Sf_dVtmaBeqv(:, k) = (dSf_dBeqv_PertVtma - dSf_dBeqv).' * lam / pert;  %BeqvVtma from, size of [nBeqv, nVtma] 
-        d2St_dVtmaBeqv(:, k) = (dSt_dBeqv_PertVtma - dSt_dBeqv).' * lam / pert;  %BeqvVtma  to , size of [nBeqv, nVtma]
+        d2Pfdp_dVtmaBeqv(:, k) = (dPfdp_dBeqv_PertVtma - dPfdp_dBeqv).' * lam / pert;  %BeqvVtma from, size of [nBeqv, nVtma] 
     end
     %PfshVtma num_G57
     for k=1:nVtma
@@ -323,9 +329,9 @@ else %AAB- Polar Version
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dPfshPertVtma evaluated in x+pert
         [dSf_dPfsh_PertVtma, dSt_dPfsh_PertVtma] = dSbr_dsh(branch_Pert, V, 1, vcart); %dSbr_dPfshPertVtma
+        dPfdp_dPfsh_PertVtma = -real(dSf_dPfsh_PertVtma);
         %2nd Derivatives of Sbr w.r.t. PfshVtma   
-        d2Sf_dVtmaPfsh(:, k) = (dSf_dPfsh_PertVtma - dSf_dPfsh).' * lam / pert;  %PfshVtma from, size of [nPfsh , nVtma] 
-        d2St_dVtmaPfsh(:, k) = (dSt_dPfsh_PertVtma - dSt_dPfsh).' * lam / pert;  %PfshVtma  to , size of [nPfsh , nVtma] 
+        d2Pfdp_dVtmaPfsh(:, k) = (dPfdp_dPfsh_PertVtma - dPfdp_dPfsh).' * lam / pert;  %PfshVtma from, size of [nPfsh , nVtma] 
     end
     %QtmaVtma num_G67
     for k=1:nVtma
@@ -337,9 +343,9 @@ else %AAB- Polar Version
         %Make Ybus, Yf, Yt Perturbated
         %dSbr_dQtmaPertVtma evaluated in x+pert
         [dSf_dQtma_PertVtma, dSt_dQtma_PertVtma] = dSbr_dma(branch_Pert, V, 2, vcart); %dSbr_dQtmaPertVtma
-        %2nd Derivatives of Sbr w.r.t. QtmaVtma   
-        d2Sf_dQtmaVtma(:, k) = (dSf_dQtma_PertVtma - dSf_dQtma).' * lam / pert;  %QtmaVtma from, size of [nQtma , nVtma] 
-        d2St_dQtmaVtma(:, k) = (dSt_dQtma_PertVtma - dSt_dQtma).' * lam / pert;  %QtmaVtma  to , size of [nQtma , nVtma] 
+        dPfdp_dQtma_PertVtma = -real(dSf_dQtma_PertVtma);
+        %2nd Derivatives of Pfdp w.r.t. QtmaVtma   
+        d2Pfdp_dVtmaQtma(:, k) = (dPfdp_dQtma_PertVtma - dPfdp_dQtma).' * lam / pert;  %QtmaVtma from, size of [nQtma , nVtma] 
     end
     %Vtma2 num_G77
     for k=1:nVtma
@@ -352,51 +358,25 @@ else %AAB- Polar Version
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);        
         %dSbr_dVtmaPertVtma evaluated in x+pert
         [dSf_dVtma_PertVtma, dSt_dVtma_PertVtma] = dSbr_dma(branch_Pert, V, 4, vcart); %dSbr_dVtmaPertVtma
-        %2nd Derivatives of Sbr w.r.t. Vtma2   
-        d2Sf_dVtma2(:, k) = (dSf_dVtma_PertVtma - dSf_dVtma).' * lam / pert;  %Vtma2 from, size of [nVtma , nVtma] 
-        d2St_dVtma2(:, k) = (dSt_dVtma_PertVtma - dSt_dVtma).' * lam / pert;  %Vtma2  to , size of [nVtma , nVtma]  
+        dPfdp_dVtma_PertVtma = -real(dSf_dVtma_PertVtma);        
+        %2nd Derivatives of Pfdp w.r.t. Vtma2   
+        d2Pfdp_dVtma2(:, k) = (dPfdp_dVtma_PertVtma - dPfdp_dVtma).' * lam / pert;  %Vtma2 from, size of [nVtma , nVtma] 
     end
 end
 
 %Assigning the partial derivatives with their respective outputs. 
-num_Hf17 = sparse(d2Sf_dVtmaVa);
-num_Hf27 = sparse(d2Sf_dVtmaVm);
-num_Hf37 = sparse(d2Sf_dVtmaBeqz);
-num_Hf47 = sparse(d2Sf_dVtmaBeqv);
-num_Hf57 = sparse(d2Sf_dVtmaPfsh);
-num_Hf67 = sparse(d2Sf_dVtmaQtma);
+num_Hf17 = sparse(d2Pfdp_dVtmaVa);
+num_Hf27 = sparse(d2Pfdp_dVtmaVm);
+num_Hf37 = sparse(d2Pfdp_dVtmaBeqz);
+num_Hf47 = sparse(d2Pfdp_dVtmaBeqv);
+num_Hf57 = sparse(d2Pfdp_dVtmaPfsh);
+num_Hf67 = sparse(d2Pfdp_dVtmaQtma);
 
-num_Hf71 = sparse(d2Sf_dVaVtma);
-num_Hf72 = sparse(d2Sf_dVmVtma);
-num_Hf73 = sparse(d2Sf_dBeqzVtma);
-num_Hf74 = sparse(d2Sf_dBeqvVtma);
-num_Hf75 = sparse(d2Sf_dPfshVtma);
-num_Hf76 = sparse(d2Sf_dQtmaVtma);
+num_Hf71 = sparse(d2Pfdp_dVaVtma);
+num_Hf72 = sparse(d2Pfdp_dVmVtma);
+num_Hf73 = sparse(d2Pfdp_dBeqzVtma);
+num_Hf74 = sparse(d2Pfdp_dBeqvVtma);
+num_Hf75 = sparse(d2Pfdp_dPfshVtma);
+num_Hf76 = sparse(d2Pfdp_dQtmaVtma);
 
-num_Hf77 = sparse(d2Sf_dVtma2);
-
-num_Ht17 = sparse(d2St_dVtmaVa);
-num_Ht27 = sparse(d2St_dVtmaVm);
-num_Ht37 = sparse(d2St_dVtmaBeqz);
-num_Ht47 = sparse(d2St_dVtmaBeqv);
-num_Ht57 = sparse(d2St_dVtmaPfsh);
-num_Ht67 = sparse(d2St_dVtmaQtma);
-
-num_Ht71 = sparse(d2St_dVaVtma);
-num_Ht72 = sparse(d2St_dVmVtma);
-num_Ht73 = sparse(d2St_dBeqzVtma);
-num_Ht74 = sparse(d2St_dBeqvVtma);
-num_Ht75 = sparse(d2St_dPfshVtma);
-num_Ht76 = sparse(d2St_dQtmaVtma);
-
-num_Ht77 = sparse(d2St_dVtma2);
-
-
-
-
-
-
-
-
-
-
+num_Hf77 = sparse(d2Pfdp_dVtma2);
