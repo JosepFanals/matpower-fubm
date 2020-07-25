@@ -130,8 +130,8 @@ if nargout > 1
     if nBeqz > 0
         %% compute partials of Flows w.r.t. V and Beq
         [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch(iBeqz,:), Yf(iBeqz,:), Yt(iBeqz,:), V, mpopt.opf.v_cartesian); %AAB-Obtains the derivatives of the Sf and St w.r.t V   - Yf and Yt are constant here.
-        [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch(iBeqz,:), V, 3, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq - V remains constant here because Beq is the only variable
-        %[dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch(iBeqz,:), V, 2, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq - V remains constant here because Beq is the only variable 
+        [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch(iBeqz,:), V, 1, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq - V remains constant here because Beq is the only variable
+        %[dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch(iBeqv,:), V, 2, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq - V remains constant here because Beq is the only variable 
         [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch, V, 1, mpopt.opf.v_cartesian); %% w.r.t. Theta_sh               %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_sh - V remains constant here because Theta_sh is the only variable 
         [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch, V, 2, mpopt.opf.v_cartesian); %% w.r.t. ma/tap                 %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma       is the only variable 
         [dSf_dVtma, dSt_dVtma] = dSbr_dma(branch, V, 4, mpopt.opf.v_cartesian); %% w.r.t. ma/tap                 %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma       is the only variable 

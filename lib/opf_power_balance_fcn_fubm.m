@@ -53,7 +53,7 @@ function [g, dg] = opf_power_balance_fcn_fubm(x, mpc, mpopt)
 %% Identifier of AC/DC grids
 %%AAB--------------------------------------------------------------------- 
 %%identifier of Zero Constraint VSCs
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 %%identifier of elements with Vf controlled by Beq
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
@@ -143,7 +143,7 @@ if nargout > 1
     %% compute partials of injected bus powers
     [dSbus_dV1, dSbus_dV2] = dSbus_dV(Ybus, V, mpopt.opf.v_cartesian);   %% w.r.t. V %AAB- Ybus remains constant here because V is the only variable - dSbus_dV1 = dSbus_dVa & dSbus_dV2 = dSbus_dVm for polar
     %%AAB------------------------------------------------------------------
-    [dSbus_dBeqz] = dSbus_dBeq(branch, V, 3, mpopt.opf.v_cartesian); %% w.r.t. Beqz      %AAB- V remains constant here because Beq is the only variable
+    [dSbus_dBeqz] = dSbus_dBeq(branch, V, 1, mpopt.opf.v_cartesian); %% w.r.t. Beqz      %AAB- V remains constant here because Beq is the only variable
     [dSbus_dBeqv] = dSbus_dBeq(branch, V, 2, mpopt.opf.v_cartesian); %% w.r.t. Beqv      %AAB- V remains constant here because Beq is the only variable
     [dSbus_dPfsh] = dSbus_dsh(branch, V, 1, mpopt.opf.v_cartesian);  %% w.r.t. Theta_sh  %AAB- V remains constant here because Theta_sh is the only variable
     [dSbus_dQtma] = dSbus_dma(branch, V, 2, mpopt.opf.v_cartesian);  %% w.r.t. ma        %AAB- V remains constant here because ma is the only variable    

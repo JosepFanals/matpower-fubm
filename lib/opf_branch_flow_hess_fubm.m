@@ -51,7 +51,7 @@ lim_type = upper(mpopt.opf.flow_lim(1));
  
 %% identifier of AC/DC grids
 %%AAB----------------------------------------------------------------------
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSCI, VSCIIIz and VSCIII, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 %%identifier of elements with Vf controlled by Beq
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
@@ -145,7 +145,7 @@ else %<-----AAB-OFSBSR Type == P, 2, S
     Ct = sparse(1:nl2, t, ones(nl2, 1), nl2, nb);   %% connection matrix for line & to buses
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch(il,:), Yf, Yt, V, mpopt.opf.v_cartesian); %AAB-Obtains the derivatives of the Sf and St w.r.t V   - Yf and Yt are constant here.
     %AAB-------------------------------------------------------------------
-    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch(il,:), V, 3, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq      - V remains constant here because Beq      is the only variable
+    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch(il,:), V, 1, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq      - V remains constant here because Beq      is the only variable
     [dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch(il,:), V, 2, mpopt.opf.v_cartesian); %% w.r.t. Beq               %AAB-Obtains the derivatives of the Sf and St w.r.t Beq      - V remains constant here because Beq      is the only variable
     [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch(il,:), V, 1, mpopt.opf.v_cartesian);  %% w.r.t. Theta_sh          %AAB-Obtains the derivatives of the Sf and St w.r.t Theta_sh - V remains constant here because Theta_sh is the only variable
     [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch(il,:), V, 2, mpopt.opf.v_cartesian);  %% w.r.t. ma                %AAB-Obtains the derivatives of the Sf and St w.r.t ma       - V remains constant here because ma       is the only variable

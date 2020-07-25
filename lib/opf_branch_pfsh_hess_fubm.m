@@ -48,7 +48,7 @@ function d2G = opf_branch_pfsh_hess_fubm(x, lambda, mpc, iPfsh, mpopt)
 
 %% identifier of AC/DC grids
 %%AAB---------------------------------------------------------------------- 
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq

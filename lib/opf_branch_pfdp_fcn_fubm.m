@@ -64,7 +64,7 @@ function [g, dg] = opf_branch_pfdp_fcn_fubm(x, mpc, iPfdp, mpopt)
 
 %% identifier of AC/DC grids
 %%AAB---------------------------------------------------------------------- 
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSCI, VSCIIIz and VSCIII, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
@@ -157,7 +157,7 @@ if nargout > 1
     if nPfdp > 0
         %% compute partials of Flows w.r.t. V, Beq, Theta Shift and ma
         [dPfdp_dV1_all, dPfdp_dV2_all, dPfdp_dPfsh_all, dPfdp_dQfma_all, dPfdp_dBeqz_all,...
-            dPfdp_dBeqv_all, dPfdp_dVtma_all, dPfdp_dQtma_all, dPfdp_dPfdp_all] = dPfdp_dx(branch, Yf, Yt, V, 3, mpopt.opf.v_cartesian);
+            dPfdp_dBeqv_all, dPfdp_dVtma_all, dPfdp_dQtma_all, dPfdp_dPfdp_all] = dPfdp_dx(branch, Yf, Yt, V, 1, mpopt.opf.v_cartesian);
         %% Selecting only the branches that have droop control
         dPfdp_dV1   = dPfdp_dV1_all(iPfdp,:);                %Only Droop control elements iPfdp
         dPfdp_dV2   = dPfdp_dV2_all(iPfdp,:);                %Only Droop control elements iPfdp

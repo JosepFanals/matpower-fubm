@@ -97,7 +97,7 @@ if dc
   if fubm
     %% Identify if grid is AC/DC or has controls
     %%FUBM--------------------------------------------------------------------
-    iBeqz = find ( (mpc.branch(:,CONV)==1 | mpc.branch(:,CONV)==3 | mpc.branch(:,CONV)==4) & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
+    iBeqz = find ( (mpc.branch(:,CONV)==1 | mpc.branch(:,CONV)==3) & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
     nBeqz = length(iBeqz); %FUBM- Number of VSCs with active Zero Constraint control
     iPfsh = find (mpc.branch(:,PF)~=0 & mpc.branch(:, BR_STATUS)==1 & (mpc.branch(:, SH_MIN)~=-360 | mpc.branch(:, SH_MAX)~=360) & (mpc.branch(:, CONV)~=3) & (mpc.branch(:, CONV)~=4)); %FUBM- Find branch locations with Pf controlled by Theta_shift [nPfsh,1] (Converters and Phase Shifter Transformers, but no VSCIII)
     nPfsh = length(iPfsh); %FUBM- Number of elements with active Pf controlled by Theta_shift (Converters and Phase Shifter Transformers, but no VSCIII)
@@ -148,7 +148,7 @@ else    %% AC or AC/DC
   if fubm 
     %% Identify if grid is AC/DC
     %%FUBM--------------------------------------------------------------------
-    iBeqz = find ( (mpc.branch(:,CONV)==1 | mpc.branch(:,CONV)==3 | mpc.branch(:,CONV)==4) & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1] (VSCI, VSCIIIz, VSCIII)
+    iBeqz = find ( (mpc.branch(:,CONV)==1 | mpc.branch(:,CONV)==3) & mpc.branch(:, BR_STATUS)==1); %FUBM- Find branch locations of VSC for Zero Constraint control size[nBeqz,1]
     nBeqz = length(iBeqz); %FUBM- Number of VSC with active Zero Constraint control
     iBeqv = find (mpc.branch(:,CONV)==2 & mpc.branch(:, BR_STATUS)==1 & mpc.branch(:,VF_SET)~=0); %FUBM- Find branch locations of VSC for Vf Constraint control size[nBeqv,1]
     nBeqv = length(iBeqv); %FUBM- Number of VSC with active Vf control

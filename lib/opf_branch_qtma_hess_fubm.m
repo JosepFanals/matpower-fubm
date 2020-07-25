@@ -48,7 +48,7 @@ function d2G = opf_branch_qtma_hess_fubm(x, lambda, mpc, iQtma, mpopt)
 
 %% identifier of AC/DC grids
 %%AAB---------------------------------------------------------------------- 
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
@@ -145,7 +145,7 @@ muTaux(iQtma)=muT; %% Fill in the location of the constraint the values of mu
     %[Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = d2St_dvtma2(V,muTaux);
     %[Gt17, Gt27, Gt37, Gt47, Gt57, Gt67, Gt71, Gt72, Gt73, Gt74, Gt75, Gt76, Gt77] = deal(imag(Gt17), imag(Gt27), imag(Gt37), imag(Gt47), imag(Gt57), imag(Gt67), imag(Gt71), imag(Gt72), imag(Gt73), imag(Gt74), imag(Gt75), imag(Gt76), imag(Gt77));
     [Gt18, Gt28, Gt38, Gt48, Gt58, Gt68, Gt78, Gt81, Gt82, Gt83, Gt84, Gt85, Gt86, Gt87, Gt88] = d2St_dshdp2(V,muTaux);
-    [Gt18, Gt28, Gt38, Gt48, Gt58, Gt68, Gt78, Gt81, Gt82, Gt83, Gt84, Gt85, Gt86, Gt87, Gt88] = deal(real(Gt18), real(Gt28), real(Gt38), real(Gt48), real(Gt58), real(Gt68), real(Gt78), real(Gt81), real(Gt82), real(Gt83), real(Gt84), real(Gt85), real(Gt86), real(Gt87), real(Gt88));
+    [Gt18, Gt28, Gt38, Gt48, Gt58, Gt68, Gt78, Gt81, Gt82, Gt83, Gt84, Gt85, Gt86, Gt87, Gt88] = deal(imag(Gt18), imag(Gt28), imag(Gt38), imag(Gt48), imag(Gt58), imag(Gt68), imag(Gt78), imag(Gt81), imag(Gt82), imag(Gt83), imag(Gt84), imag(Gt85), imag(Gt86), imag(Gt87), imag(Gt88));
             
     %% construct Hessian
       %Va    Vm    Beqz  Beqv  ShAng Qtma  ShAngDp 
