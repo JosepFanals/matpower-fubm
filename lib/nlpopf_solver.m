@@ -200,6 +200,10 @@ if fubm
         maVt = x(vv.i1.maVt:vv.iN.maVt);
         branch(iVtma,TAP)=maVt; %AAB- Update the data from ma/tap to the branch matrix 
     end
+    if nPfdp %%update mpc.branch with FUBM from x
+        ShAngDp = x(vv.i1.ShAngDp:vv.iN.ShAngDp);
+        branch(iPfdp,SHIFT)=ShAngDp*180/pi; %AAB- Update the data from Theta_sh to the branch matrix (the updated value is changed from radians to degrees)
+    end
 end
 
 [Ybus, Yf, Yt] = makeYbus(baseMVA, bus, branch); %<<AAB-Ybus calculation with updated variables- Original: makeYbus
