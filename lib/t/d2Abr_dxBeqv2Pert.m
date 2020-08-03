@@ -74,7 +74,7 @@ function [num_Hf14, num_Hf24, num_Hf34, num_Hf41, num_Hf42, num_Hf43, num_Hf44,.
     RATE_C, TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST, ...
     ANGMIN, ANGMAX, MU_ANGMIN, MU_ANGMAX, VF_SET, VT_SET,TAP_MAX, ...
     TAP_MIN, CONV, BEQ, K2, BEQ_MIN, BEQ_MAX, SH_MIN, SH_MAX, GSW, ...
-    ALPH1, ALPH2, ALPH3] = idx_brch;%<<AAB-extra fields for FUBM
+    ALPH1, ALPH2, ALPH3, KDP] = idx_brch;%<<AAB-extra fields for FUBM
 %% default input args
 if nargin < 7
     vcart = 0;      %% default to polar coordinates
@@ -88,7 +88,7 @@ Va = bus(:, VA) * pi/180;
 %[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 %% identifier of AC/DC grids
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
@@ -108,7 +108,7 @@ else %AAB- Polar Version
     
     %Sbr 1st Derivatives 
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, vcart);
-    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 3, vcart);
+    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, vcart);
     [dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch, V, 2, vcart);
     
     %Abr 1st Derivatives    
@@ -217,7 +217,7 @@ else %AAB- Polar Version
         %Sbr evaluated in x+pert
         [Sf_PertBeqv, St_PertBeqv] = SbrFlows(branch_Pert, Yf_Pert, Yt_Pert, V);
         %dSbr_dBeqzPertBeqv evaluated in x+pert
-        [dSf_dBeqz_PertBeqv, dSt_dBeqz_PertBeqv] = dSbr_dBeq(branch_Pert, V, 3, vcart); %dSbr_dBeqzPertBeqv
+        [dSf_dBeqz_PertBeqv, dSt_dBeqz_PertBeqv] = dSbr_dBeq(branch_Pert, V, 1, vcart); %dSbr_dBeqzPertBeqv
         %dAbr_dBeqzPertBeqv evaluated in x+pert        
         [dAf_dBeqz_PertBeqv, dAt_dBeqz_PertBeqv] = dAbr_dBeq(dSf_dBeqz_PertBeqv, dSt_dBeqz_PertBeqv, Sf_PertBeqv, St_PertBeqv);             
         %2nd Derivatives of Sbr w.r.t. BeqzBeqv

@@ -87,7 +87,7 @@ Va = bus(:, VA) * pi/180;
 %[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 %% identifier of AC/DC grids
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 
 if vcart
@@ -104,7 +104,7 @@ else %AAB- Polar Version
     
     %Sbr 1st Derivatives 
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, vcart);
-    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 3, vcart);
+    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, vcart);
     
     %Abr 1st Derivatives    
     [dAf_dV1, dAf_dV2, dAt_dV1, dAt_dV2] = dAbr_dV(dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St);
@@ -137,7 +137,7 @@ else %AAB- Polar Version
         V1p = V;
         V1p(k) = Vm(k) * exp(1j * (Va(k) + pert));  %% perturb Va
         [Sf_PertVa, St_PertVa] = SbrFlows(branch, Yf, Yt, V1p);
-        [dSf_dBeqz_PertVa, dSt_dBeqz_PertVa] = dSbr_dBeq(branch, V1p, 3, vcart); %Sbr_PertVa
+        [dSf_dBeqz_PertVa, dSt_dBeqz_PertVa] = dSbr_dBeq(branch, V1p, 1, vcart); %Sbr_PertVa
         [dAf_dBeqz_PertVa, dAt_dBeqz_PertVa] = dAbr_dBeq(dSf_dBeqz_PertVa, dSt_dBeqz_PertVa, Sf_PertVa, St_PertVa); %dAbr_dBeqzPertVa
         d2Af_dVaBeqz(:, k) = (dAf_dBeqz_PertVa - dAf_dBeqz).' * lam / pert; %BeqzVa From
         d2At_dVaBeqz(:, k) = (dAt_dBeqz_PertVa - dAt_dBeqz).' * lam / pert; %BeqzVa To
@@ -147,7 +147,7 @@ else %AAB- Polar Version
         V2p = V;
         V2p(k) = (Vm(k) + pert) * exp(1j * Va(k));  %% perturb Vm
         [Sf_PertVm, St_PertVm] = SbrFlows(branch, Yf, Yt, V2p);
-        [dSf_dBeqz_PertVm, dSt_dBeqz_PertVm] = dSbr_dBeq(branch, V2p, 3, vcart); %Sbr_PertVm
+        [dSf_dBeqz_PertVm, dSt_dBeqz_PertVm] = dSbr_dBeq(branch, V2p, 1, vcart); %Sbr_PertVm
         [dAf_dBeqz_PertVm, dAt_dBeqz_PertVm] = dAbr_dBeq(dSf_dBeqz_PertVm, dSt_dBeqz_PertVm, Sf_PertVm, St_PertVm); %dAbr_dBeqzPertVm
         d2Af_dVmBeqz(:, k) = (dAf_dBeqz_PertVm - dAf_dBeqz).' * lam / pert; %BeqzVm From
         d2At_dVmBeqz(:, k) = (dAt_dBeqz_PertVm - dAt_dBeqz).' * lam / pert; %BeqzVm To
@@ -184,7 +184,7 @@ else %AAB- Polar Version
         %Sbr evaluated in x+pert
         [Sf_PertBeqz, St_PertBeqz] = SbrFlows(branch_Pert, Yf_Pert, Yt_Pert, V);
         %dSbr_dBeqzPertBeqz evaluated in x+pert
-        [dSf_dBeqz_PertBeqz, dSt_dBeqz_PertBeqz] = dSbr_dBeq(branch_Pert, V, 3, vcart); %dSbr_dBeqzPertBeqz
+        [dSf_dBeqz_PertBeqz, dSt_dBeqz_PertBeqz] = dSbr_dBeq(branch_Pert, V, 1, vcart); %dSbr_dBeqzPertBeqz
         %dAbr_dBeqzPertBeqz evaluated in x+pert        
         [dAf_dBeqz_PertBeqz, dAt_dBeqz_PertBeqz] = dAbr_dBeq(dSf_dBeqz_PertBeqz, dSt_dBeqz_PertBeqz, Sf_PertBeqz, St_PertBeqz);       
         %2nd Derivatives of Abr w.r.t. Beqz2   

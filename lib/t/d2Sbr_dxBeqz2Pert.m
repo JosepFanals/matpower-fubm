@@ -86,7 +86,7 @@ Va = bus(:, VA) * pi/180;
 %[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 %% identifier of AC/DC grids
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 
 if vcart
@@ -103,7 +103,7 @@ else %AAB- Polar Version
     
     %Sbr 1st Derivatives 
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, vcart);
-    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 3, vcart);
+    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, vcart);
     
     %Selector of active Beqz 
     BeqzAux1 = sparse( zeros(nl,1) );       %AAB- Vector of zeros for the seclector
@@ -132,7 +132,7 @@ else %AAB- Polar Version
     for k = 1:nb
         V1p = V;
         V1p(k) = Vm(k) * exp(1j * (Va(k) + pert));  %% perturb Va
-        [dSf_dBeqz_PertVa, dSt_dBeqz_PertVa] = dSbr_dBeq(branch, V1p, 3, vcart); %dSbr_dBeqzPertVa
+        [dSf_dBeqz_PertVa, dSt_dBeqz_PertVa] = dSbr_dBeq(branch, V1p, 1, vcart); %dSbr_dBeqzPertVa
         d2Sf_dVaBeqz(:, k) = (dSf_dBeqz_PertVa - dSf_dBeqz).' * lam / pert; %BeqzVa From
         d2St_dVaBeqz(:, k) = (dSt_dBeqz_PertVa - dSt_dBeqz).' * lam / pert; %BeqzVa To
     end
@@ -140,7 +140,7 @@ else %AAB- Polar Version
     for k = 1:nb
         V2p = V;
         V2p(k) = (Vm(k) + pert) * exp(1j * Va(k));  %% perturb Vm
-        [dSf_dBeqz_PertVm, dSt_dBeqz_PertVm] = dSbr_dBeq(branch, V2p, 3, vcart); %dSbr_dBeqzPertVm
+        [dSf_dBeqz_PertVm, dSt_dBeqz_PertVm] = dSbr_dBeq(branch, V2p, 1, vcart); %dSbr_dBeqzPertVm
         d2Sf_dVmBeqz(:, k) = (dSf_dBeqz_PertVm - dSf_dBeqz).' * lam / pert; %BeqzVm From
         d2St_dVmBeqz(:, k) = (dSt_dBeqz_PertVm - dSt_dBeqz).' * lam / pert; %BeqzVm To
     end
@@ -172,7 +172,7 @@ else %AAB- Polar Version
         %Make Ybus, Yf, Yt Perturbated
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dBeqzPertBeqz evaluated in x+pert
-        [dSf_dBeqz_PertBeqz, dSt_dBeqz_PertBeqz] = dSbr_dBeq(branch_Pert, V, 3, vcart); %dSbr_dBeqzPertBeqz
+        [dSf_dBeqz_PertBeqz, dSt_dBeqz_PertBeqz] = dSbr_dBeq(branch_Pert, V, 1, vcart); %dSbr_dBeqzPertBeqz
         %2nd Derivatives of Sbus w.r.t. Beqz2   
         d2Sf_dBeqz2(:, k) = (dSf_dBeqz_PertBeqz - dSf_dBeqz).' * lam / pert;  %BeqzBeqz from, size of [nBeqz , nBeqz] 
         d2St_dBeqz2(:, k) = (dSt_dBeqz_PertBeqz - dSt_dBeqz).' * lam / pert;  %BeqzBeqz  to , size of [nBeqz , nBeqz]

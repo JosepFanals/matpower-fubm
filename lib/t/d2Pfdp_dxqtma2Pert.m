@@ -86,7 +86,7 @@ YttB = Ys + 1j*Bc/2 + 1j*Beq;
 
 %% identifier of AC/DC grids
 %%AAB---------------------------------------------------------------------- 
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 iBeqv = find (branch(:,CONV)==2 & branch(:, BR_STATUS)==1 & branch(:, VF_SET)~=0); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqv = length(iBeqv); %AAB- Number of VSC with Vf controlled by Beq
@@ -125,7 +125,7 @@ else %AAB- Polar Version
     
     %Sbr 1st Derivatives 
     [dSf_dV1, dSf_dV2, dSt_dV1, dSt_dV2, Sf, St] = dSbr_dV(branch, Yf, Yt, V, vcart);
-    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 3, vcart);
+    [dSf_dBeqz, dSt_dBeqz] = dSbr_dBeq(branch, V, 1, vcart);
     [dSf_dBeqv, dSt_dBeqv] = dSbr_dBeq(branch, V, 2, vcart);
     [dSf_dPfsh, dSt_dPfsh] = dSbr_dsh(branch, V, 1, vcart);
     [dSf_dQtma, dSt_dQtma] = dSbr_dma(branch, V, 2, vcart);
@@ -270,7 +270,7 @@ else %AAB- Polar Version
         %Make Ybus, Yf, Yt Perturbated
         %[Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbr_dBeqzPertQtma evaluated in x+pert
-        [dSf_dBeqz_PertQtma, dSt_dBeqz_PertQtma] = dSbr_dBeq(branch_Pert, V, 3, vcart); %dSbr_dBeqzPertQtma
+        [dSf_dBeqz_PertQtma, dSt_dBeqz_PertQtma] = dSbr_dBeq(branch_Pert, V, 1, vcart); %dSbr_dBeqzPertQtma
         dPfdp_dBeqz_PertQtma = -real(dSf_dBeqz_PertQtma); 
         %2nd Derivatives of Sbr w.r.t. BeqzQtma
         d2Pfdp_dQtmaBeqz(:, k) = (dPfdp_dBeqz_PertQtma - dPfdp_dBeqz).' * lam / pert;  %BeqzQtma from, size of [nBeqz, nQtma] 

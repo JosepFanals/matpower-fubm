@@ -76,7 +76,7 @@ Va = bus(:, VA) * pi/180;
 %[stat, Cf, Ct, k2, tap, Ys, Bc, Beq] = getbranchdata(branch, nb); %AAB- Gets the requested data from branch
 
 %% identifier of AC/DC grids
-iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 | branch(:,CONV)==4) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
+iBeqz = find ((branch(:,CONV)==1 | branch(:,CONV)==3 ) & branch(:, BR_STATUS)==1); %AAB- Find branch locations of VSC, If the grid has them it's an AC/DC grid
 nBeqz = length(iBeqz); %AAB- Number of VSC with active Zero Constraint control
 
 if vcart
@@ -93,7 +93,7 @@ else %AAB- Polar Version
     
     %Sbus 1st Derivatives 
     [dSbus_dV1, dSbus_dV2] = dSbus_dV(Ybus, V, vcart);
-    [dSbus_dBeqz] = dSbus_dBeq(branch, V, 3, vcart);
+    [dSbus_dBeqz] = dSbus_dBeq(branch, V, 1, vcart);
     
     %Selector of active Beqz 
     BeqAux1 = sparse( zeros(nl,1) );      %AAB- Vector of zeros for the seclector
@@ -112,14 +112,14 @@ else %AAB- Polar Version
     for k = 1:nb
         V1p = V;
         V1p(k) = Vm(k) * exp(1j * (Va(k) + pert));  %% perturb Va
-        [dSbus_dBeqz_PertVa] = dSbus_dBeq(branch, V1p, 3, vcart); %dSbus_dBeqzPertVa
+        [dSbus_dBeqz_PertVa] = dSbus_dBeq(branch, V1p, 1, vcart); %dSbus_dBeqzPertVa
         d2Sbus_dVaBeqz(:, k) = (dSbus_dBeqz_PertVa - dSbus_dBeqz).' * lam / pert; %BeqzVa (dSbus_dBeqzPertVa - dSbus_dBeqz)
     end
     %BeqzVm
     for k = 1:nb
         V2p = V;
         V2p(k) = (Vm(k) + pert) * exp(1j * Va(k));  %% perturb Vm
-        [dSbus_dBeqz_PertVm] = dSbus_dBeq(branch, V2p, 3, vcart); %dSbus_dBeqzPertVm
+        [dSbus_dBeqz_PertVm] = dSbus_dBeq(branch, V2p, 1, vcart); %dSbus_dBeqzPertVm
         d2Sbus_dVmBeqz(:, k) = (dSbus_dBeqz_PertVm - dSbus_dBeqz).' * lam / pert; %BeqzVm (dSbus_dBeqzPertVm - dSbus_dBeqz)
     end
     %VxBeqz
@@ -147,7 +147,7 @@ else %AAB- Polar Version
         %Make Ybus, Yf, Yt Perturbated
         [Ybus_Pert, Yf_Pert, Yt_Pert] = makeYbus(baseMVA, bus, branch_Pert);
         %dSbus_dBeqzPertBeqz evaluated in x+pert
-        [dSbus_dBeqz_PertBeqz] = dSbus_dBeq(branch_Pert, V, 3, vcart); %dSbus_dBeqzPertBeqz
+        [dSbus_dBeqz_PertBeqz] = dSbus_dBeq(branch_Pert, V, 1, vcart); %dSbus_dBeqzPertBeqz
         %2nd Derivatives of Sbus w.r.t. Beqz2   
         d2Sbus_dBeqz2(:, k) = (dSbus_dBeqz_PertBeqz - dSbus_dBeqz).' * lam / pert;  %BeqzBeqz (dSbus_dBeqzPertBeqz - dSbus_dBeqz) %AAB- Final d2Sbus_dBeq2 has a size of [n , n] 
         
