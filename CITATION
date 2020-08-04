@@ -1,8 +1,27 @@
-We request that publications derived from the use of MATPOWER, or the
-included data files, explicitly acknowledge that fact by citing the
-appropriate paper(s) and the software itself.
+We request that publications derived from the use of MATPOWER-FUBM,
+the included data files, explicitly acknowledge that fact by citing the
+appropriate paper(s) and the softwares itself. Please notice that every
+publication derived from the use of MATPOWER-FUBM must cite, the FUBM, 
+the MATPOWER-FUBM and also MATPOWER. 
 
 ### Papers
+All publications derived from the use of *MATPOWER-FUBM*, the FUBM model or
+the included FUBM data files, should cite the following papers:
+
+    (To Be Published) A. Alvarez-Bustos, B. Kazemtabrizi, M. Shahbazi, and
+    R. D. Zimmerman, "MATPOWER-FUBM: Flexible Universal Branch Model for 
+    Matpower’s Optimal Power Flow and Power Flow Tools for Hybrid AC/DC 
+    Power Systems Research and Education," *Power Systems, IEEE Transactions
+    on*, vol. XX, no. X, pp. XX–XX, Month. 20XX.  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
+
+    (Under Review) A. Alvarez-Bustos, B. Kazemtabrizi, M. Shahbazi, and
+    E. Acha-Daza, "Universal Branch Model for the Solution of Optimal 
+    Power Flows in Hybrid AC/DC Grids," *International Journal of 
+    Electrical Power and Energy Systems*, vol. XX, no. X, pp. XX–XX,
+    Month. 20XX.  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
+
 
 All publications derived from the use of MATPOWER, or the included data
 files, should cite the 2011 MATPOWER paper:
@@ -37,6 +56,18 @@ cases. Details are available in the help text at the top of the
 corresponding case files.
 
 ### Software
+To cite the MATPOWER-FUBM software, should cite the following and MATPOWER:
+
+  (To Be Published) A. Alvarez-Bustos, B. Kazemtabrizi, M. Shahbazi, and
+  R. D. Zimmerman, "MATPOWER-FUBM: Flexible Universal Branch Model for 
+  Matpower’s Optimal Power Flow and Power Flow Tools for Hybrid AC/DC 
+  Power Systems Research and Education," *Power Systems, IEEE Transactions
+  on*, vol. XX, no. X, pp. XX–XX, Month. 20XX.  
+  doi: XX.XXXX/XXXXX.20XX.XXXXXXX 
+
+  A. Alvarez-Bustos (2020). MATPOWER-FUBM (Version 1.0)
+  [Software]. Available: https://github.com/AbrahamAlvarezB/matpower-fubm
+  doi: XX.XXXX/XXXXX.20XX.XXXXXXX 
 
 For the sake of reproducibility of research results, it is best to cite
 the specific version of the software used with the version-specfic DOI.

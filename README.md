@@ -1,10 +1,11 @@
 ![MATPOWER][logo]
 
-A Power System Simulation Package for MATLAB and Octave
--------------------------------------------------------
+A Power System Simulation Package for MATLAB
+--------------------------------------------
 
 - **MATPOWER Website**          - https://matpower.org
 - **MATPOWER GitHub Project**   - https://github.com/MATPOWER/matpower
+- **MATPOWER-FUBM GitHub Project**   - https://github.com/AbrahamAlvarezB/matpower-fubm
 
 MATPOWER is a package of M-files for solving power flow, continuation
 power flow and optimal power flow problems using MATLAB or Octave. It
@@ -13,95 +14,106 @@ easy to use and modify. MATPOWER is designed to give the best
 performance possible while keeping the code simple to understand and
 modify.
 
+MATPOWER-FUBM is an extended and modified version of MATPOWER. It combines
+The Flexible Universal Branch Model (FUBM) with the MATPOWER tool to solve
+power flow and optimal power flow problems for AC, DC and AC/DC power grids.
+The FUBM formulation provides a direct link between the AC and DC parts of 
+the grid allowing for solving the entire network within a unified frame of
+reference (not sequentially). It is also capable of realistically model any
+element within the AC/DC powergrid, ranging from conventional AC transmission
+lines to multiple types of AC/DC interface devices such as Voltage Source 
+Converters (VSC). The FUBM model introduces optional control variables for 
+voltage, power, and voltage droop control. 
+
+MATPOWER and MATPOWER-FUBM are intended as a simulation tool for researchers
+and educators that is easy to use and modify. Both of them are designed to 
+give the best performance possible while keeping the code simple to understand 
+and modify.
+
+The FUBM does not create any conflicts with the traditional usage of MATPOWER.
+Even though the MATPOWER-FUBM tool is designed to be fully compatible with 
+MATPOWER, it has only been fully tested for Power Flow and Optimal Power Flow.
+The MATPOWER-FUBM tool is not compatible with Octave. However, this feature will
+be added in the future.
+
 MATPOWER releases can be downloaded from the [MATPOWER website][1],
 and the latest stable and work-in-progress versions can always be
 downloaded or cloned from the [MATPOWER GitHub project][2]. The
 `master` branch should always contain a stable version.
 
+MATPOWER-FUBM releases can be downloaded from the [MATPOWER-FUBM 
+GitHub project][40].
 
 System Requirements
 -------------------
 *   [MATLAB][3] version 7.3 (R2006b) or later, or
-*   [GNU Octave][4] version 4 or later
+*   [GNU Octave][4] version 4 or later (Only MATPOWER)
 
 
-Getting MATPOWER
-----------------
-
-You can either download an official *versioned release* or you can obtain
-the *current development version*, which
-we also attempt to keep stable enough for everyday use. The development
-version includes new features and bug fixes added since the last
-versioned release.
-
-#### Versioned Releases
-
-Download the ZIP file of the latest official versioned release from the
-[MATPOWER website][1].
-**Note:** This _does_ include the [MATPOWER Extras][7d].
-
+Getting MATPOWER-FUBM
+---------------------
 #### Current Development Version
 
-There are also two options for obtaining the most recent development version
-of MATPOWER from the `master` branch on GitHub.
+There are two options for obtaining the most recent development version
+of MATPOWER-FUBM from the `master` branch on GitHub.
 **Note:** This does _not_ include the [MATPOWER Extras][7d].
 
-1. Clone the [MATPOWER repository from GitHub][2].
+1. Clone the [MATPOWER-FUBM repository from GitHub][40].
    *Use this option if you want to be able to easily update to the current
    development release, with the latest bug fixes and new features, using a
    simple `git pull` command, or if you want to help with testing or
    or development. This requires that you have a [Git client][5] (GUI
    or command-line) installed.*
     - From the command line:
-        - `git clone https://github.com/MATPOWER/matpower.git`
-    - Or, from the [MATPOWER GitHub repository page][2]:
+        - `git clone https://github.com/AbrahamAlvarezB/matpower-fubm.git`
+    - Or, from the [MATPOWER-FUBM GitHub repository page][40]:
         - Click the green **Clone or download** button, then **Open in Desktop**.
 
-2. Download a ZIP file of the MATPOWER repository from GitHub.
+2. Download a ZIP file of the MATPOWER-FUBM repository from GitHub.
    *Use this option if you need features or fixes introduced since
    the latest versioned release, but you do not have access to or
    are not ready to begin using Git (but don't be afraid to
    [give Git a try][6]).*
-    - Go to the [MATPOWER GitHub repository page][2].
+    - Go to the [MATPOWER-FUBM GitHub repository page][40].
     - Click the green **Clone or download** button, then **Download ZIP**.
 
+#### Contributing to MATPOWER or MATPOWER-FUBM
+**For Contributing to MATPOWER**
 See [CONTRIBUTING.md][7] for information on how to get a local copy
 of your own MATPOWER fork, if you are interesting in contributing
-your own code or modifications.
+your own code or modifications. Please visit MATPOWER's official
+webpage to make sure you are contributing to the updated code.
 
-#### MATPOWER Docker Image
-
-MATPOWER is also available on [Docker Hub][7a] as the pre-packaged
-[Docker][7b] image tagged [matpower/matpower-desktop][7c], providing an
-Ubuntu desktop environment with Octave, MATPOWER, and the
-[MATPOWER Extras][7d] pre-installed. See the [MATPOWER-Docker page][7e]
-for more details.
-
-Docker images are provided for both versioned releases and
-development versions.
+**For Contributing to MATPOWER-FUBM**
+Please contact:
+1. Abraham Alvarez-Bustos at abraham.alvarez-bustos@durham.ac.uk 
+                          or snoop_and@hotmail.com
+2. Behzad Kazemtabrizi at behzad.kazemtabrizi@durham.ac.uk
+3. Mahmoud Shahbazi at mahmoud.shahbazi@durham.ac.uk
 
 
 Installation
 ------------
 
-Installation and use of MATPOWER requires familiarity with the basic
-operation of MATLAB or Octave. Make sure you follow the installation
-instructions for the version of MATPOWER you are installing. The process
-was simplified with an install script following version 6.0.
+Installation and use of MATPOWER-FUBM requires familiarity with the
+basic operation of MATLAB. Make sure you follow the installation 
+instructions for the version of MATPOWER you are installing. The 
+installation process for MATPOWER-FUBM has been included to the 
+original installation script developed by MATPOWER.
 
-1.  **Get a copy of MATPOWER** as described above. Clone the repository
-    or download and extract the ZIP file of the MATPOWER distribution
-    and place the resulting directory in the location of your choice
-    and call it anything you like. We will use `<MATPOWER>` as a
-    placeholder to denote the path to this directory (the one
-    containing `install_matpower.m`). The files in `<MATPOWER>` should
-    not need to be modified, so it is recommended that they be kept
-    separate from your own code.
+1.  **Get a copy of MATPOWER-FUBM** as described above. Clone the 
+    repository or download and extract the ZIP file of the MATPOWER
+    -FUBM distribution and place the resulting directory in the 
+    location of your choice and call it anything you like. We will 
+    use `<MATPOWER-FUBM>` as a placeholder to denote the path to this
+    directory (the one containing `install_matpower.m`). The files in
+    `<MATPOWER-FUBM>` should not need to be modified, so it is 
+    recommended that they be kept separate from your own code.
 
 2.  **Run the installer.**
-    - Open MATLAB or Octave and change to the `<MATPOWER>` directory.
+    - Open MATLAB and change to the `<MATPOWER-FUBM>` directory.
     - Run the installer and follow the directions to add the
-      required directories to your MATLAB or Octave path, by typing:
+      required directories to your MATLAB path, by typing:
 
             install_matpower
 
@@ -134,6 +146,35 @@ mpc.bus(2, PD) = 30;
 runopf(mpc);
 ```
 
+Running MATPOWER-FUBM
+---------------------
+The FUBM requires extra data to identify AC and DC branches, 
+Transformers, Phase Shifter Transformers (PST), Controlled 
+Tap Transformers (CTT), Voltage Source Converters (VSC), 
+STATCOMS, and their controls. This data is added as extra 
+columns in the branch matrix of each case in the data folder.
+The MATPOWER-FUBM code includes a **Quick guide** on the **docs**
+folder, for details on how to simulate different elements and
+their voltage and power controls.
+
+To run a controlled AC/DC Newton Power Flow on the modified 30-bus
+system specified in the file `fubm_case_30_2MTDC_ctrls_vt2_pf_dp.m`,
+with the default algorithm options, at the MATLAB prompt, type:
+
+```matlab
+runpf('fubm_case_30_2MTDC_ctrls_vt2_pf_dp')
+```
+
+To run a controlled AC/DC Optimal Power Flow on the modified 30-bus
+system specified in the file `fubm_case_30_2MTDC_ctrls_vt2_pf_dp.m`,
+The algorithm options should be adjusted as follows:
+At the MATLAB prompt, type:
+
+```matlab
+mpopt = mpoption('opf.ac.solver', 'MIPS', 'mips.max_it',5000,'opf.violation',1e-6);
+runopf('fubm_case_30_2MTDC_ctrls_vt2_pf_dp',mpopt)
+```
+
 By default, the results of the simulation are pretty-printed to the
 screen, but the solution can also be optionally returned in a `results`
 struct. The following example shows how simple it is, after running a DC
@@ -148,23 +189,39 @@ gen6_output     = results.gen(6, PG);
 branch51_flow   = results.branch(51, PF);
 ```
 
-For additional info, see the [MATPOWER User's Manual][8], the [on-line
-function reference][9], or the built-in help documentation for the various
-MATPOWER functions. For example:
+It works similarly for the FUBM extra variables. For example, running
+the opf using KNITRO on the case 'fubm_case_30_2MTDC_ctrls_vt2_pf', 
+the optimal theta_sh variable controlling an active power flow of 7.5MW
+on a PST can be accessed as:
+
+```matlab
+PF = 14; SHIFT = 10;
+mpopt = mpoption('opf.ac.solver', 'KNITRO','knitro.tol_x',1e-10,'knitro.tol_f',1e-4,'opf.violation',1e-6);
+results = runopf('fubm_case_30_2MTDC_ctrls_vt2_pf_dp',mpopt)
+final_objective = results.f;
+PST_P_flow = results.branch(25, PF);
+PST_Theta_sh = results.branch(25, SHIFT);
+```
+
+For additional MATPOWER info, see the [MATPOWER User's Manual][8], the
+[on-line function reference][9], or the built-in help documentation for
+the various MATPOWER and MATPOWER-FUBM functions. For example:
 
     help runpf
     help runopf
     help mpoption
     help caseformat
+    help bustypes_fubm
 
 
 Documentation
 -------------
 
-There are four primary sources of documentation for MATPOWER.
+There are five primary sources of documentation for MATPOWER-FUBM.
   - [MATPOWER User's Manual][8]
   - [MOST User's Manual][10]
   - [MATPOWER Online Function Reference][9]
+  - [MATPOWER-FUBM Quick Guide][41]
   - MATLAB's `help` command
 
 #### Manuals
@@ -207,6 +264,19 @@ Contributing
 Please see our [contributing guidelines][7] for details on how to
 contribute to the project or report issues.
 
+**For Contributing to MATPOWER**
+See [CONTRIBUTING.md][7] for information on how to get a local copy
+of your own MATPOWER fork, if you are interesting in contributing
+your own code or modifications. Please visit MATPOWER's official
+webpage to make sure you are contributing to the updated code.
+
+**For Contributing to MATPOWER-FUBM**
+Please contact:
+1. Abraham Alvarez-Bustos at abraham.alvarez-bustos@durham.ac.uk 
+                          or snoop_and@hotmail.com
+2. Behzad Kazemtabrizi at behzad.kazemtabrizi@durham.ac.uk
+3. Mahmoud Shahbazi at mahmoud.shahbazi@durham.ac.uk
+
 
 Sponsoring the MATPOWER Project
 -------------------------------
@@ -217,9 +287,22 @@ MATPOWER development and support require significant resources. Any
 contributions from the community or other sponsors free us to focus on
 that support and the development of valuable new features.
 
+Sponsoring the FUBM Project
+-------------------------------
 
-Publications and Tech Notes
----------------------------
+If you have found the FUBM to be valuable, please consider supporting
+the project by becoming a sponsor. Please contact:
+1. Abraham Alvarez-Bustos at abraham.alvarez-bustos@durham.ac.uk 
+                          or snoop_and@hotmail.com
+2. Behzad Kazemtabrizi at behzad.kazemtabrizi@durham.ac.uk
+3. Mahmoud Shahbazi at mahmoud.shahbazi@durham.ac.uk
+
+Any contributions from the community or other sponsors free us to focus on
+that support and the development of valuable new features.
+
+------------------------------------
+MATPOWER Publications and Tech Notes
+------------------------------------
 
 1.  R. D. Zimmerman, C. E. Murillo-Sanchez, and R. J. Thomas,
     ["MATPOWER: Steady-State Operations, Planning and Analysis Tools
@@ -280,17 +363,73 @@ Publications and Tech Notes
     https://matpower.org/docs/TN4-OPF-Derivatives-Cartesian.pdf  
     doi: [10.5281/zenodo.3237909](https://doi.org/10.5281/zenodo.3237909).
 
+-----------------------------------------
+MATPOWER-FUBM Publications and Tech Notes
+-----------------------------------------
 
-[Citing MATPOWER][31]
+10. A. Alvarez-Bustos and B. Kazemtabrizi, ["Flexible general branch 
+    model unified power flow algorithm for future flexible AC/DC 
+    networks,"][42] *2018 IEEE International Conference on Environment
+    and Electrical Engineering (EEEIC / I&CPS Europe)*, Palermo, Italy,
+    Jun. 2018.
+    doi: [10.1109/EEEIC.2018.8493705][43].
+
+11. *Under Review* A. Alvarez-Bustos, B. Kazemtabrizi, M. Shahbazi, and
+    E. Acha-Daza, "Universal Branch Model for the Solution of Optimal 
+    Power Flows in Hybrid AC/DC Grids," *International Journal of 
+    Electrical Power and Energy Systems*, vol. XX, no. X, pp. XX–XX,
+    Month. 20XX.  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
+
+
+12. *To Be Published* A. Alvarez-Bustos, B. Kazemtabrizi, M. Shahbazi, and
+    R. D. Zimmerman, "MATPOWER-FUBM: Flexible Universal Branch Model for 
+    Matpower’s Optimal Power Flow and Power Flow Tools for Hybrid AC/DC 
+    Power Systems Research and Education," *Power Systems, IEEE Transactions
+    on*, vol. XX, no. X, pp. XX–XX, Month. 20XX.  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
+
+13. A. Alvarez-Bustos, "AC/DC Optimal Power Flow and Power flow Equations and
+    their Derivatives in Complex Matrix Notation using FUBM for MATPOWER," 
+    *MATPOWER-FUBM Technical Note 5*, Ago 2020.  
+    Available:
+    https://matpower.org/docs/TN5-FUBM-Derivatives.pdf  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
+
+14. A. Alvarez-Bustos, "MATPOWER-FUBM Quick Guide," *MATPOWER Technical Note
+    4*, Ago 2020. Available:
+    https://matpower.org/docs/MATPOWER-FUBM-Quick-Guide.pdf  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
+
+[Citing MATPOWER-FUBM][31]
 ---------------------
 
-We request that publications derived from the use of MATPOWER, or the
-included data files, explicitly acknowledge that fact by citing the
-appropriate paper(s) and the software itself.
+We request that publications derived from the use of MATPOWER-FUBM,
+the included data files, explicitly acknowledge that fact by citing the
+appropriate paper(s) and the softwares itself. Please notice that every
+publication derived from the use of MATPOWER-FUBM must cite, the FUBM, 
+the MATPOWER-FUBM and also MATPOWER. 
 
 #### Papers
 
-All publications derived from the use of MATPOWER, or the included data
+All publications derived from the use of *MATPOWER-FUBM*, the FUBM model or
+the included FUBM data files, should cite the following papers:
+
+>   *To Be Published* A. Alvarez-Bustos, B. Kazemtabrizi, M. Shahbazi, and
+    R. D. Zimmerman, "MATPOWER-FUBM: Flexible Universal Branch Model for 
+    Matpower’s Optimal Power Flow and Power Flow Tools for Hybrid AC/DC 
+    Power Systems Research and Education," *Power Systems, IEEE Transactions
+    on*, vol. XX, no. X, pp. XX–XX, Month. 20XX.  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
+
+>   *Under Review* A. Alvarez-Bustos, B. Kazemtabrizi, M. Shahbazi, and
+    E. Acha-Daza, "Universal Branch Model for the Solution of Optimal 
+    Power Flows in Hybrid AC/DC Grids," *International Journal of 
+    Electrical Power and Energy Systems*, vol. XX, no. X, pp. XX–XX,
+    Month. 20XX.  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
+
+All publications derived from the use of *MATPOWER*, or the included data
 files, should cite the 2011 MATPOWER paper:
 
 >   R. D. Zimmerman, C. E. Murillo-Sanchez, and R. J. Thomas, "MATPOWER:
@@ -323,14 +462,18 @@ cases. Details are available in the help text at the top of the
 corresponding case files.
 
 #### Software
+To cite the MATPOWER-FUBM software, should cite the following and MATPOWER:
 
-For the sake of reproducibility of research results, it is best to cite
-the specific version of the software used, with the version-specfic DOI.
-For example, for version 7.0 of MATPOWER, use:
+>   *To Be Published* A. Alvarez-Bustos, B. Kazemtabrizi, M. Shahbazi, and
+    R. D. Zimmerman, "MATPOWER-FUBM: Flexible Universal Branch Model for 
+    Matpower’s Optimal Power Flow and Power Flow Tools for Hybrid AC/DC 
+    Power Systems Research and Education," *Power Systems, IEEE Transactions
+    on*, vol. XX, no. X, pp. XX–XX, Month. 20XX.  
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX XX.
 
->   R. D. Zimmerman, C. E. Murillo-Sanchez (2019). *MATPOWER (Version 7.0)*
-    [Software]. Available: https://matpower.org  
-    doi: [10.5281/zenodo.3251119](https://doi.org/10.5281/zenodo.3251119)
+>   A. Alvarez-Bustos (2020). MATPOWER-FUBM (Version 1.0)
+    [Software]. Available: https://github.com/AbrahamAlvarezB/matpower-fubm
+    doi: XX.XXXX/XXXXX.20XX.XXXXXXX 
 
 To cite the MATPOWER software generally, without reference to a specific
 version, use the following citation and DOI, with *\<YEAR\>* replaced by the
@@ -342,6 +485,14 @@ year of the most recent release:
 
 A list of versions with release dates and version-specific DOI's can be
 found via the general DOI at https://doi.org/10.5281/zenodo.3236535.
+
+For the sake of reproducibility of research results, it is best to cite
+the specific version of the software used, with the version-specfic DOI.
+For example, for version 7.0 of MATPOWER, use:
+
+>   R. D. Zimmerman, C. E. Murillo-Sanchez (2019). *MATPOWER (Version 7.0)*
+    [Software]. Available: https://matpower.org  
+    doi: [10.5281/zenodo.3251119](https://doi.org/10.5281/zenodo.3251119)
 
 #### User's Manuals
 
@@ -463,5 +614,9 @@ MATPOWER is distributed as open-source under the [3-clause BSD license][30].
 [37]: https://guides.github.com/activities/citable-code/
 [38]: https://ieee-dataport.org
 [39]: https://www.re3data.org
+[40]: https://github.com/AbrahamAlvarezB/matpower-fubm
+[41]: docs/MATPOWER-FUBM-Quick-Guide.pdf
+[42]: https://ieeexplore.ieee.org/document/8493705
+[43]: https://doi.org/10.1109/EEEIC.2018.8493705
 
-[logo]: docs/src/images/MATPOWER-md.png
+[logo]: docs/src/images/MATPOWER-FUBM-md.png
