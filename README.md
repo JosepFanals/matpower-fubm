@@ -1,4 +1,4 @@
-![MATPOWER][logo]
+![MATPOWER-FUBM][logo-fubm]
 
 A Power System Simulation Package for MATLAB and Octave
 -------------------------------------------------------
@@ -465,3 +465,4 @@ MATPOWER is distributed as open-source under the [3-clause BSD license][30].
 [39]: https://www.re3data.org
 
 [logo]: docs/src/images/MATPOWER-md.png
+[logo-fubm]: docs/src/images/MATPOWER-FUBM-md.png
