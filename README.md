@@ -1,5 +1,66 @@
 ![MATPOWER-FUBM][logo-fubm]
 
+A Power System Simulation Package for MATLAB based on MATPOWER
+--------------------------------------------------------------
+
+MATPOWER-FUBM is an extended and modified version of MATPOWER. It combines
+The Flexible Universal Branch Model **FUBM** with the MATPOWER tool to solve
+power flow and optimal power flow problems for AC, DC and AC/DC power grids.
+The FUBM formulation provides a direct link between the AC and DC parts of 
+the grid allowing for solving the entire network within a unified frame of
+reference (not sequentially). It is also capable of realistically model any
+element within the AC/DC powergrid, ranging from conventional AC transmission
+lines to multiple types of AC/DC interface devices such as Voltage Source 
+Converters (VSC). The FUBM model introduces optional control variables for 
+voltage, power, and voltage droop control. 
+
+The FUBM does not create any conflicts with the traditional usage of MATPOWER.
+Even though the MATPOWER-FUBM tool is designed to be fully compatible with 
+MATPOWER, it has only been fully tested for Power Flow and Optimal Power Flow.
+The MATPOWER-FUBM tool is not compatible with Octave. *However, this feature 
+will be added in the future.*
+
+[README MATPOWER-FUBM][40]
+---------------------------
+MATPOWER-FUBM is designed to be transparent to MATPOWER. Nevertheless, there are 
+some details to consider before Downloading, Installing and Running this tool.
+This also includes Quick Guides and Technical Notes.
+**PLEASE READ CAREFULLY [THIS FILE][40] BEFORE CONTINUING** 
+**[README MATPOWER-FUBM][40]**
+
+[Getting MATPOWER-FUBM][41]
+---------------------------
+
+To obtain the *current development version*, which we also attempt to 
+keep stable enough for everyday use, please follow the instructiions in:
+[Get MATPOWER-FUBM][41]
+
+[Citing MATPOWER-FUBM][42]
+--------------------------
+We request that publications derived from the use of MATPOWER-FUBM,
+the included data files, explicitly acknowledge that fact by citing the
+appropriate paper(s) and the softwares itself. Please notice that every
+publication derived from the use of MATPOWER-FUBM must cite, the FUBM, 
+the MATPOWER-FUBM and also MATPOWER. **Please follow the link below with 
+detailed instructions regarding to MATPOWER-FUBM citation** 
+[CITE MATPOWER-FUBM][42]
+
+
+Installation MATPOWER-FUBM
+---------------------------
+MATPOWER-FUBM installation is the same as for MATPOWER, Please follow the
+installation instructions below for standard MATPOWER.
+
+--------------------------------------------------
+--------------------------------------------------
+
+*The information below is for standard MATPOWER*
+
+--------------------------------------------------
+--------------------------------------------------
+
+![MATPOWER][logo]
+
 A Power System Simulation Package for MATLAB and Octave
 -------------------------------------------------------
 
@@ -281,6 +342,16 @@ Publications and Tech Notes
     doi: [10.5281/zenodo.3237909](https://doi.org/10.5281/zenodo.3237909).
 
 
+[Citing MATPOWER-FUBM][42]
+--------------------------
+We request that publications derived from the use of MATPOWER-FUBM,
+the included data files, explicitly acknowledge that fact by citing the
+appropriate paper(s) and the softwares itself. Please notice that every
+publication derived from the use of MATPOWER-FUBM must cite, the FUBM, 
+the MATPOWER-FUBM and also MATPOWER. **Please follow the link below with 
+detailed instructions regarding to MATPOWER-FUBM citation** 
+[CITE MATPOWER-FUBM][42]
+
 [Citing MATPOWER][31]
 ---------------------
 
@@ -463,6 +534,14 @@ MATPOWER is distributed as open-source under the [3-clause BSD license][30].
 [37]: https://guides.github.com/activities/citable-code/
 [38]: https://ieee-dataport.org
 [39]: https://www.re3data.org
+
+[40]: README-MATPOWER-FUBM
+[41]: GETTING-MATPOWER-FUBM
+[42]: CITATION-MATPOWER-FUBM
+[43]: https://github.com/AbrahamAlvarezB/matpower-fubm
+[44]: docs/MATPOWER-FUBM-Quick-Guide.pdf
+[45]: https://ieeexplore.ieee.org/document/8493705
+[46]: https://doi.org/10.1109/EEEIC.2018.8493705
 
 [logo]: docs/src/images/MATPOWER-md.png
 [logo-fubm]: docs/src/images/MATPOWER-FUBM-md.png
