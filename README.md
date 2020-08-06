@@ -535,9 +535,9 @@ MATPOWER is distributed as open-source under the [3-clause BSD license][30].
 [38]: https://ieee-dataport.org
 [39]: https://www.re3data.org
 
-[40]: README-MATPOWER-FUBM
-[41]: GETTING-MATPOWER-FUBM
-[42]: CITATION-MATPOWER-FUBM
+[40]: README-MATPOWER-FUBM.md
+[41]: GETTING-MATPOWER-FUBM.md
+[42]: CITATION-MATPOWER-FUBM.md
 [43]: https://github.com/AbrahamAlvarezB/matpower-fubm
 [44]: docs/MATPOWER-FUBM-Quick-Guide.pdf
 [45]: https://ieeexplore.ieee.org/document/8493705
